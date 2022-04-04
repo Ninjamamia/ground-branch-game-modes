@@ -1,36 +1,50 @@
-local m = require("KillConfirmed")
+local Tables = require("Common.Tables2")
+local Method = require("Common.Method")
 
-function m:OnRoundStageSet(RoundStage)
-	print('Started round stage ' .. RoundStage)
-	timer.ClearAll()
-	if RoundStage == 'WaitingForReady' then
-		self:PreRoundCleanUp()
-		self.Objectives.Exfiltrate:SelectPoint(false)
-		self.Objectives.ConfirmKill:ShuffleSpawns()
-		timer.Set(
-			self.Timers.SettingsChanged.Name,
-			self,
-			self.CheckIfSettingsChanged,
-			self.Timers.SettingsChanged.TimeStep,
-			true
-		)
-	elseif RoundStage == 'PreRoundWait' then
+local CustomMode = Tables.DeepCopy(require("KillConfirmed"))
+
+CustomMode.Settings.RespawnCost.Value = 100000
+CustomMode.PlayerScoreTypes.CollateralDamage = {
+	Score = -250,
+	OneOff = false,
+	Description = 'Killed a non-combatant'
+}
+CustomMode.CollateralDamageDamageCount = 0
+
+Method.Extend(CustomMode, 'OnRoundStageSet', function(self, super, RoundStage)
+	if RoundStage == 'PreRoundWait' then
+		print("Setting attitudes")
 		gamemode.SetTeamAttitude(1, 10, 'Neutral')
 		gamemode.SetTeamAttitude(10, 1, 'Neutral')
 		gamemode.SetTeamAttitude(10, 100, 'Friendly')
 		gamemode.SetTeamAttitude(100, 10, 'Friendly')
-	
-		self:SetUpOpForStandardSpawns()
-		self:SpawnOpFor()
-	elseif RoundStage == 'InProgress' then
-		self.PlayerTeams.BluFor.Script:RoundStart(
-			self.Settings.RespawnCost.Value,
-			self.Settings.DisplayScoreMessage.Value == 1,
-			self.Settings.DisplayScoreMilestones.Value == 1,
-			self.Settings.DisplayObjectiveMessages.Value == 1,
-			self.Settings.DisplayObjectivePrompts.Value == 1
-		)
 	end
-end
+	super(RoundStage)
+end)
 
-return m
+Method.Extend(CustomMode, 'OnCharacterDied', function(self, super, Character, CharacterController, KillerController)
+	local goodKill = true
+
+	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress'
+	then
+		if CharacterController ~= nil then
+			local killedTeam = actor.GetTeamId(CharacterController)
+			local killerTeam = nil
+			if KillerController ~= nil then
+				killerTeam = actor.GetTeamId(KillerController)
+			end
+			if killedTeam == 10 and killerTeam == 1 then
+				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
+				goodKill = false
+			end
+		end
+	end
+
+	if goodKill then
+		super(Character, CharacterController, KillerController)
+	end
+end)
+
+
+
+return CustomMode

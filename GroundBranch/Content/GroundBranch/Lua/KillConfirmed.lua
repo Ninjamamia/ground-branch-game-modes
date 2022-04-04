@@ -562,8 +562,9 @@ end
 function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
-	self.Objectives.ConfirmKill:Reset()
-	self.Objectives.Exfiltrate:Reset()
+	for _, objective in ipairs(self.Objectives) do
+		objective:Reset()
+	end
 end
 
 function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
