@@ -1,17 +1,17 @@
-local Tables = require("Common.Tables2")
-local Method = require("Common.Method")
+local Tables = require("Common.Tables")
 
-local CustomMode = Tables.DeepCopy(require("KillConfirmed"))
+local super = Tables.DeepCopy(require("KillConfirmed"))
+local KillConfirmedSP = setmetatable({}, { __index = super })
 
-CustomMode.Settings.RespawnCost.Value = 100000
-CustomMode.PlayerScoreTypes.CollateralDamage = {
+KillConfirmedSP.Settings.RespawnCost.Value = 100000
+KillConfirmedSP.PlayerScoreTypes.CollateralDamage = {
 	Score = -250,
 	OneOff = false,
 	Description = 'Killed a non-combatant'
 }
-CustomMode.CollateralDamageDamageCount = 0
+KillConfirmedSP.CollateralDamageDamageCount = 0
 
-Method.Extend(CustomMode, 'OnRoundStageSet', function(self, super, RoundStage)
+function KillConfirmedSP:OnRoundStageSet(RoundStage)
 	if RoundStage == 'PreRoundWait' then
 		print("Setting attitudes")
 		gamemode.SetTeamAttitude(1, 10, 'Neutral')
@@ -19,10 +19,10 @@ Method.Extend(CustomMode, 'OnRoundStageSet', function(self, super, RoundStage)
 		gamemode.SetTeamAttitude(10, 100, 'Friendly')
 		gamemode.SetTeamAttitude(100, 10, 'Friendly')
 	end
-	super(RoundStage)
-end)
+	super.OnRoundStageSet(self, RoundStage)
+end
 
-Method.Extend(CustomMode, 'OnCharacterDied', function(self, super, Character, CharacterController, KillerController)
+function KillConfirmedSP:OnCharacterDied(Character, CharacterController, KillerController)
 	local goodKill = true
 
 	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress'
@@ -41,10 +41,8 @@ Method.Extend(CustomMode, 'OnCharacterDied', function(self, super, Character, Ch
 	end
 
 	if goodKill then
-		super(Character, CharacterController, KillerController)
+		super.OnCharacterDied(self, Character, CharacterController, KillerController)
 	end
-end)
+end
 
-
-
-return CustomMode
+return KillConfirmedSP
