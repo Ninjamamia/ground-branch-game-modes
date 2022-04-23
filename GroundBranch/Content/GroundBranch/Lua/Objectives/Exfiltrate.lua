@@ -82,9 +82,9 @@ end
 
 function Exfiltrate:GetCompletedObjectives()
 	if self.ExfilDone then
-		return 'ExfiltrateBluFor'
+		return {'ExfiltrateBluFor'}
 	else
-		return ''
+		return {}
 	end
 end
 
@@ -174,7 +174,9 @@ end
 ---cancels the exfiltration.
 function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
-		self.ExfilDone = true
+		if self.Team:GetAlivePlayersCount() > 0 then
+			self.ExfilDone = true
+		end
 		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
 		timer.Clear(self, self.ExfilTimer.Name)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime

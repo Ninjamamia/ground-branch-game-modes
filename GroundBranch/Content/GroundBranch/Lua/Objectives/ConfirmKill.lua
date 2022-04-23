@@ -91,11 +91,11 @@ end
 
 function ConfirmKill:GetCompletedObjectives()
     if self:AreAllConfirmed() then
-        return 'NeutralizeHVTs,ConfirmEliminatedHVTs'
+        return {'NeutralizeHVTs','ConfirmEliminatedHVTs'}
     elseif self:AreAllNeutralized() then
-        return 'NeutralizeHVTs'
+        return {'NeutralizeHVTs'}
     end
-    return ''
+    return {}
 end
 
 ---Shuffle HVT spawn order. Should be called before every round.

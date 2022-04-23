@@ -13,15 +13,19 @@ function AvoidFatality:Reset()
     self.currentCount = 0
 end
 
-function ConfirmKill:GetCompletedObjectives()
+function AvoidFatality:GetCompletedObjectives()
     if self:IsOK() then
-        return self.objectiveName
+        return {self.objectiveName}
     end
-    return ''
+    return {}
 end
 
 function AvoidFatality:ReportFatality()
     self.currentCount = self.currentCount + 1
+end
+
+function AvoidFatality:GetFatalityCount()
+    return self.currentCount
 end
 
 function AvoidFatality:IsOK()
