@@ -10,14 +10,14 @@ local Groups = {
     GroupTagPrefix = 'Group'
 }
 
+Groups.__index = Groups
+
 ---Creates a new group spawns object. At creation all relevant spawn points are
 ---gathered, default values are set.
 ---@param groupTagPrefix string The tag prefix assigned to group spawn points.
 ---@return table Groups Newly create Groups object.
 function Groups:Create(groupTagPrefix)
-    local groups = {}
-    setmetatable(groups, self)
-    self.__index = self
+    local self = setmetatable({}, Groups)
     -- Setting attributes
     self.GroupTagPrefix = groupTagPrefix or 'Group'
     -- Gathering all relevant spawn points
@@ -43,7 +43,7 @@ function Groups:Create(groupTagPrefix)
     self.ReserveSpawnPoints = {}
     self.SelectedSpawnPoints = {}
     print('Initialized Spawns Groups ' .. tostring(groups))
-    return groups
+    return self
 end
 
 ---Adds spawn points from a random group within the given maxDistance from provided
