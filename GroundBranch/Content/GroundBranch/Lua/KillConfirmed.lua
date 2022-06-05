@@ -9,6 +9,7 @@ local MSpawnsGroups         = require('Spawns.Groups')
 local MSpawnsCommon         = require('Spawns.Common')
 local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
+local AdminTools = require('AdminTools')
 
 --#region Properties
 
@@ -262,6 +263,9 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				end
 			else
 				print('BluFor eliminated')
+				if killedTeam == self.PlayerTeams.BluFor.TeamId then
+					AdminTools:NotifyKIA(CharacterController)
+				end
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
