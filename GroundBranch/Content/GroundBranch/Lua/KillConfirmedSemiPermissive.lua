@@ -17,6 +17,7 @@ Notes for Mission Editing:
 local Tables = require("Common.Tables")
 local AvoidFatality = require("Objectives.AvoidFatality")
 local NoSoftFail = require("Objectives.NoSoftFail")
+local MSpawnsGroups         = require('Spawns.Groups')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))
@@ -40,12 +41,22 @@ super.TeamScoreTypes.CollateralDamage = {
 super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
 super.Objectives.NoSoftFail = NoSoftFail.new()
 
+-- Add additional teams
+super.AiTeams.CIVUnarmed = {
+	Tag = 'CIV_Unarmed',
+	CalculatedAiCount = 0,
+	Spawns = nil
+}
 -- Our sub-class of the singleton
 local Mode = setmetatable({}, { __index = super })
 
 -- The max. amount of collateral damage before failing the mission
 Mode.CollateralDamageThreshold = 3
 
+function Mode:PreInit()
+	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create("CIV_Unarmed_")
+	super.PreInit(self)
+end
 
 function Mode:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
@@ -58,8 +69,16 @@ function Mode:OnRoundStageSet(RoundStage)
 	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
 		-- Make sure the 'SOFT FAIL' message is cleared
 		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
+	elseif RoundStage == 'PreRoundWait' then
+		self:SpawnCIVs()
 	end
 	super.OnRoundStageSet(self, RoundStage)
+end
+
+function Mode:SpawnCIVs()
+	AdminTools:ShowDebug("Spawning CIVs")
+	self.AiTeams.CIVUnarmed.Spawns:AddSpawnsFromRandomGroup(10)
+	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.5, 10, "CIV_Unarmed")
 end
 
 function Mode:PreRoundCleanUp()

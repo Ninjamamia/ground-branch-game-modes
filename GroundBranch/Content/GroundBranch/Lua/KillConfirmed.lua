@@ -7,6 +7,7 @@
 local MTeams                = require('Players.Teams')
 local MSpawnsGroups         = require('Spawns.Groups')
 local MSpawnsCommon         = require('Spawns.Common')
+local MSpawnsQueue          = require('Spawns.Queue')
 local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 local AdminTools = require('AdminTools')
@@ -162,6 +163,7 @@ local KillConfirmed = {
 			Name = 'SpawnOpFor',
 			TimeStep = 0.5,
 		},
+		SpawnQueue = nil,
 	},
 }
 
@@ -205,6 +207,7 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Value,
 		self.Settings.HVTCount.Max
 	)
+	self.SpawnQueue = MSpawnsQueue:Create()
 end
 
 function KillConfirmed:PostInit()
@@ -223,6 +226,7 @@ end
 function KillConfirmed:OnRoundStageSet(RoundStage)
 	print('Started round stage ' .. RoundStage)
 	timer.ClearAll()
+	self.SpawnQueue:Start()
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self.Objectives.Exfiltrate:SelectPoint(false)
@@ -474,18 +478,8 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 end
 
 function KillConfirmed:SpawnOpFor()
-	self.Objectives.ConfirmKill:Spawn(0.4)
-	timer.Set(
-		self.Timers.SpawnOpFor.Name,
-		self,
-		self.SpawnStandardOpForTimer,
-		self.Timers.SpawnOpFor.TimeStep,
-		false
-	)
-end
-
-function KillConfirmed:SpawnStandardOpForTimer()
-	self.AiTeams.OpFor.Spawns:Spawn(3.5, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
+	self.Objectives.ConfirmKill:EnqueueSpawning(self.SpawnQueue, 0.4)
+	self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.4, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
 end
 
 --#endregion

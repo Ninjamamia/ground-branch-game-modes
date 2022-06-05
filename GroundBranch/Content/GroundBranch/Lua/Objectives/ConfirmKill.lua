@@ -126,6 +126,13 @@ function ConfirmKill:Spawn(duration)
     timer.Set('CheckSpawnsTimer', self, self.checkSpawnsTimer, duration + 0.1, false)
 end
 
+---Schedule spawning the specified amount of HVTs at the shuffled spawn points.
+---@param duration number time over whch the ai should be spawned.
+function ConfirmKill:EnqueueSpawning(spawnQueue, duration)
+    print('Schedule spawning ' .. self.HVT.Tag)
+	spawnQueue:Enqueue(0.0, duration, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, self.checkSpawnsTimer, self)
+end
+
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.
 function ConfirmKill:checkSpawnsTimer()
     local hvtControllers = ai.GetControllers(
