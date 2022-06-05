@@ -3,10 +3,9 @@ local Queue = {
     SpawnQueue = {},
     CurrSpawnItem = nil,
     tiSpawnQueue = 0,
-    tiSpawnDurationLast = 0,
     Timer = {
         Name = 'SpawnQueue',
-        TimeStep = 0.5,
+        TimeStep = 0.25,
     },
 }
 
@@ -24,15 +23,26 @@ function Queue:Create()
 end
 
 function Queue:Enqueue(delay, duration, count, spawnPoints, spawnTag, postSpawnCallback, postSpawnCallbackTarget)
-	table.insert(self.SpawnQueue, {
-		delay = delay,
+	local NewItem = {
+		tiSpawn = self.tiSpawnQueue + delay,
 		duration = duration,
 		count = count,
 		spawnPoints = spawnPoints,
 		spawnTag = spawnTag,
 		postSpawnCallback = postSpawnCallback or nil,
 		postSpawnCallbackTarget = postSpawnCallbackTarget or nil
-	})
+	}
+	if #self.SpawnQueue == 0 then
+		table.insert(self.SpawnQueue, NewItem)
+	else
+		for i, CurrItem in ipairs(self.SpawnQueue) do
+			if CurrItem.tiSpawn > NewItem.tiSpawn then
+				table.insert(self.SpawnQueue, i, NewItem)
+				return
+			end
+		end
+		table.insert(self.SpawnQueue, NewItem)
+	end
 end
 
 function Queue:OnSpawnQueueTick()
@@ -42,22 +52,20 @@ function Queue:OnSpawnQueueTick()
 	end
 	if self.CurrSpawnItem == nil then
 		self.CurrSpawnItem = self.SpawnQueue[1]
-		self.CurrSpawnItem.delay = self.tiSpawnQueue + math.max(self.CurrSpawnItem.delay, self.tiSpawnDurationLast + 0.1)
-		print('SpawnQueue: Will Spawn ' .. self.CurrSpawnItem.count .. ' ' .. self.CurrSpawnItem.spawnTag .. ' in ' .. self.CurrSpawnItem.delay - self.tiSpawnQueue .. 's')
+		print('SpawnQueue: Will Spawn ' .. self.CurrSpawnItem.count .. ' ' .. self.CurrSpawnItem.spawnTag .. ' in ' .. self.CurrSpawnItem.tiSpawn - self.tiSpawnQueue .. 's')
 	end
-	if self.tiSpawnQueue >= self.CurrSpawnItem.delay then
-		print('SpawnQueue: Spawning ' .. self.CurrSpawnItem.count .. ' ' .. self.CurrSpawnItem.spawnTag .. ' over ' .. self.CurrSpawnItem.duration .. 's')
+	if self.tiSpawnQueue >= self.CurrSpawnItem.tiSpawn then
+		print('SpawnQueue: Spawning ' .. self.CurrSpawnItem.count .. ' ' .. self.CurrSpawnItem.spawnTag .. ' frozen for ' .. self.CurrSpawnItem.duration .. 's')
 		table.remove(self.SpawnQueue, 1)
-		ai.CreateOverDuration(
-			self.CurrSpawnItem.duration,
-			self.CurrSpawnItem.count,
-			self.CurrSpawnItem.spawnPoints,
-			self.CurrSpawnItem.spawnTag
-		)
-		if self.CurrSpawnItem.postSpawnCallback ~= nil and self.CurrSpawnItem.postSpawnCallbackTarget then
-			timer.Set('PostSpawnCallbackTimer', self.CurrSpawnItem.postSpawnCallbackTarget, self.CurrSpawnItem.postSpawnCallback, self.CurrSpawnItem.duration + 0.1, false)
+        for i, spawnPoint in ipairs(self.CurrSpawnItem.spawnPoints) do
+			if i > self.CurrSpawnItem.count then
+				break
+			end
+            ai.Create(spawnPoint, self.CurrSpawnItem.spawnTag, self.CurrSpawnItem.duration)
+        end
+		if self.CurrSpawnItem.postSpawnCallback ~= nil and self.CurrSpawnItem.postSpawnCallbackTarget ~= nil then
+			self.CurrSpawnItem.postSpawnCallback(self.CurrSpawnItem.postSpawnCallbackTarget)
 		end
-		self.tiSpawnDurationLast = self.CurrSpawnItem.duration
 		self.CurrSpawnItem = nil
 	end
 end
@@ -65,7 +73,6 @@ end
 ---Must be called every time the timers have been reset globally
 function Queue:Start()
 	self.tiSpawnQueue = 0
-	self.tiSpawnDurationLast = 0
 	timer.Set(
 				self.Timer.Name,
 				self,
