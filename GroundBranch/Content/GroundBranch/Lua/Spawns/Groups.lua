@@ -272,6 +272,17 @@ function Groups:Spawn(duration, count, spawnTag)
 	)
 end
 
+---Schedules AI spawning in the selected spawn points.
+---@param duration number The time over which the AI will be spawned.
+---@param count integer The amount of the AI to spawn.
+---@param spawnTag string The tag that will be assigned to spawned AI.
+function Groups:EnqueueSpawning(spawnQueue, delay, duration, count, spawnTag, postSpawnCallback, postSpawnCallbackTarget)
+    if count > #self.SelectedSpawnPoints then
+        count = #self.SelectedSpawnPoints
+    end
+	spawnQueue:Enqueue(delay, duration, count, self:PopSelectedSpawnPoints(), spawnTag, postSpawnCallback, postSpawnCallbackTarget)
+end
+
 --#endregion
 
 return Groups
