@@ -130,7 +130,7 @@ end
 ---@param duration number time over whch the ai should be spawned.
 function ConfirmKill:EnqueueSpawning(spawnQueue, duration)
     print('Schedule spawning ' .. self.HVT.Tag)
-	spawnQueue:Enqueue(0.0, duration, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, self.checkSpawnsTimer, self)
+	spawnQueue:Enqueue( 0.5, duration, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, self.checkSpawnsTimer, self)
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.

@@ -76,7 +76,6 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:SpawnCIVs()
-	AdminTools:ShowDebug("Spawning CIVs")
 	self.AiTeams.CIVUnarmed.Spawns:AddSpawnsFromRandomGroup(10)
 	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.5, 10, "CIV_Unarmed")
 end
