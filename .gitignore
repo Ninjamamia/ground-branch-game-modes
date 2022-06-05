@@ -39,7 +39,6 @@ GroundBranch/Content/GroundBranch/Lua/IntelTarget.lua
 GroundBranch/Content/GroundBranch/Lua/Laptop.lua
 GroundBranch/Content/GroundBranch/Lua/TeamElimination.lua
 GroundBranch/Content/GroundBranch/Lua/TeamEliminationValidate.lua
-GroundBranch/Content/GroundBranch/Lua/TerroristHunt.lua
 GroundBranch/Content/GroundBranch/Lua/TerroristHuntValidate.lua
 GroundBranch/Content/GroundBranch/Lua/Training.lua
 GroundBranch/Content/GroundBranch/Lua/Testing.lua
