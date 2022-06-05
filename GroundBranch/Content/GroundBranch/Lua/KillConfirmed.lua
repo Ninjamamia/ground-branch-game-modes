@@ -44,6 +44,12 @@ local KillConfirmed = {
 			Value = 60,
 			AdvancedSetting = false,
 		},
+		Reinforcements = {
+			Min = 0,
+			Max = 30,
+			Value = 5,
+			AdvancedSetting = false,
+		},
 		RespawnCost = {
 			Min = 0,
 			Max = 10000,
@@ -260,6 +266,14 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			end
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
+				if self.Settings.Reinforcements.Value > 0 then
+					local tiReinforce = math.random(50, 150) * 0.1
+					print("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
+					AdminTools:ShowDebug("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
+					local hvtLocation = actor.GetLocation(Character)
+					self.AiTeams.OpFor.Spawns:AddSpawnsFromClosestGroup(self.Settings.Reinforcements.Value, hvtLocation)
+					self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, self.Settings.Reinforcements.Value, self.AiTeams.OpFor.Tag)
+				end
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
