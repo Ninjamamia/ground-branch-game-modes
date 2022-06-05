@@ -23,7 +23,7 @@ local super = Tables.DeepCopy(require("KillConfirmed"))
 
 -- Use a separate loadout
 super.PlayerTeams.BluFor.Loadout='NoTeamCamouflage'
-super.Settings.RespawnCost.Value = 100000
+super.Settings.RespawnCost.Value = 2000
 
 -- Add new score types
 super.PlayerScoreTypes.CollateralDamage = {
@@ -93,6 +93,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
 					self.Objectives.NoSoftFail:Fail()
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+					gamemode.SetRoundStage('PostRoundWait')
 				end
 			end
 			if killedTeam == killerTeam and killerTeam == self.PlayerTeams.BluFor.TeamId then
