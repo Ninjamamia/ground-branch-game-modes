@@ -60,6 +60,12 @@ super.Settings.CIVUpriseSize = {
 	Value = 10,
 	AdvancedSetting = false,
 }
+super.Settings.CIVPopulation = {
+	Min = 0,
+	Max = 30,
+	Value = 10,
+	AdvancedSetting = false,
+}
 
 -- Add additional teams
 super.AiTeams.CIVUnarmed = {
@@ -85,8 +91,8 @@ Mode.CollateralDamageThreshold = 3
 Mode.IsUprise = false
 	
 function Mode:PreInit()
-	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create("CIV_Unarmed")
-	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create("CIV_Armed")
+	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
+	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	super.PreInit(self)
 end
 	
@@ -109,12 +115,14 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:SpawnCIVs()
-	self.AiTeams.CIVUnarmed.Spawns:AddSpawnsFromRandomGroup(10)
-	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.5, 10, "CIV_Unarmed")
+	self.AiTeams.CIVUnarmed.Spawns:AddSpawnsFromRandomGroup(self.Settings.CIVPopulation.Value)
+	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
 end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
+	ai.CleanUp(self.AiTeams.CIVArmed.Tag)
+	ai.CleanUp(self.AiTeams.CIVUnarmed.Tag)
 	gamemode.SetTeamAttitude(self.PlayerTeams.BluFor.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Neutral')
 	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.PlayerTeams.BluFor.TeamId, 'Neutral')
 	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.CIVArmed.TeamId, 'Friendly')
@@ -132,7 +140,7 @@ function Mode:Uprise()
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromRandomGroup(self.Settings.CIVUpriseSize.Value)
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, self.Settings.CIVUpriseSize.Value, "CIV_Armed")
+		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, self.Settings.CIVUpriseSize.Value, self.AiTeams.CIVArmed.Tag)
 	end
 end
 
