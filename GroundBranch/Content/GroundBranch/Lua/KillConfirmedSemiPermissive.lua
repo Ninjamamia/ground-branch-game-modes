@@ -64,11 +64,13 @@ super.Settings.CIVUpriseSize = {
 -- Add additional teams
 super.AiTeams.CIVUnarmed = {
 	Tag = 'CIV_Unarmed',
+	TeamId = 10,
 	CalculatedAiCount = 0,
 	Spawns = nil
 }
 super.AiTeams.CIVArmed = {
 	Tag = 'CIV_Armed',
+	TeamId = 20,
 	CalculatedAiCount = 0,
 	Spawns = nil
 }
@@ -113,14 +115,14 @@ end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
-	gamemode.SetTeamAttitude(1, 10, 'Neutral')
-	gamemode.SetTeamAttitude(10, 1, 'Neutral')
-	gamemode.SetTeamAttitude(100, 20, 'Friendly')
-	gamemode.SetTeamAttitude(20, 100, 'Friendly')
-	gamemode.SetTeamAttitude(10, 20, 'Friendly')
-	gamemode.SetTeamAttitude(20, 10, 'Friendly')
-	gamemode.SetTeamAttitude(10, 100, 'Friendly')
-	gamemode.SetTeamAttitude(100, 10, 'Friendly')
+	gamemode.SetTeamAttitude(self.PlayerTeams.BluFor.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.PlayerTeams.BluFor.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.CIVArmed.TeamId, 'Friendly')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVArmed.TeamId, self.AiTeams.OpFor.TeamId, 'Friendly')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.AiTeams.CIVArmed.TeamId, 'Friendly')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVArmed.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Friendly')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.AiTeams.OpFor.TeamId, 'Friendly')
+	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Friendly')
 end
 
 function Mode:Uprise()
@@ -145,7 +147,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if ((killedTeam == 10) or (killedTeam == 20 and self.IsUprise == false)) and killerTeam == self.PlayerTeams.BluFor.TeamId then
+			if ((killedTeam == self.AiTeams.CIVUnarmed.TeamId) or (killedTeam == self.AiTeams.CIVArmed.TeamId and self.IsUprise == false)) and killerTeam == self.PlayerTeams.BluFor.TeamId then
 				goodKill = false
 				Mode:Uprise()
 				self.Objectives.AvoidFatality:ReportFatality()

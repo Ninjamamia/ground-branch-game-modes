@@ -139,6 +139,7 @@ local KillConfirmed = {
 	},
 	AiTeams = {
 		OpFor = {
+			TeamId = 100,
 			Tag = 'OpFor',
 			CalculatedAiCount = 0,
 			Spawns = nil
