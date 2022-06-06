@@ -144,6 +144,12 @@ local KillConfirmed = {
 			CalculatedAiCount = 0,
 			Spawns = nil
 		},
+		HVTSupport = {
+			TeamId = 100,
+			Tag = 'HVTSupport',
+			CalculatedAiCount = 0,
+			Spawns = nil
+		},
 	},
 	Objectives = {
 		ConfirmKill = nil,
@@ -166,10 +172,6 @@ local KillConfirmed = {
 			Name = 'CheckReadyDown',
 			TimeStep = 0.1,
 		},
-		SpawnOpFor = {
-			Name = 'SpawnOpFor',
-			TimeStep = 0.5,
-		},
 		SpawnQueue = nil,
 	},
 }
@@ -189,6 +191,8 @@ function KillConfirmed:PreInit()
 	)
 	-- Gathers all OpFor spawn points by groups
 	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
+	-- Gathers all OpFor spawn points by groups
+	self.AiTeams.HVTSupport.Spawns = MSpawnsGroups:Create(self.AiTeams.HVTSupport.Tag)
 	-- Gathers all HVT spawn points
 	self.Objectives.ConfirmKill = MObjectiveConfirmKill:Create(
 		self,
@@ -272,8 +276,8 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 					print("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
 					AdminTools:ShowDebug("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
 					local hvtLocation = actor.GetLocation(Character)
-					self.AiTeams.OpFor.Spawns:AddSpawnsFromClosestGroup(self.Settings.Reinforcements.Value, hvtLocation)
-					self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, self.Settings.Reinforcements.Value, self.AiTeams.OpFor.Tag)
+					self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(self.Settings.Reinforcements.Value, hvtLocation)
+					self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, self.Settings.Reinforcements.Value, self.AiTeams.HVTSupport.Tag)
 				end
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
@@ -570,6 +574,7 @@ end
 function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
+	ai.CleanUp(self.AiTeams.HVTSupport.Tag)
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()
