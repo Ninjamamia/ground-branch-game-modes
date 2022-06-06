@@ -48,10 +48,22 @@ super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
 super.Objectives.NoSoftFail = NoSoftFail.new()
 
 -- Add additional settings
-super.Settings.UpriseOnHVTKill = {
+super.Settings.UpriseOnHVTKillChance = {
 	Min = 0,
-	Max = 1,
-	Value = 1,
+	Max = 100,
+	Value = 0,
+	AdvancedSetting = false,
+}
+super.Settings.InitialUpriseChance = {
+	Min = 0,
+	Max = 100,
+	Value = 50,
+	AdvancedSetting = false,
+}
+super.Settings.ChanceIncreasePerCollateral = {
+	Min = 0,
+	Max = 100,
+	Value = 20,
 	AdvancedSetting = false,
 }
 super.Settings.CIVUpriseSize = {
@@ -84,16 +96,20 @@ super.AiTeams.CIVArmed = {
 -- Our sub-class of the singleton
 local Mode = setmetatable({}, { __index = super })
 
--- The max. amount of collateral damage before failing the mission
-Mode.CollateralDamageThreshold = 3
-
 -- Indicates that the uprise is triggered already
 Mode.IsUprise = false
+
+-- Current effective uprise chance
+Mode.UpriseChance = 0
 	
 function Mode:PreInit()
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	super.PreInit(self)
+end
+
+function Mode:TakeChance(chance)
+	return math.random(0, 100) <= chance
 end
 	
 function Mode:PostInit()
@@ -109,6 +125,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
 	elseif RoundStage == 'PreRoundWait' then
 		self.IsUprise = false
+		self.UpriseChance = self.Settings.InitialUpriseChance.Value
 		self:SpawnCIVs()
 	end
 	super.OnRoundStageSet(self, RoundStage)
@@ -157,7 +174,6 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 			end
 			if ((killedTeam == self.AiTeams.CIVUnarmed.TeamId) or (killedTeam == self.AiTeams.CIVArmed.TeamId and self.IsUprise == false)) and killerTeam == self.PlayerTeams.BluFor.TeamId then
 				goodKill = false
-				Mode:Uprise()
 				self.Objectives.AvoidFatality:ReportFatality()
 				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
 				self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
@@ -165,10 +181,17 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 				local message = 'Collateral damage by ' .. player.GetName(KillerController)
 				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 								
-				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
+				if self.IsUprise then
 					self.Objectives.NoSoftFail:Fail()
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
 					gamemode.SetRoundStage('PostRoundWait')
+				end
+				if Mode:TakeChance(self.UpriseChance) then
+					Mode:Uprise()
+				end
+				self.UpriseChance = self.UpriseChance + self.Settings.ChanceIncreasePerCollateral.Value
+				if self.IsUprise == false then
+					AdminTools:ShowDebug("Uprise chance on next collateral damage: " .. self.UpriseChance .. "%")
 				end
 			end
 			if killedTeam == killerTeam and killerTeam == self.PlayerTeams.BluFor.TeamId then
@@ -180,7 +203,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 
 	if goodKill then
 		super.OnCharacterDied(self, Character, CharacterController, KillerController)
-		if actor.HasTag(CharacterController, self.HVT.Tag) and Mode.Settings.UpriseOnHVTKill.Value == 1 then
+		if actor.HasTag(CharacterController, self.HVT.Tag) and self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
 			Mode:Uprise()
 		end
 	end
