@@ -18,8 +18,13 @@ function Queue:Create()
     self.SpawnQueue = {}
 	self.CurrSpawnItem = nil
 	self.tiSpawnQueue = 0
-	self.tiSpawnDurationLast = 0
     return self
+end
+
+function Queue:Reset()
+	self.tiSpawnQueue = 0
+	self.SpawnQueue = {}
+	self.CurrSpawnItem = nil
 end
 
 function Queue:Enqueue(delay, duration, count, spawnPoints, spawnTag, postSpawnCallback, postSpawnCallbackTarget)
@@ -72,7 +77,6 @@ end
 
 ---Must be called every time the timers have been reset globally
 function Queue:Start()
-	self.tiSpawnQueue = 0
 	timer.Set(
 				self.Timer.Name,
 				self,

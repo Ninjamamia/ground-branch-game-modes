@@ -575,6 +575,7 @@ function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
 	ai.CleanUp(self.AiTeams.HVTSupport.Tag)
+	self.SpawnQueue:Reset()
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()
