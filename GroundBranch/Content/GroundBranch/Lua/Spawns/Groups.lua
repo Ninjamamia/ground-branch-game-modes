@@ -192,7 +192,7 @@ function Groups:AddSpawnsFromGroup(aiPerGroupAmount, selectedGroupIndex)
         self.GroupTagPrefix
     )
     print('Adding spawn points from group ' .. groupName .. ' (Prefix: ' .. self.GroupTagPrefix .. ')')
-    for j, member in ipairs(self.RemainingGroups[selectedGroupIndex]) do
+    for j, member in ipairs(Tables.ShuffleTable(self.RemainingGroups[selectedGroupIndex])) do
         if j <= aiPerGroupAmount then
             table.insert(self.SelectedSpawnPoints, member)
         else
