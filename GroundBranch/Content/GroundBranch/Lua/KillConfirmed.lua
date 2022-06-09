@@ -62,10 +62,12 @@ local KillConfirmed = {
 			Value = 1000,
 			AdvancedSetting = true,
 		},
+	},
+	BackupSettings = {
 		DisplayScoreMessage = {
 			Min = 0,
 			Max = 1,
-			Value = 0,
+			Value = 1,
 			AdvancedSetting = true,
 		},
 		DisplayScoreMilestones = {
@@ -264,10 +266,10 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	elseif RoundStage == 'InProgress' then
 		self.PlayerTeams.BluFor.Script:RoundStart(
 			self.Settings.RespawnCost.Value,
-			self.Settings.DisplayScoreMessage.Value == 1,
-			self.Settings.DisplayScoreMilestones.Value == 1,
-			self.Settings.DisplayObjectiveMessages.Value == 1,
-			self.Settings.DisplayObjectivePrompts.Value == 1
+			self.BackupSettings.DisplayScoreMessage.Value == 1,
+			self.BackupSettings.DisplayScoreMilestones.Value == 1,
+			self.BackupSettings.DisplayObjectiveMessages.Value == 1,
+			self.BackupSettings.DisplayObjectivePrompts.Value == 1
 		)
 	end
 end
@@ -488,28 +490,6 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 		self.AiTeams.OpFor.Spawns:GetSelectedSpawnPointsCount()
 	-- Select random groups and add their spawn points to spawn list
 	print('Adding random group spawns')
-	while missingAiCount > 0 do
-		if self.AiTeams.OpFor.Spawns:GetRemainingGroupsCount() <= 0 then
-			break
-		end
-		local aiCountPerGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
-			2,
-			10,
-			gamemode.GetPlayerCount(true),
-			0.5,
-			self.Settings.OpForPreset.Value,
-			1,
-			1
-		)
-		if aiCountPerGroup > missingAiCount	then
-			print('Remaining AI count is not enough to fill group')
-			break
-		end
-		self.AiTeams.OpFor.Spawns:AddSpawnsFromRandomGroup(aiCountPerGroup)
-		missingAiCount = self.AiTeams.OpFor.CalculatedAiCount -
-			self.AiTeams.OpFor.Spawns:GetSelectedSpawnPointsCount()
-	end
-	-- Select random spawns
 	self.AiTeams.OpFor.Spawns:AddRandomSpawns()
 	self.AiTeams.OpFor.Spawns:AddRandomSpawnsFromReserve()
 end

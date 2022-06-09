@@ -162,12 +162,12 @@ function Mode:Uprise()
 end
 
 function Mode:LocalUprise(killedCivLocation)
-		local tiUprise = math.random(50, 150) * 0.1
-		local sizeUprise = math.random(0, self:GetPossibleAICount(10))
-		print("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
-		AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
-		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag)
+	local tiUprise = math.random(50, 150) * 0.1
+	local sizeUprise = math.random(0, self:GetPossibleAICount(10))
+	print("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
+	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
+	self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
+	self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag)
 end
 
 function Mode:OnCharacterDied(Character, CharacterController, KillerController)
