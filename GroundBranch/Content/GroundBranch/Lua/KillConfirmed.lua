@@ -32,6 +32,12 @@ local KillConfirmed = {
 			Value = 2,
 			AdvancedSetting = false,
 		},
+		AIMaxConcurrentCount = {
+			Min = 1,
+			Max = 50,
+			Value = 50,
+			AdvancedSetting = false,
+		},
 		Difficulty = {
 			Min = 0,
 			Max = 4,
@@ -174,6 +180,7 @@ local KillConfirmed = {
 		},
 		SpawnQueue = nil,
 	},
+	KilledAICount = 0,
 }
 
 --#endregion
@@ -219,6 +226,14 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Max
 	)
 	self.SpawnQueue = MSpawnsQueue:Create()
+end
+
+function KillConfirmed:GetAICount()
+	return self.SpawnQueue.ExpectedAICount - self.KilledAICount
+end
+
+function KillConfirmed:GetPossibleAICount(desiredCount)
+	return math.max(math.min(self.Settings.AIMaxConcurrentCount.Value - self:GetAICount(), desiredCount), 0)
 end
 
 function KillConfirmed:PostInit()
@@ -269,6 +284,11 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
+			if killedTeam ~= self.PlayerTeams.BluFor.TeamId then
+				self.KilledAICount = self.KilledAICount + 1
+				print("Current AI count: " .. self:GetAICount() .. " (" .. self.KilledAICount .. " of " .. self.SpawnQueue.ExpectedAICount .. " killed)")
+				AdminTools:ShowDebug("Current AI count: " .. self:GetAICount() .. " (" .. self.KilledAICount .. " of " .. self.SpawnQueue.ExpectedAICount .. " killed)")
+			end
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
 				if self.Settings.Reinforcements.Value > 0 then
@@ -284,11 +304,9 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
-			else
+			elseif killedTeam == self.PlayerTeams.BluFor.TeamId then
 				print('BluFor eliminated')
-				if killedTeam == self.PlayerTeams.BluFor.TeamId then
-					AdminTools:NotifyKIA(CharacterController)
-				end
+				AdminTools:NotifyKIA(CharacterController)
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
@@ -434,7 +452,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	print('Setting up AI spawn points by groups')
 	local maxAiCount = math.min(
 		self.AiTeams.OpFor.Spawns.Total,
-		ai.GetMaxCount() - self.Settings.HVTCount.Value
+		self:GetPossibleAICount(ai.GetMaxCount()) - self.Settings.HVTCount.Value
 	)
 	self.AiTeams.OpFor.CalculatedAiCount = MSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
@@ -576,6 +594,7 @@ function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
 	ai.CleanUp(self.AiTeams.HVTSupport.Tag)
 	self.SpawnQueue:Reset()
+	self.KilledAICount = 0
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()

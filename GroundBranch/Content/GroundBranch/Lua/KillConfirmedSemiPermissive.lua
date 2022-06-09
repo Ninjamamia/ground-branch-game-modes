@@ -101,7 +101,7 @@ Mode.IsUprise = false
 
 -- Current effective uprise chance
 Mode.UpriseChance = 0
-	
+
 function Mode:PreInit()
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
@@ -133,7 +133,7 @@ end
 
 function Mode:SpawnCIVs()
 	self.AiTeams.CIVUnarmed.Spawns:AddRandomSpawns()
-	self.AiTeams.CIVUnarmed.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
+	self.AiTeams.CIVUnarmed.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.5, self:GetPossibleAICount(self.Settings.CIVPopulation.Value), self.AiTeams.CIVUnarmed.Tag)
 end
 
 function Mode:PreRoundCleanUp()
@@ -156,14 +156,14 @@ function Mode:Uprise()
 		print("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
-		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromRandomGroup(self.Settings.CIVUpriseSize.Value)
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, self.Settings.CIVUpriseSize.Value, self.AiTeams.CIVArmed.Tag)
+		self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
+		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, self:GetPossibleAICount(self.Settings.CIVUpriseSize.Value), self.AiTeams.CIVArmed.Tag)
 	end
 end
 
 function Mode:LocalUprise(killedCivLocation)
 		local tiUprise = math.random(50, 150) * 0.1
-		local sizeUprise = math.random(0, 10)
+		local sizeUprise = math.random(0, self:GetPossibleAICount(10))
 		print("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 		AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
@@ -171,6 +171,7 @@ function Mode:LocalUprise(killedCivLocation)
 end
 
 function Mode:OnCharacterDied(Character, CharacterController, KillerController)
+	super.OnCharacterDied(self, Character, CharacterController, KillerController)
 	local goodKill = true
 
 	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress'
@@ -181,39 +182,41 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if killedTeam == self.AiTeams.CIVUnarmed.TeamId and killerTeam == self.PlayerTeams.BluFor.TeamId then
-				goodKill = false
-				self.Objectives.AvoidFatality:ReportFatality()
-				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
-				self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
-				local message = 'Collateral damage by ' .. player.GetName(KillerController)
-				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
-				if self.IsUprise then
-					self.Objectives.NoSoftFail:Fail()
-					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
-					gamemode.SetRoundStage('PostRoundWait')
+			if killerTeam == self.PlayerTeams.BluFor.TeamId then
+				if killedTeam == killerTeam then
+					-- Count fratricides as collateral damage
+					self.Objectives.AvoidFatality:ReportFatality()
+				else
+					if killedTeam == self.AiTeams.CIVUnarmed.TeamId then
+						goodKill = false
+						self.Objectives.AvoidFatality:ReportFatality()
+						self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
+						self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
+						local message = 'Collateral damage by ' .. player.GetName(KillerController)
+						self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
+						if self.IsUprise then
+							self.Objectives.NoSoftFail:Fail()
+							self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+							gamemode.SetRoundStage('PostRoundWait')
+						end
+						local Location = actor.GetLocation(Character)
+						self:LocalUprise(Location)
+						if self:TakeChance(self.UpriseChance) then
+							self:Uprise()
+						end
+						self.UpriseChance = self.UpriseChance + self.Settings.ChanceIncreasePerCollateral.Value
+						if self.IsUprise == false then
+							AdminTools:ShowDebug("Uprise chance on next collateral damage: " .. self.UpriseChance .. "%")
+						end
+					end
 				end
-				local Location = actor.GetLocation(Character)
-				Mode:LocalUprise(Location)
-				if Mode:TakeChance(self.UpriseChance) then
-					Mode:Uprise()
-				end
-				self.UpriseChance = self.UpriseChance + self.Settings.ChanceIncreasePerCollateral.Value
-				if self.IsUprise == false then
-					AdminTools:ShowDebug("Uprise chance on next collateral damage: " .. self.UpriseChance .. "%")
-				end
-			end
-			if killedTeam == killerTeam and killerTeam == self.PlayerTeams.BluFor.TeamId then
-				-- Count fratricides as collateral damage
-				self.Objectives.AvoidFatality:ReportFatality()
 			end
 		end
 	end
 
 	if goodKill then
-		super.OnCharacterDied(self, Character, CharacterController, KillerController)
 		if actor.HasTag(CharacterController, self.HVT.Tag) and self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
-			Mode:Uprise()
+			self:Uprise()
 		end
 	end
 end

@@ -8,6 +8,7 @@ Key,SourceString,Comment
 "missionsetting_opforpreset_2","Medium","Opsboard"
 "missionsetting_opforpreset_3","High","Opsboard"
 "missionsetting_opforpreset_4","Overwhelming","Opsboard"
+"missionsetting_aimaxconcurrentcount","Maximum Number Of Concurrent AI","Opsboard"
 "missionsetting_displayscoremessage","Display Score Messages","Opsboard"
 "missionsetting_displayscoremessage_0","No","Opsboard"
 "missionsetting_displayscoremessage_1","Yes","Opsboard"
