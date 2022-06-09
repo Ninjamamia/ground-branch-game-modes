@@ -132,7 +132,7 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:SpawnCIVs()
-	self.AiTeams.CIVUnarmed.Spawns:AddSpawnsFromRandomGroup(self.Settings.CIVPopulation.Value)
+	self.AiTeams.CIVUnarmed.Spawns:AddRandomSpawns()
 	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
 end
 
