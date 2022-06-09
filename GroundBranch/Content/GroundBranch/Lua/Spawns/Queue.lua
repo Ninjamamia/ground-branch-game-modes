@@ -3,6 +3,7 @@ local Queue = {
     SpawnQueue = {},
     CurrSpawnItem = nil,
     tiSpawnQueue = 0,
+	ExpectedAICount = 0,
     Timer = {
         Name = 'SpawnQueue',
         TimeStep = 0.25,
@@ -24,6 +25,7 @@ end
 ---Resets the queue, has to be called by pre round cleanup.
 function Queue:Reset()
 	self.tiSpawnQueue = 0
+	self.ExpectedAICount = 0
 	self.SpawnQueue = {}
 	self.CurrSpawnItem = nil
 end
@@ -46,6 +48,7 @@ function Queue:Enqueue(delay, freezeTime, count, spawnPoints, spawnTag, postSpaw
 		postSpawnCallback = postSpawnCallback or nil,
 		postSpawnCallbackOwner = postSpawnCallbackOwner or nil
 	}
+	self.ExpectedAICount = self.ExpectedAICount + math.min(#spawnPoints, count)
 	if #self.SpawnQueue == 0 then
 		table.insert(self.SpawnQueue, NewItem)
 	else
@@ -75,7 +78,7 @@ function Queue:OnSpawnQueueTick()
 			if i > self.CurrSpawnItem.count then
 				break
 			end
-            ai.Create(spawnPoint, self.CurrSpawnItem.spawnTag, self.CurrSpawnItem.freezeTime)
+           ai.Create(spawnPoint, self.CurrSpawnItem.spawnTag, self.CurrSpawnItem.freezeTime)
         end
 		if self.CurrSpawnItem.postSpawnCallback ~= nil and self.CurrSpawnItem.postSpawnCallbackOwner ~= nil then
 			self.CurrSpawnItem.postSpawnCallback(self.CurrSpawnItem.postSpawnCallbackOwner)
