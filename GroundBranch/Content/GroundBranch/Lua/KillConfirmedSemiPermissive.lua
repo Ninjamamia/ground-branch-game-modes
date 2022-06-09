@@ -133,7 +133,7 @@ end
 
 function Mode:SpawnCIVs()
 	self.AiTeams.CIVUnarmed.Spawns:AddRandomSpawns()
-	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
+	self.AiTeams.CIVUnarmed.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
 end
 
 function Mode:PreRoundCleanUp()
@@ -161,6 +161,15 @@ function Mode:Uprise()
 	end
 end
 
+function Mode:LocalUprise(killedCivLocation)
+		local tiUprise = math.random(50, 150) * 0.1
+		local sizeUprise = math.random(0, 10)
+		print("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
+		AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
+		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
+		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag)
+end
+
 function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 	local goodKill = true
 
@@ -172,20 +181,20 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if ((killedTeam == self.AiTeams.CIVUnarmed.TeamId) or (killedTeam == self.AiTeams.CIVArmed.TeamId and self.IsUprise == false)) and killerTeam == self.PlayerTeams.BluFor.TeamId then
+			if killedTeam == self.AiTeams.CIVUnarmed.TeamId and killerTeam == self.PlayerTeams.BluFor.TeamId then
 				goodKill = false
 				self.Objectives.AvoidFatality:ReportFatality()
 				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
 				self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
-
 				local message = 'Collateral damage by ' .. player.GetName(KillerController)
 				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
-								
 				if self.IsUprise then
 					self.Objectives.NoSoftFail:Fail()
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
 					gamemode.SetRoundStage('PostRoundWait')
 				end
+				local Location = actor.GetLocation(Character)
+				Mode:LocalUprise(Location)
 				if Mode:TakeChance(self.UpriseChance) then
 					Mode:Uprise()
 				end
