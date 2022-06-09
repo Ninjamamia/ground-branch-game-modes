@@ -273,14 +273,18 @@ function Groups:Spawn(duration, count, spawnTag)
 end
 
 ---Schedules AI spawning in the selected spawn points.
----@param duration number The time over which the AI will be spawned.
+---@param spawnQueue table The queue object to use.
+---@param delay number The time after which spawning shall start.
+---@param freezeTime number the time for which the ai should be frozen.
 ---@param count integer The amount of the AI to spawn.
 ---@param spawnTag string The tag that will be assigned to spawned AI.
-function Groups:EnqueueSpawning(spawnQueue, delay, duration, count, spawnTag, postSpawnCallback, postSpawnCallbackTarget)
+---@param postSpawnCallback function A function to call after spawning is complete (optional).
+---@param postSpawnCallbackOwner table A owner object of postSpawnCallback (optional).
+function Groups:EnqueueSpawning(spawnQueue, delay, freezeTime, count, spawnTag, postSpawnCallback, postSpawnCallbackOwner)
     if count > #self.SelectedSpawnPoints then
         count = #self.SelectedSpawnPoints
     end
-	spawnQueue:Enqueue(delay, duration, count, self:PopSelectedSpawnPoints(), spawnTag, postSpawnCallback, postSpawnCallbackTarget)
+	spawnQueue:Enqueue(delay, freezeTime, count, self:PopSelectedSpawnPoints(), spawnTag, postSpawnCallback, postSpawnCallbackOwner)
 end
 
 --#endregion

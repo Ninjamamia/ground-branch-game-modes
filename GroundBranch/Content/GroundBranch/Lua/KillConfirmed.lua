@@ -497,8 +497,8 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 end
 
 function KillConfirmed:SpawnOpFor()
-	self.Objectives.ConfirmKill:EnqueueSpawning(self.SpawnQueue, 0.5)
-	self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, 0.5, 0.4, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
+	self.Objectives.ConfirmKill:EnqueueSpawning(self.SpawnQueue, 0.4)
+	self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.4, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
 end
 
 --#endregion
