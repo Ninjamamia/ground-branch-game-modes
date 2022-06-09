@@ -52,6 +52,7 @@ end
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 ---@param location table vector {x,y,z} The origin point for distance calculation.
 ---@param maxDistance number The maximum distance from location to a selected group.
+---@return  integer Amount of spawn points actually added.
 function Groups:AddSpawnsFromRandomGroupWithinDistance(
     aiPerGroupAmount,
     location,
@@ -83,11 +84,11 @@ function Groups:AddSpawnsFromRandomGroupWithinDistance(
 
     if #groupsToConsider <=0 then
         print('No groups within distance found')
-        return
+        return 0
     end
 
     local selectedGroupIndex = groupsToConsider[math.random(#groupsToConsider)]
-    self:AddSpawnsFromGroup(
+    return self:AddSpawnsFromGroup(
         aiPerGroupAmount,
         selectedGroupIndex
     )
@@ -98,6 +99,7 @@ end
 ---Spawns that excceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 ---@param location table vector {x,y,z} The origin point for distance calculation.
+---@return  integer Amount of spawn points actually added.
 function Groups:AddSpawnsFromClosestGroup(aiPerGroupAmount, location)
     print('Searching for group closest to '.. tostring(location) .. ' (Prefix: ' .. self.GroupTagPrefix .. ')')
     local selectedGroupIndex = 0
@@ -126,10 +128,10 @@ function Groups:AddSpawnsFromClosestGroup(aiPerGroupAmount, location)
 
     if selectedGroupIndex == 0 then
         print('No groups within max distance found')
-        return
+        return 0
     end
 
-    self:AddSpawnsFromGroup(
+    return self:AddSpawnsFromGroup(
         aiPerGroupAmount,
         selectedGroupIndex
     )
@@ -139,14 +141,15 @@ end
 ---SelectedSpawnPoints table.
 ---Spawns that excceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
+---@return  integer Amount of spawn points to actually added.
 function Groups:AddSpawnsFromRandomGroup(aiPerGroupAmount)
     print('Adding spawn points from randomly selected group' .. ' (Prefix: ' .. self.GroupTagPrefix .. ')')
     if #self.RemainingGroups <=0 then
         print('No groups left')
-        return
+        return 0
     end
     local selectedGroupIndex = math.random(#self.RemainingGroups)
-    self:AddSpawnsFromGroup(
+    return self:AddSpawnsFromGroup(
         aiPerGroupAmount,
         selectedGroupIndex
     )
@@ -186,13 +189,15 @@ end
 ---aiPerGroupAmount will be added to the reserveSpawns table.
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 ---@param selectedGroupIndex integer Index of group from which spawn points will be added.
+---@return integer Number of spawns actually added.
 function Groups:AddSpawnsFromGroup(aiPerGroupAmount, selectedGroupIndex)
     local groupName = Actors.GetSuffixFromActorTag(
         self.RemainingGroups[selectedGroupIndex][1],
         self.GroupTagPrefix
     )
     print('Adding spawn points from group ' .. groupName .. ' (Prefix: ' .. self.GroupTagPrefix .. ')')
-    for j, member in ipairs(Tables.ShuffleTable(self.RemainingGroups[selectedGroupIndex])) do
+    local group = Tables.ShuffleTable(self.RemainingGroups[selectedGroupIndex])
+    for j, member in ipairs(group) do
         if j <= aiPerGroupAmount then
             table.insert(self.SelectedSpawnPoints, member)
         else
@@ -205,6 +210,7 @@ function Groups:AddSpawnsFromGroup(aiPerGroupAmount, selectedGroupIndex)
     )
     table.remove(self.RemainingGroups, selectedGroupIndex)
     print('Removed group ' .. groupName .. ' from remaining groups')
+    return math.min(aiPerGroupAmount, #group)
 end
 
 ---Returns the total cound of all groups.
