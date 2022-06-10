@@ -180,8 +180,8 @@ local KillConfirmed = {
 			Name = 'CheckReadyDown',
 			TimeStep = 0.1,
 		},
-		SpawnQueue = nil,
 	},
+	SpawnQueue = nil,
 	KilledAICount = 0,
 }
 
