@@ -103,6 +103,7 @@ Mode.IsUprise = false
 Mode.UpriseChance = 0
 
 function Mode:PreInit()
+	print("Test")
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	super.PreInit(self)
