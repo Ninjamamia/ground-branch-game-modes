@@ -62,6 +62,12 @@ local KillConfirmed = {
 			Value = 1000,
 			AdvancedSetting = true,
 		},
+		ReinforcementsTrigger = {
+			Min = 0,
+			Max = 1,
+			Value = 1,
+			AdvancedSetting = true,
+		},
 	},
 	BackupSettings = {
 		DisplayScoreMessage = {
@@ -208,7 +214,9 @@ function KillConfirmed:PreInit()
 		self.OnAllKillsConfirmed,
 		self.PlayerTeams.BluFor.Script,
 		self.HVT.Tag,
-		self.Settings.HVTCount.Value
+		self.Settings.HVTCount.Value,
+		self,
+		self.OnConfirmedKill
 	)
 	-- Gathers all extraction points placed in the mission
 	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
@@ -274,6 +282,25 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	end
 end
 
+function KillConfirmed:OnConfirmedKill(location)
+	if self.Settings.ReinforcementsTrigger.Value > 0 then
+		self:SpawnReinforcements(location, 0.0)
+	end
+end
+
+function KillConfirmed:SpawnReinforcements(hvtLocation, tiReinforce)
+	local sizeReinforcement = self:GetPossibleAICount(self.Settings.Reinforcements.Value)
+	if sizeReinforcement > 0 then
+		print("Spawning HVT reinforcements in " .. tiReinforce .. "s ...")
+		AdminTools:ShowDebug("Spawning HVT reinforcements in " .. tiReinforce .. "s ...")
+		self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(sizeReinforcement, hvtLocation)
+		self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self)
+	else
+		print("No AI slots are available for HVT reinforcements.")
+		AdminTools:ShowDebug("No AI slots are available for HVT reinforcements.")
+	end
+end
+
 function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerController)
 	print('OnCharacterDied')
 	if
@@ -293,19 +320,10 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			end
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
-				if self.Settings.Reinforcements.Value > 0 then
-					local sizeReinforcement = self:GetPossibleAICount(self.Settings.Reinforcements.Value)
-					if sizeReinforcement > 0 then
-						local tiReinforce = math.random(50, 150) * 0.1
-						print("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
-						AdminTools:ShowDebug("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
-						local hvtLocation = actor.GetLocation(Character)
-						self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(sizeReinforcement, hvtLocation)
-						self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self)
-					else
-						print("HVT down, but no AI slots are available.")
-						AdminTools:ShowDebug("HVT down, but no AI slots are available.")
-					end
+				if self.Settings.ReinforcementsTrigger.Value < 1 then
+					local tiReinforce = math.random(50, 150) * 0.1
+					local hvtLocation = actor.GetLocation(Character)
+					self:SpawnReinforcements(hvtLocation, tiReinforce)
 				end
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')

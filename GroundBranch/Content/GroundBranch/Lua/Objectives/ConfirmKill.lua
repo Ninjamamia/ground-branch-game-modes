@@ -42,18 +42,24 @@ local ConfirmKill = {
 ---@param hvtTag string Tag assigned to HVT spawn points in mission editor. Used to find HVT spawn points.
 ---@param hvtCount integer How many HVTs are in play.
 ---@return table ConfirmKill The newly created ConfirmKill object.
+---@param onConfirmedKillFuncOwner table The object owning function to be run when a kill is confirmed.
+---@param onConfirmedKillFunc function Function to be run when a kill is confirmed.
 function ConfirmKill:Create(
     onObjectiveCompleteFuncOwner,
     onObjectiveCompleteFunc,
     team,
     hvtTag,
-    hvtCount
+    hvtCount,
+    onConfirmedKillFuncOwner,
+    onConfirmedKillFunc
 )
     local killConfirmation = {}
     setmetatable(killConfirmation, self)
     self.__index = self
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
+    self.OnConfirmedKillFuncOwner = onConfirmedKillFuncOwner or nil
+    self.OnConfirmedKillFunc = onConfirmedKillFunc or nil
     self.Team = team
     self.HVT.Count = hvtCount or 1
     self.HVT.Tag = hvtTag or 'HVT'
@@ -205,7 +211,7 @@ function ConfirmKill:ShouldConfirmKillTimer()
 			local Dist = vector.Size(DistVector)
 			LowestDist = math.min(LowestDist, Dist)
 			if Dist <= 250 and math.abs(DistVector.z) < 110 then
-                self:ConfirmKill(leaderIndex, playerController)
+                self:ConfirmKill(leaderIndex, playerController, leaderLocation)
 			end
 		end
 	end
@@ -227,12 +233,15 @@ end
 
 ---Confirms the kill and updates objective tracking variables.
 ---@param leaderIndex integer index of the leader location in table EliminatedNotConfirmedLocations that was confirmed.
-function ConfirmKill:ConfirmKill(leaderIndex, confirmer)
+function ConfirmKill:ConfirmKill(leaderIndex, confirmer, leaderLocation)
     table.remove(self.HVT.EliminatedNotConfirmedLocations, leaderIndex)
     self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmedLocations
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
     self.Team:AwardPlayerScore(confirmer, 'ConfirmHvt')
     self.Team:AwardTeamScore('ConfirmHvt')
+    if self.OnConfirmedKillFunc ~= nil then
+        self.OnConfirmedKillFunc(self.OnConfirmedKillFuncOwner, leaderLocation)
+    end
     if self:AreAllConfirmed() then
 		print('All HVT kills confirmed')
         self.Team:DisplayMessageToAlivePlayers('HVTConfirmedAll', 'Upper', 5.0, 'ObjectiveMessage')
