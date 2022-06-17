@@ -294,12 +294,18 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
 				if self.Settings.Reinforcements.Value > 0 then
-					local tiReinforce = math.random(50, 150) * 0.1
-					print("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
-					AdminTools:ShowDebug("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
-					local hvtLocation = actor.GetLocation(Character)
-					self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(self.Settings.Reinforcements.Value, hvtLocation)
-					self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, self.Settings.Reinforcements.Value, self.AiTeams.HVTSupport.Tag)
+					local sizeReinforcement = self:GetPossibleAICount(self.Settings.Reinforcements.Value)
+					if sizeReinforcement > 0 then
+						local tiReinforce = math.random(50, 150) * 0.1
+						print("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
+						AdminTools:ShowDebug("HVT down, spawning reinforcements in " .. tiReinforce .. "s ...")
+						local hvtLocation = actor.GetLocation(Character)
+						self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(sizeReinforcement, hvtLocation)
+						self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self)
+					else
+						print("HVT down, but no AI slots are available.")
+						AdminTools:ShowDebug("HVT down, but no AI slots are available.")
+					end
 				end
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
@@ -325,6 +331,10 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			end
 		end
 	end
+end
+
+function KillConfirmed:OnReinforcementsSpawned()
+	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: HVT reinforcements spotted!', 'Upper', 5.0, 'Always')
 end
 
 --#endregion

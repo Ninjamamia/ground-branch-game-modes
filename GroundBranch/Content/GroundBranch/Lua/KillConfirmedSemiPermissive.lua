@@ -156,9 +156,16 @@ function Mode:Uprise()
 		print("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
-		self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, self:GetPossibleAICount(self.Settings.CIVUpriseSize.Value), self.AiTeams.CIVArmed.Tag)
+		local sizeUprise = self:GetPossibleAICount(self.Settings.CIVUpriseSize.Value)
+		if sizeUprise > 0 then
+			self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
+			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnUpriseSpawned, self)
+		end
 	end
+end
+
+function Mode:OnUpriseSpawned()
+	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: Civilians are uprising, no more "mistakes" are permitted...', 'Upper', 5.0, 'Always')
 end
 
 function Mode:LocalUprise(killedCivLocation)
@@ -166,16 +173,21 @@ function Mode:LocalUprise(killedCivLocation)
 	local sizeUprise = math.random(0, self:GetPossibleAICount(10))
 	print("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
-	self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-	self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag)
+	if sizeUprise > 0 then
+		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
+		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnLocalUpriseSpawned, self)
+	end
+end
+
+function Mode:OnLocalUpriseSpawned()
+	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: Armed civilians spotted nearby!', 'Upper', 5.0, 'Always')
 end
 
 function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 	super.OnCharacterDied(self, Character, CharacterController, KillerController)
 	local goodKill = true
 
-	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress'
-	then
+	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress' then
 		if CharacterController ~= nil then
 			local killedTeam = actor.GetTeamId(CharacterController)
 			local killerTeam = nil
