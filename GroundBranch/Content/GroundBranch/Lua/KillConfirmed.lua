@@ -68,6 +68,12 @@ local KillConfirmed = {
 			Value = 1,
 			AdvancedSetting = true,
 		},
+		DisplayDebugMessages = {
+			Min = 0,
+			Max = 1,
+			Value = 0,
+			AdvancedSetting = true,
+		},
 	},
 	BackupSettings = {
 		DisplayScoreMessage = {
@@ -283,20 +289,21 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 end
 
 function KillConfirmed:OnConfirmedKill(location)
-	if self.Settings.ReinforcementsTrigger.Value > 0 then
+	if self.Settings.ReinforcementsTrigger.Value == 1 then
 		self:SpawnReinforcements(location, 0.0)
 	end
 end
 
 function KillConfirmed:SpawnReinforcements(hvtLocation, tiReinforce)
+	if self.Settings.Reinforcements.Value < 1 then
+		return
+	end
 	local sizeReinforcement = self:GetPossibleAICount(self.Settings.Reinforcements.Value)
 	if sizeReinforcement > 0 then
-		print("Spawning HVT reinforcements in " .. tiReinforce .. "s ...")
 		AdminTools:ShowDebug("Spawning HVT reinforcements in " .. tiReinforce .. "s ...")
 		self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(sizeReinforcement, hvtLocation)
 		self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self)
 	else
-		print("No AI slots are available for HVT reinforcements.")
 		AdminTools:ShowDebug("No AI slots are available for HVT reinforcements.")
 	end
 end
@@ -315,12 +322,11 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			end
 			if killedTeam ~= self.PlayerTeams.BluFor.TeamId then
 				self.KilledAICount = self.KilledAICount + 1
-				print("Current AI count: " .. self:GetAICount() .. " (" .. self.KilledAICount .. " of " .. self.SpawnQueue.ExpectedAICount .. " killed)")
 				AdminTools:ShowDebug("Current AI count: " .. self:GetAICount() .. " (" .. self.KilledAICount .. " of " .. self.SpawnQueue.ExpectedAICount .. " killed)")
 			end
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
-				if self.Settings.ReinforcementsTrigger.Value < 1 then
+				if self.Settings.ReinforcementsTrigger.Value == 0 then
 					local tiReinforce = math.random(50, 150) * 0.1
 					local hvtLocation = actor.GetLocation(Character)
 					self:SpawnReinforcements(hvtLocation, tiReinforce)
@@ -610,6 +616,7 @@ function KillConfirmed:PreRoundCleanUp()
 end
 
 function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
+	AdminTools.ShowDebugGameMessages = self.Settings.DisplayDebugMessages.Value == 1
 	if Setting == "HVTCount" then
 		print('HVT count set to ' .. NewValue .. ', updating spawns & objective markers.')
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)

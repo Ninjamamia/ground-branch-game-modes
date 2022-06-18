@@ -153,7 +153,6 @@ end
 function Mode:Uprise()
 	if not self.IsUprise then
 		local tiUprise = math.random(50, 150) * 0.1
-		print("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
 		local sizeUprise = self:GetPossibleAICount(self.Settings.CIVUpriseSize.Value)
@@ -171,7 +170,6 @@ end
 function Mode:LocalUprise(killedCivLocation)
 	local tiUprise = math.random(50, 150) * 0.1
 	local sizeUprise = math.random(0, self:GetPossibleAICount(10))
-	print("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
