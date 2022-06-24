@@ -130,6 +130,11 @@ function Exfiltrate:GetSelectedPoint()
 	return self.Points.Active
 end
 
+---Get the tag of the currently selected exfill point.
+function Exfiltrate:GetSelectedPointTag()
+	return actor.GetTag(self:GetSelectedPoint(), 1) or "Unknown"
+end
+
 ---Displays a world prompt at the extraction zone.
 function Exfiltrate:GuideToExtractionTimer()
 	self.Team:DisplayPromptToAlivePlayers(
