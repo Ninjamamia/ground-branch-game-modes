@@ -241,15 +241,7 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Value,
 		self.Settings.HVTCount.Max
 	)
-	self.SpawnQueue = MSpawnsQueue:Create()
-end
-
-function KillConfirmed:GetAICount()
-	return self.SpawnQueue.ExpectedAICount - self.KilledAICount
-end
-
-function KillConfirmed:GetPossibleAICount(desiredCount)
-	return math.max(math.min(self.Settings.AIMaxConcurrentCount.Value - self:GetAICount(), desiredCount), 0)
+	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value)
 end
 
 function KillConfirmed:PostInit()
@@ -278,6 +270,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
+		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
 		self.PlayerTeams.BluFor.Script:RoundStart(
 			self.Settings.RespawnCost.Value,
 			self.BackupSettings.DisplayScoreMessage.Value == 1,
@@ -298,13 +291,11 @@ function KillConfirmed:SpawnReinforcements(hvtLocation, tiReinforce)
 	if self.Settings.Reinforcements.Value < 1 then
 		return
 	end
-	local sizeReinforcement = self:GetPossibleAICount(self.Settings.Reinforcements.Value)
+	local sizeReinforcement = self.Settings.Reinforcements.Value
 	if sizeReinforcement > 0 then
 		AdminTools:ShowDebug("Spawning HVT reinforcements in " .. tiReinforce .. "s ...")
 		self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(sizeReinforcement, hvtLocation)
-		self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self)
-	else
-		AdminTools:ShowDebug("No AI slots are available for HVT reinforcements.")
+		self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self, nil, nil, true, 1)
 	end
 end
 
@@ -321,8 +312,8 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				killerTeam = actor.GetTeamId(KillerController)
 			end
 			if killedTeam ~= self.PlayerTeams.BluFor.TeamId then
-				self.KilledAICount = self.KilledAICount + 1
-				AdminTools:ShowDebug("Current AI count: " .. self:GetAICount() .. " (" .. self.KilledAICount .. " of " .. self.SpawnQueue.ExpectedAICount .. " killed)")
+				self.SpawnQueue:OnAIKilled()
+				AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
 			end
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
@@ -488,7 +479,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	print('Setting up AI spawn points by groups')
 	local maxAiCount = math.min(
 		self.AiTeams.OpFor.Spawns.Total,
-		self:GetPossibleAICount(ai.GetMaxCount()) - self.Settings.HVTCount.Value
+		self.Settings.AIMaxConcurrentCount.Value - self.Settings.HVTCount.Value
 	)
 	self.AiTeams.OpFor.CalculatedAiCount = MSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
@@ -617,6 +608,7 @@ end
 
 function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
 	AdminTools.ShowDebugGameMessages = self.Settings.DisplayDebugMessages.Value == 1
+	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 	if Setting == "HVTCount" then
 		print('HVT count set to ' .. NewValue .. ', updating spawns & objective markers.')
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)

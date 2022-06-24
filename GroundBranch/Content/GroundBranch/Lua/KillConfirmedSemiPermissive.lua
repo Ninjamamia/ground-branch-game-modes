@@ -133,7 +133,7 @@ end
 
 function Mode:SpawnCIVs()
 	self.AiTeams.CIVUnarmed.Spawns:AddRandomSpawns()
-	self.AiTeams.CIVUnarmed.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.5, self:GetPossibleAICount(self.Settings.CIVPopulation.Value), self.AiTeams.CIVUnarmed.Tag)
+	self.AiTeams.CIVUnarmed.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
 end
 
 function Mode:PreRoundCleanUp()
@@ -155,10 +155,10 @@ function Mode:Uprise()
 		local tiUprise = math.random(50, 150) * 0.1
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
-		local sizeUprise = self:GetPossibleAICount(self.Settings.CIVUpriseSize.Value)
+		local sizeUprise = self.Settings.CIVUpriseSize.Value
 		if sizeUprise > 0 then
 			self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
-			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnUpriseSpawned, self)
+			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnUpriseSpawned, self, nil, nil, true)
 		end
 	end
 end
@@ -169,11 +169,11 @@ end
 
 function Mode:LocalUprise(killedCivLocation)
 	local tiUprise = math.random(50, 150) * 0.1
-	local sizeUprise = math.random(0, self:GetPossibleAICount(10))
+	local sizeUprise = math.random(0, 10)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnLocalUpriseSpawned, self)
+		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnLocalUpriseSpawned, self, nil, nil, true)
 	end
 end
 

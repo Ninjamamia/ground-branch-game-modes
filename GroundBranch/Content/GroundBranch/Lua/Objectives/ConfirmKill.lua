@@ -136,7 +136,7 @@ end
 ---@param freezeTime number time for which the ai should be frozen.
 function ConfirmKill:EnqueueSpawning(spawnQueue, freezeTime)
     print('Schedule spawning ' .. self.HVT.Tag)
-	spawnQueue:Enqueue(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, self.checkSpawnsTimer, self)
+	spawnQueue:Enqueue(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, nil, nil, self.checkSpawnsTimer, self)
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.
