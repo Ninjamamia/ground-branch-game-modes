@@ -10,7 +10,8 @@ local MSpawnsCommon         = require('Spawns.Common')
 local MSpawnsQueue          = require('Spawns.Queue')
 local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
-local AdminTools = require('AdminTools')
+local AdminTools 			= require('AdminTools')
+local Tables 				= require('Common.Tables')
 
 --#region Properties
 
@@ -195,6 +196,7 @@ local KillConfirmed = {
 	},
 	SpawnQueue = nil,
 	KilledAICount = 0,
+	ExfilGuardSpawns = {},
 }
 
 --#endregion
@@ -264,6 +266,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self.Objectives.Exfiltrate:SelectPoint(false)
+		self:PrepareExfilGuards()
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 	elseif RoundStage == 'PreRoundWait' then
@@ -279,6 +282,13 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 			self.BackupSettings.DisplayObjectivePrompts.Value == 1
 		)
 	end
+end
+
+function KillConfirmed:PrepareExfilGuards()
+	self.ExfilGuardSpawns = Tables.ShuffleTable(gameplaystatics.GetAllActorsOfClassWithTag(
+		'GroundBranch.GBAISpawnPoint',
+		self.Objectives.Exfiltrate:GetSelectedPointTag()
+	))
 end
 
 function KillConfirmed:OnConfirmedKill(location)
@@ -530,6 +540,7 @@ end
 
 function KillConfirmed:OnAllKillsConfirmed()
 	self.Objectives.Exfiltrate:SelectedPointSetActive(true)
+	self.SpawnQueue:Enqueue(5.0, 0.1, math.random(0, 2), self.ExfilGuardSpawns, self.AiTeams.OpFor.Tag, nil, nil, nil, nil, false, 1)
 end
 
 --#endregion
