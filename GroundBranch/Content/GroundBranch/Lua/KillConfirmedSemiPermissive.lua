@@ -109,9 +109,9 @@ function Mode:PreInit()
 end
 
 function Mode:TakeChance(chance)
-	return math.random(0, 100) <= chance
+	return math.random(0, 99) < chance
 end
-	
+
 function Mode:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
