@@ -34,6 +34,7 @@ Key,SourceString,Comment
 "missionsetting_displaydebugmessages","Display Debug Messages","Opsboard"
 "missionsetting_displaydebugmessages_0","No","Opsboard"
 "missionsetting_displaydebugmessages_1","Yes","Opsboard"
+"missionsetting_triggerareasratio","Percentage Of Trigger Areas To Use","Opsboard"
 "objective_NeutralizeHVTs","Locate and neutralize High Value Targets (HVTs).","Opsboard"
 "objective_ConfirmEliminatedHVTs","Confirm that every neutralized HVT is eliminated.","Opsboard"
 "objective_ExfiltrateBluFor","Exfiltrate via marked extraction point.","Opsboard"

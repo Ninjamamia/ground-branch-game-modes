@@ -12,6 +12,7 @@ local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 local AdminTools 			= require('AdminTools')
 local Tables 				= require('Common.Tables')
+local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
 
 --#region Properties
 
@@ -74,6 +75,12 @@ local KillConfirmed = {
 			Max = 1,
 			Value = 0,
 			AdvancedSetting = true,
+		},
+		TriggerAreasRatio = {
+			Min = 0,
+			Max = 100,
+			Value = 0,
+			AdvancedSetting = false,
 		},
 	},
 	BackupSettings = {
@@ -197,6 +204,7 @@ local KillConfirmed = {
 	SpawnQueue = nil,
 	KilledAICount = 0,
 	ExfilGuardSpawns = {},
+	AmbushManager = nil,
 }
 
 --#endregion
@@ -244,6 +252,7 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Max
 	)
 	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value)
+	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
 end
 
 function KillConfirmed:PostInit()
@@ -270,6 +279,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 	elseif RoundStage == 'PreRoundWait' then
+		self.AmbushManager:ActivateRandomly(self.Settings.TriggerAreasRatio.Value)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
@@ -554,6 +564,7 @@ function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 			self.Objectives.ConfirmKill:AreAllConfirmed()
 		)
 	end
+	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
 end
 
 function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
