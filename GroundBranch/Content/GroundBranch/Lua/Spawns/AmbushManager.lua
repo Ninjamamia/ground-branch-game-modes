@@ -25,7 +25,7 @@ function AmbushManager:Create(spawnQueue, teamTag)
     for _, Trigger in ipairs(Triggers) do
         local Name = actor.GetName(Trigger)
         for _, Tag in ipairs(actor.GetTags(Trigger)) do
-            if Tag ~= 'Ambush' and Tag ~= 'MissionActor' then
+            if Tag ~= 'Ambush' and Tag ~= 'MissionActor' and Tag ~= 'Mandatory' then
                 self.Triggers[Name] = {
                     Name = Name,
                     Tag = Tag,
