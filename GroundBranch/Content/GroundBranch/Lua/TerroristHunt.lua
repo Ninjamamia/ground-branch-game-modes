@@ -185,6 +185,11 @@ function terroristhunt:OnMissionSettingChanged(Setting, NewValue)
 	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 
+function terroristhunt:OnGameTriggerBeginOverlap(GameTrigger, Player)
+	print('OnGameTriggerBeginOverlap')
+	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
+end
+
 function terroristhunt:CheckOpForCountTimer()
 	if self.SpawnQueue.AliveAICount == 0 then
 		timer.Clear("ShowRemaining")
