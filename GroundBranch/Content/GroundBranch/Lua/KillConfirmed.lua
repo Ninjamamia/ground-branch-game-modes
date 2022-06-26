@@ -202,7 +202,6 @@ local KillConfirmed = {
 		},
 	},
 	SpawnQueue = nil,
-	KilledAICount = 0,
 	ExfilGuardSpawns = {},
 	AmbushManager = nil,
 }
@@ -621,7 +620,6 @@ function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
 	ai.CleanUp(self.AiTeams.HVTSupport.Tag)
 	self.SpawnQueue:Reset()
-	self.KilledAICount = 0
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()
