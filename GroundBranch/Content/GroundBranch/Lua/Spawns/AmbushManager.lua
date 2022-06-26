@@ -20,6 +20,9 @@ function AmbushManager:Create(spawnQueue, teamTag)
     -- Setting attributes
     self.SpawnQueue = spawnQueue
     self.TeamTag = teamTag
+    self.Triggers = {}
+    self.MandatoryTriggerKeys = {}
+    self.OptionalTriggerKeys = {}
     print('Gathering ambush triggers...')
     Triggers = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBGameTrigger', 'Ambush')
     for _, Trigger in ipairs(Triggers) do
