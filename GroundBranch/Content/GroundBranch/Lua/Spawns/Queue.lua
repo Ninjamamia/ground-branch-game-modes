@@ -1,3 +1,4 @@
+local AdminTools 			= require('AdminTools')
 
 local Queue = {
     SpawnQueue = {},
@@ -49,6 +50,7 @@ end
 function Queue:OnAIKilled()
 	self.KilledAICount = self.KilledAICount + 1
 	self.AliveAICount = math.max(self.AliveAICount - 1, 0)
+	AdminTools:ShowDebug(self:GetStateMessage())
 end
 
 function Queue:AbortPending()
@@ -121,7 +123,7 @@ function Queue:OnSpawnQueueTick()
 				if self.AliveAICount >= maxAICount then
 					if CurrSpawnItem.isBlocking then
 						if count > 0 then
-							print('SpawnQueue: Spawned (P) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's, ' .. self.PendingAICount .. ' AI still pending' )
+							AdminTools:ShowDebug('SpawnQueue: Spawned (P) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's, ' .. self.PendingAICount .. ' AI still pending' )
 						end
 						return
 					else
@@ -147,7 +149,7 @@ function Queue:OnSpawnQueueTick()
 			CurrSpawnItem.postSpawnCallback(CurrSpawnItem.postSpawnCallbackOwner)
 		end
 		if count > 0 then
-			print('SpawnQueue: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's')
+			AdminTools:ShowDebug('SpawnQueue: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's')
 		end
 		table.remove(self.SpawnQueue, 1)
 	end
