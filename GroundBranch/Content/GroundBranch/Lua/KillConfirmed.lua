@@ -332,7 +332,6 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			end
 			if killedTeam ~= self.PlayerTeams.BluFor.TeamId then
 				self.SpawnQueue:OnAIKilled()
-				AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
 			end
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)

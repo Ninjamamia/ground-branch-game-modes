@@ -161,7 +161,6 @@ function terroristhunt:OnCharacterDied(Character, CharacterController, KillerCon
 		if CharacterController ~= nil then
 			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				self.SpawnQueue:OnAIKilled()
-				AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
 				timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
 			else
 				AdminTools:NotifyKIA(CharacterController)
