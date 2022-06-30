@@ -34,7 +34,7 @@ function Priority:Create()
 		end
 	end
 	print('Found ' .. self.Total .. ' spawns by priority')
-	print('Initialized PrioritySpawns ' .. tostring(priority))
+	print('Initialized PrioritySpawns ' .. tostring(self))
     return self
 end
 
