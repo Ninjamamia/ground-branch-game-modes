@@ -82,6 +82,30 @@ local KillConfirmed = {
 			Value = 0,
 			AdvancedSetting = false,
 		},
+		MinAmbushDelay = {
+			Min = 0,
+			Max = 30,
+			Value = 0,
+			AdvancedSetting = true,
+		},
+		MaxAmbushDelay = {
+			Min = 0,
+			Max = 30,
+			Value = 15,
+			AdvancedSetting = true,
+		},
+		MinAmbushSize = {
+			Min = 0,
+			Max = 50,
+			Value = 0,
+			AdvancedSetting = true,
+		},
+		MaxAmbushSize = {
+			Min = 0,
+			Max = 50,
+			Value = 10,
+			AdvancedSetting = true,
+		},
 	},
 	BackupSettings = {
 		DisplayScoreMessage = {
@@ -251,7 +275,7 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Max
 	)
 	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value)
-	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
+	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag, self)
 end
 
 function KillConfirmed:PostInit()

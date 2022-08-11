@@ -15,10 +15,11 @@ AmbushManager.__index = AmbushManager
 ---Creates a new ambush manager object. At creation all relevant spawn points are
 ---gathered, default values are set.
 ---@return table AmbushManager Newly created AmbushManager object.
-function AmbushManager:Create(spawnQueue, teamTag)
+function AmbushManager:Create(spawnQueue, teamTag, gameMode)
     local self = setmetatable({}, AmbushManager)
     -- Setting attributes
     self.SpawnQueue = spawnQueue
+    self.GameMode = gameMode
     self.TeamTag = teamTag
     self.Triggers = {}
     self.MandatoryTriggerKeys = {}
@@ -105,8 +106,24 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
         if Trigger.State == 'Active' then
             Trigger.State = 'Triggered'
             actor.SetActive(Trigger.Actor, false)
-            local tiAmbush = math.random(0, 150) * 0.1
-            local sizeAmbush = math.min(math.random(0, 10), #Trigger.Spawns)
+            local tiMin = 0
+            if self.GameMode.Settings.MinAmbushDelay ~= nil then
+                tiMin = self.GameMode.Settings.MinAmbushDelay.Value
+            end
+            local tiMax = 15
+            if self.GameMode.Settings.MaxAmbushDelay ~= nil then
+                tiMax = self.GameMode.Settings.MaxAmbushDelay.Value
+            end
+            local tiAmbush = math.random(tiMin * 10, tiMax * 10) * 0.1
+            local numMin = 0
+            if self.GameMode.Settings.MinAmbushSize ~= nil then
+                numMin = self.GameMode.Settings.MinAmbushSize.Value
+            end
+            local numMax = 15
+            if self.GameMode.Settings.MaxAmbushSize ~= nil then
+                numMax = self.GameMode.Settings.MaxAmbushSize.Value
+            end
+            local sizeAmbush = math.min(math.random(numMin, numMax), #Trigger.Spawns)
             AdminTools:ShowDebug("Ambush " .. Trigger.Tag .. " triggered, spawning " .. sizeAmbush .. " AI in " .. tiAmbush .. "s")
             if sizeAmbush > 0 then
                 self.SpawnQueue:Enqueue(tiAmbush, 0.1, sizeAmbush, Tables.ShuffleTable(Trigger.Spawns), self.TeamTag, nil, nil, nil, nil, true)

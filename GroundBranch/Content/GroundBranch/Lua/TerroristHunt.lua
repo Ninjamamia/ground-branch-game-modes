@@ -65,6 +65,30 @@ local terroristhunt = {
 			Value = 0,
 			AdvancedSetting = false,
 		},
+		MinAmbushDelay = {
+			Min = 0,
+			Max = 30,
+			Value = 0,
+			AdvancedSetting = true,
+		},
+		MaxAmbushDelay = {
+			Min = 0,
+			Max = 30,
+			Value = 15,
+			AdvancedSetting = true,
+		},
+		MinAmbushSize = {
+			Min = 0,
+			Max = 50,
+			Value = 0,
+			AdvancedSetting = true,
+		},
+		MaxAmbushSize = {
+			Min = 0,
+			Max = 50,
+			Value = 10,
+			AdvancedSetting = true,
+		},
 	},
 	SpawnQueue = nil,
 	AmbushManager = nil,
@@ -74,7 +98,7 @@ function terroristhunt:PreInit()
 	print('Pre initialization')
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
 	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value)
-	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
+	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag, self)
 
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AiTeams.OpFor.Spawns.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
