@@ -59,11 +59,11 @@ local terroristhunt = {
 			Value = 0,
 			AdvancedSetting = true,
 		},
-		TriggerAreasRatio = {
+		TriggerActivationChance = {
 			Min = 0,
 			Max = 100,
 			Value = 0,
-			AdvancedSetting = false,
+			AdvancedSetting = true,
 		},
 		MinAmbushDelay = {
 			Min = 0,
@@ -88,6 +88,12 @@ local terroristhunt = {
 			Max = 50,
 			Value = 10,
 			AdvancedSetting = true,
+		},
+		TriggersEnabled = {
+			Min = 0,
+			Max = 1,
+			Value = 1,
+			AdvancedSetting = false,
 		},
 	},
 	SpawnQueue = nil,
@@ -165,7 +171,11 @@ function terroristhunt:OnRoundStageSet(RoundStage)
 		self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 		self.SpawnQueue:Reset()
 	elseif RoundStage == "PreRoundWait" then
-		self.AmbushManager:ActivateRandomly(self.Settings.TriggerAreasRatio.Value)
+		if self.Settings.TriggersEnabled.Value == 1 then
+			self.AmbushManager:Activate()
+		else
+			self.AmbushManager:Deactivate()
+		end
 		self:SpawnOpFor()
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 		-- need to update this as ops board setting may have changed - have to do this before RoundStage InProgress to be effective

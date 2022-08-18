@@ -76,11 +76,11 @@ local KillConfirmed = {
 			Value = 0,
 			AdvancedSetting = true,
 		},
-		TriggerAreasRatio = {
+		TriggerActivationChance = {
 			Min = 0,
 			Max = 100,
 			Value = 0,
-			AdvancedSetting = false,
+			AdvancedSetting = true,
 		},
 		MinAmbushDelay = {
 			Min = 0,
@@ -105,6 +105,12 @@ local KillConfirmed = {
 			Max = 50,
 			Value = 10,
 			AdvancedSetting = true,
+		},
+		TriggersEnabled = {
+			Min = 0,
+			Max = 1,
+			Value = 1,
+			AdvancedSetting = false,
 		},
 	},
 	BackupSettings = {
@@ -302,7 +308,11 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 	elseif RoundStage == 'PreRoundWait' then
-		self.AmbushManager:ActivateRandomly(self.Settings.TriggerAreasRatio.Value)
+		if self.Settings.TriggersEnabled.Value == 1 then
+			self.AmbushManager:Activate()
+		else
+			self.AmbushManager:Deactivate()
+		end
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
