@@ -68,7 +68,7 @@ function AmbushManager:ActivateTrigger(Trigger)
     print("  tiAmbush=" .. Trigger.tiAmbush)
     print("  sizeAmbush=" .. Trigger.sizeAmbush)
     if Trigger.sizeAmbush > 0 then
-        Tables.ShuffleTable(Trigger.Spawns)
+        Trigger.Spawns = Tables.ShuffleTable(Trigger.Spawns)
         Trigger.State = 'Active'
         actor.SetActive(Trigger.Actor, true)
     end
