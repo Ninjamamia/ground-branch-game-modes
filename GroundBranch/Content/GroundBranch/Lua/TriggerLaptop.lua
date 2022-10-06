@@ -12,7 +12,7 @@ function laptop:ServerUseTimer(User, DeltaTime)
 	self.CurrentTime = math.min(self.CurrentTime, SearchTime)
 
 	local Result = {}
-	Result.Message = "Are in for surprises?"
+	Result.Message = "Are you in for surprises?"
 	Result.Equip = false
 	Result.Percentage = self.CurrentTime / SearchTime
 	if Result.Percentage == 1.0 then
