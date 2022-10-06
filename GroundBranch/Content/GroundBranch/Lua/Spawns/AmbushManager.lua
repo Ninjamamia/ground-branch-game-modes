@@ -21,7 +21,7 @@ function AmbushManager:Create(spawnQueue, teamTag, gameMode)
     self.TeamTag = teamTag
     self.Triggers = {}
     print('Gathering ambush triggers...')
-    Triggers = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBGameTrigger', 'Ambush')
+    Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
     local count = 0
     for _, Trigger in ipairs(Triggers) do
         local Name = actor.GetName(Trigger)
@@ -123,7 +123,6 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
     if Trigger ~= nil then
         if Trigger.State == 'Active' then
             Trigger.State = 'Triggered'
-            actor.SetActive(Trigger.Actor, false)
             AdminTools:ShowDebug("Ambush " .. Trigger.Tag .. " triggered, spawning " .. Trigger.sizeAmbush .. " AI in " .. Trigger.tiAmbush .. "s")
             self.SpawnQueue:Enqueue(Trigger.tiAmbush, 0.1, Trigger.sizeAmbush, Trigger.Spawns, self.TeamTag, nil, nil, nil, nil, true)
         end

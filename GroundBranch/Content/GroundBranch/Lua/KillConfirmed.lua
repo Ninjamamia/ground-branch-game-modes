@@ -599,6 +599,11 @@ function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
 end
 
+function KillConfirmed:OnLaptopTriggered(Laptop)
+	-- this is called from the laptop TriggerLaptop.lua script when a laptop is successfully hacked
+	self.AmbushManager:OnGameTriggerBeginOverlap(Laptop, nil)
+end
+
 function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
 	print('OnGameTriggerEndOverlap')
 	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then

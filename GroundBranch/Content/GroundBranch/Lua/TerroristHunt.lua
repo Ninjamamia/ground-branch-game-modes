@@ -223,6 +223,11 @@ function terroristhunt:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
 end
 
+function terroristhunt:OnLaptopTriggered(Laptop)
+	-- this is called from the laptop TriggerLaptop.lua script when a laptop is successfully hacked
+	self.AmbushManager:OnGameTriggerBeginOverlap(Laptop, nil)
+end
+
 function terroristhunt:CheckOpForCountTimer()
 	if self.SpawnQueue.AliveAICount == 0 then
 		timer.Clear("ShowRemaining")
