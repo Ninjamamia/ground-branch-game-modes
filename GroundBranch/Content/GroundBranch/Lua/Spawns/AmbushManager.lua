@@ -30,32 +30,39 @@ function AmbushManager:Create(spawnQueue, teamTag, gameMode)
             Tag = nil,
             Actor = Trigger,
             State = 'Inactive',
-            Spawns = nil
+            Spawns = {},
+            Activates = {}
         }
         print('Ambush trigger ' .. Name .. ' found.')
+        print('  Parameters:')
         for _, Tag in ipairs(actor.GetTags(Trigger)) do
             local key
             local value
             _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")
             if key ~= nil then
-                print("  " .. Tag)
+                print("    " .. Tag)
                 if key == "Group" then
                     CurrTrigg.Tag = value
                     CurrTrigg.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
                         'GroundBranch.GBAISpawnPoint',
                         value
                     )
+                elseif key == "Activate" then
+                    if value ~= CurrTrigg.Name then
+                        table.insert(CurrTrigg.Activates, value)
+                    else
+                        print("      Error: Circular reference, a trigger may not activate itself!")
+                    end
                 else
                     CurrTrigg[key] = tonumber(value)
                 end
             end
         end
-        if CurrTrigg.Tag ~= nil then
-            self.Triggers[Name] = CurrTrigg
-            count = count + 1
-        else
-            print('  No group assigned, this is not allowed!')
-        end
+        print('  Summary:')
+        print("    Spawns: " .. #CurrTrigg.Spawns)
+        print("    Activation links: " .. #CurrTrigg.Activates)
+        self.Triggers[Name] = CurrTrigg
+        count = count + 1
     end
     print('Found a total of ' .. count .. ' ambush triggers.')
     return self
@@ -67,11 +74,9 @@ function AmbushManager:ActivateTrigger(Trigger)
     Trigger.sizeAmbush = math.min(math.random((Trigger.sizeMin or self.sizeMin), (Trigger.sizeMax or self.sizeMax)), #Trigger.Spawns)
     print("  tiAmbush=" .. Trigger.tiAmbush)
     print("  sizeAmbush=" .. Trigger.sizeAmbush)
-    if Trigger.sizeAmbush > 0 then
-        Trigger.Spawns = Tables.ShuffleTable(Trigger.Spawns)
-        Trigger.State = 'Active'
-        actor.SetActive(Trigger.Actor, true)
-    end
+    Trigger.Spawns = Tables.ShuffleTable(Trigger.Spawns)
+    Trigger.State = 'Active'
+    actor.SetActive(Trigger.Actor, true)
 end
 
 function AmbushManager:DeactivateTrigger(Trigger)
@@ -123,8 +128,18 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
     if Trigger ~= nil then
         if Trigger.State == 'Active' then
             Trigger.State = 'Triggered'
-            AdminTools:ShowDebug("Ambush " .. Trigger.Tag .. " triggered, spawning " .. Trigger.sizeAmbush .. " AI in " .. Trigger.tiAmbush .. "s")
-            self.SpawnQueue:Enqueue(Trigger.tiAmbush, 0.1, Trigger.sizeAmbush, Trigger.Spawns, self.TeamTag, nil, nil, nil, nil, true)
+            if Trigger.sizeAmbush > 0 then
+                AdminTools:ShowDebug("Ambush trigger " .. Trigger.Name .. " triggered, activating " .. #Trigger.Activates .. " other triggers, spawning " .. Trigger.sizeAmbush .. " AI of group " .. Trigger.Tag .. " in " .. Trigger.tiAmbush .. "s")
+                self.SpawnQueue:Enqueue(Trigger.tiAmbush, 0.1, Trigger.sizeAmbush, Trigger.Spawns, self.TeamTag, nil, nil, nil, nil, true)
+            else
+                AdminTools:ShowDebug("Ambush trigger " .. Trigger.Name .. " triggered, activating " .. #Trigger.Activates .. " other triggers, nothing to spawn.")
+            end
+            for _, Activate in pairs(Trigger.Activates) do
+                local ActivateTrigger = self.Triggers[Activate]
+                if ActivateTrigger ~= nil then
+                    self:ActivateTrigger(ActivateTrigger)
+                end
+            end
         end
     end
 end
