@@ -30,7 +30,6 @@ local super = Tables.DeepCopy(require("KillConfirmed"))
 
 -- Use a separate loadout
 super.PlayerTeams.BluFor.Loadout='NoTeamCamouflage'
-super.Settings.RespawnCost.Value = 2000
 
 -- Add new score types
 super.PlayerScoreTypes.CollateralDamage = {

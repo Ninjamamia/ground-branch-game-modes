@@ -58,12 +58,6 @@ local KillConfirmed = {
 			Value = 5,
 			AdvancedSetting = false,
 		},
-		RespawnCost = {
-			Min = 0,
-			Max = 10000,
-			Value = 1000,
-			AdvancedSetting = true,
-		},
 		ReinforcementsTrigger = {
 			Min = 0,
 			Max = 1,
@@ -81,20 +75,6 @@ local KillConfirmed = {
 			Max = 1,
 			Value = 1,
 			AdvancedSetting = false,
-		},
-	},
-	BackupSettings = {
-		DisplayScoreMessage = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
-		},
-		DisplayScoreMilestones = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
 		},
 		DisplayObjectiveMessages = {
 			Min = 0,
@@ -288,11 +268,11 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	elseif RoundStage == 'InProgress' then
 		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
 		self.PlayerTeams.BluFor.Script:RoundStart(
-			self.Settings.RespawnCost.Value,
-			self.BackupSettings.DisplayScoreMessage.Value == 1,
-			self.BackupSettings.DisplayScoreMilestones.Value == 1,
-			self.BackupSettings.DisplayObjectiveMessages.Value == 1,
-			self.BackupSettings.DisplayObjectivePrompts.Value == 1
+			1000000,
+			false,
+			false,
+			self.Settings.DisplayObjectiveMessages.Value == 1,
+			self.Settings.DisplayObjectivePrompts.Value == 1
 		)
 	end
 end
