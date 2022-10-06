@@ -59,36 +59,6 @@ local terroristhunt = {
 			Value = 0,
 			AdvancedSetting = true,
 		},
-		TriggerActivationChance = {
-			Min = 0,
-			Max = 100,
-			Value = 0,
-			AdvancedSetting = true,
-		},
-		MinAmbushDelay = {
-			Min = 0,
-			Max = 30,
-			Value = 0,
-			AdvancedSetting = true,
-		},
-		MaxAmbushDelay = {
-			Min = 0,
-			Max = 30,
-			Value = 15,
-			AdvancedSetting = true,
-		},
-		MinAmbushSize = {
-			Min = 0,
-			Max = 50,
-			Value = 0,
-			AdvancedSetting = true,
-		},
-		MaxAmbushSize = {
-			Min = 0,
-			Max = 50,
-			Value = 10,
-			AdvancedSetting = true,
-		},
 		TriggersEnabled = {
 			Min = 0,
 			Max = 1,

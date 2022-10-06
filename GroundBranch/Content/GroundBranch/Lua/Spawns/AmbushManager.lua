@@ -87,15 +87,15 @@ end
 
 function AmbushManager:Activate()
     print('Activating ambush triggers based on their settings...')
-    self.Chance = 50
+    self.Chance = 80
     if self.GameMode.Settings.TriggerActivationChance ~= nil then
         self.Chance = self.GameMode.Settings.TriggerActivationChance.Value
     end
-    self.tiMin = 0
+    self.tiMin = 1
     if self.GameMode.Settings.MinAmbushDelay ~= nil then
         self.tiMin = self.GameMode.Settings.MinAmbushDelay.Value
     end
-    self.tiMax = 15
+    self.tiMax = 7
     if self.GameMode.Settings.MaxAmbushDelay ~= nil then
         self.tiMax = self.GameMode.Settings.MaxAmbushDelay.Value
     end
@@ -103,7 +103,7 @@ function AmbushManager:Activate()
     if self.GameMode.Settings.MinAmbushSize ~= nil then
         self.sizeMin = self.GameMode.Settings.MinAmbushSize.Value
     end
-    self.sizeMax = 15
+    self.sizeMax = 5
     if self.GameMode.Settings.MaxAmbushSize ~= nil then
         self.sizeMax = self.GameMode.Settings.MaxAmbushSize.Value
     end
