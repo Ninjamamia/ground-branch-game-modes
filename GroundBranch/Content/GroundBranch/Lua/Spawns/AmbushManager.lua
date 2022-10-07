@@ -72,15 +72,15 @@ function AmbushManager:ActivateTrigger(Trigger)
     print('Activating ambush trigger ' .. Trigger.Name .. '...')
     local tiMin = Trigger.tiMin or self.tiMin
     local tiMax = Trigger.tiMax or self.tiMax
-    if tiMin == tiMax then
-        Trigger.tiAmbush = tiMin
+    if tiMin >= tiMax then
+        Trigger.tiAmbush = math.min(tiMin, tiMax)
     else
         Trigger.tiAmbush = math.random(tiMin * 10, tiMax * 10) * 0.1
     end
     local sizeMin = Trigger.sizeMin or self.sizeMin
     local sizeMax = Trigger.sizeMax or self.sizeMax
-    if sizeMin == sizeMax then
-        Trigger.sizeAmbush = sizeMin
+    if sizeMin >= sizeMax then
+        Trigger.sizeAmbush = math.min(sizeMin, sizeMax)
     else
         Trigger.sizeAmbush = math.min(math.random(sizeMin, sizeMax), #Trigger.Spawns)
     end
