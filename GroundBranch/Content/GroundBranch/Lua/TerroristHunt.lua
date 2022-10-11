@@ -167,6 +167,7 @@ function terroristhunt:OnCharacterDied(Character, CharacterController, KillerCon
 				self.SpawnQueue:OnAIKilled()
 				timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
 			else
+				self.AmbushManager:OnCharacterDied(Character)
 				AdminTools:NotifyKIA(CharacterController)
 				player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
 								
@@ -191,6 +192,11 @@ end
 function terroristhunt:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
 	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
+end
+
+function terroristhunt:OnGameTriggerEndOverlap(GameTrigger, Player)
+	print('OnGameTriggerEndOverlap')
+	self.AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
 end
 
 function terroristhunt:OnLaptopTriggered(Laptop)

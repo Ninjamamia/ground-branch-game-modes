@@ -331,6 +331,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				end
 			elseif killedTeam == self.PlayerTeams.BluFor.TeamId then
 				print('BluFor eliminated')
+				self.AmbushManager:OnCharacterDied(Character)
 				AdminTools:NotifyKIA(CharacterController)
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
@@ -559,6 +560,7 @@ function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
 	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
 		self.Objectives.Exfiltrate:PlayerLeftExfiltration()
 	end
+	self.AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
 end
 
 function KillConfirmed:OnExfiltrated()
