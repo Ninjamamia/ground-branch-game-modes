@@ -191,7 +191,7 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
             if Trigger.Players[PlayerName] == nil then
                 Trigger.Players[PlayerName] = true
                 Trigger.PlayersCount = Trigger.PlayersCount + 1
-                AdminTools:ShowDebug('Player ' .. PlayerName .. ' entered trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present')
+                local Message = 'Player ' .. PlayerName .. ' entered trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present'
                 if Trigger.PlayersCount == 1 then
                     if Trigger.tiPresence < 0.2 then
                         Trigger:Trigger()
@@ -203,8 +203,10 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
                             Trigger.tiPresence,
                             false
                         )
+                        Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
                     end
                 end
+                AdminTools:ShowDebug(Message)
             end
         end
     end
@@ -218,10 +220,12 @@ function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
             if Trigger.Players[PlayerName] ~= nil then
                 Trigger.Players[PlayerName] = nil
                 Trigger.PlayersCount = Trigger.PlayersCount - 1
-                AdminTools:ShowDebug('Player ' .. PlayerName .. ' left trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present')
+                local Message = 'Player ' .. PlayerName .. ' left trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present'
                 if Trigger.PlayersCount == 0 then
                     timer.Clear("Trigger_" .. Trigger.Name, Trigger)
+                    Message = Message .. ', timer aborted'
                 end
+                AdminTools:ShowDebug(Message)
             end
         end
     end
@@ -234,10 +238,12 @@ function AmbushManager:OnCharacterDied(Character)
             if Trigger.Players[PlayerName] ~= nil then
                 Trigger.Players[PlayerName] = nil
                 Trigger.PlayersCount = Trigger.PlayersCount - 1
-                AdminTools:ShowDebug('Player ' .. PlayerName .. ' left trigger ' .. Trigger.Name .. ' (died), ' .. Trigger.PlayersCount .. ' players present')
+                local Message = 'Player ' .. PlayerName .. ' left trigger ' .. Trigger.Name .. ' (died), ' .. Trigger.PlayersCount .. ' players present'
                 if Trigger.PlayersCount == 0 then
                     timer.Clear("Trigger_" .. Trigger.Name, Trigger)
+                    Message = Message .. ', timer aborted'
                 end
+                AdminTools:ShowDebug(Message)
             end
         end
     end
