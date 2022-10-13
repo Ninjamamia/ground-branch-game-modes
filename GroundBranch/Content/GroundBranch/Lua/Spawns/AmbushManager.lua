@@ -44,11 +44,7 @@ function Trigger:Create(Parent, Actor)
                     value
                 )
             elseif key == "Activate" then
-                if value ~= self.Name then
-                    table.insert(self.Activates, value)
-                else
-                    print("      Error: Circular reference, a trigger may not activate itself!")
-                end
+                table.insert(self.Activates, value)
             else
                 self[key] = tonumber(value)
             end
@@ -60,7 +56,7 @@ function Trigger:Create(Parent, Actor)
     return self
 end
 
-function Trigger:Activate()
+function Trigger:Activate(IsLinked)
     print('Activating ambush trigger ' .. self.Name .. '...')
     local tiMin = self.tiMin or self.Parent.tiMin
     local tiMax = self.tiMax or self.Parent.tiMax
@@ -88,14 +84,34 @@ function Trigger:Activate()
     print("  sizeAmbush=" .. self.sizeAmbush)
     self.Spawns = Tables.ShuffleTable(self.Spawns)
     self.State = 'Active'
-    self.Players = {}
-    self.PlayersCount = 0
-    actor.SetActive(self.Actor, true)
+    IsLinked = IsLinked or false
+    if IsLinked then
+        if self.PlayersCount > 0 then
+            if self.tiPresence < 5.0 then
+                AdminTools:ShowDebug('Trigger ' .. self.Name .. ' reactivated, tiPresence < 5.0s (' .. self.tiPresence .. 's), will only re-trigger if re-occupied.')
+            else
+                timer.Set(
+                    "Trigger_" .. self.Name,
+                    self,
+                    self.Trigger,
+                    self.tiPresence,
+                    false
+                )
+                AdminTools:ShowDebug('Trigger ' .. self.Name .. ' reactivated, ' .. self.PlayersCount .. ' players still present, will re-trigger in ' .. self.tiPresence .. 's')
+            end
+        end
+    else
+        self.Players = {}
+        self.PlayersCount = 0
+        actor.SetActive(self.Actor, true)
+    end
 end
 
 function Trigger:Deactivate()
     print('Deactivating ambush trigger ' .. self.Name .. '...')
     self.State = 'Inactive'
+    self.Players = {}
+    self.PlayersCount = 0
     actor.SetActive(self.Actor, false)
 end
 
@@ -110,7 +126,7 @@ function Trigger:Trigger()
     for _, Activate in pairs(self.Activates) do
         local ActivateTrigger = self.Parent.Triggers[Activate]
         if ActivateTrigger ~= nil then
-            ActivateTrigger:Activate()
+            ActivateTrigger:Activate(true)
         end
     end
 end
