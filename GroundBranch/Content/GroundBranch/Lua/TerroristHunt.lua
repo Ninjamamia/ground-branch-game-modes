@@ -163,8 +163,8 @@ end
 function terroristhunt:OnCharacterDied(Character, CharacterController, KillerController)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
 		if CharacterController ~= nil then
-			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
-				self.SpawnQueue:OnAIKilled()
+			local CurrAI = self.SpawnQueue:OnCharacterDied(Character, CharacterController)
+			if CurrAI ~= nil and CurrAI:HasTag(self.AiTeams.OpFor.Tag) then
 				timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
 			else
 				self.AmbushManager:OnCharacterDied(Character)

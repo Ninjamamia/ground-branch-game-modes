@@ -11,7 +11,7 @@ local ConfirmKill = {
         Spawns = {},
         Markers = {},
         SpawnsShuffled = {},
-        EliminatedNotConfirmedLocations = {},
+        EliminatedNotConfirmed = {},
         EliminatedNotConfirmedCount = 0,
         EliminatedAndConfirmedCount = 0
     },
@@ -81,7 +81,7 @@ function ConfirmKill:Create(
 		)
 	end
     self.HVT.SpawnsShuffled = {}
-    self.HVT.EliminatedNotConfirmedLocations = {}
+    self.HVT.EliminatedNotConfirmed = {}
     self.HVT.EliminatedNotConfirmedCount = 0
     self.HVT.EliminatedAndConfirmedCount = 0
     print('Intialized Objective Kill Confirmation ' .. tostring(killConfirmation))
@@ -90,7 +90,7 @@ end
 
 ---Resets the object attributes to default values. Should be called before every round.
 function ConfirmKill:Reset()
-    self.HVT.EliminatedNotConfirmedLocations = {}
+    self.HVT.EliminatedNotConfirmed = {}
 	self.HVT.EliminatedNotConfirmedCount = 0
 	self.HVT.EliminatedAndConfirmedCount = 0
 end
@@ -140,16 +140,10 @@ function ConfirmKill:EnqueueSpawning(spawnQueue, freezeTime)
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.
-function ConfirmKill:checkSpawnsTimer()
-    local hvtControllers = ai.GetControllers(
-        'GroundBranch.GBAIController',
-        self.HVT.Tag,
-        255,
-        255
-    )
-    if self.HVT.Count ~= #hvtControllers then
+function ConfirmKill:checkSpawnsTimer(spawnedAI)
+    if self.HVT.Count ~= #spawnedAI then
         print('HVT count is not equal to HVT ai controllers count, adjusting HVT count')
-        self.HVT.Count = #hvtControllers
+        self.HVT.Count = #spawnedAI
     end
 end
 
@@ -171,8 +165,8 @@ function ConfirmKill:Neutralized(hvt, killer)
     self.Team:AwardPlayerScore(killer, 'KillHvt')
     self.Team:AwardTeamScore('KillHvt')
     table.insert(
-        self.HVT.EliminatedNotConfirmedLocations,
-        actor.GetLocation(hvt)
+        self.HVT.EliminatedNotConfirmed,
+        hvt
     )
     self.HVT.EliminatedNotConfirmedCount =
         self.HVT.EliminatedNotConfirmedCount + 1
@@ -182,9 +176,9 @@ end
 ---Used to display world prompt guiding players to the neutralized HVT for confirming
 ---the kill.
 function ConfirmKill:GuideToObjectiveTimer()
-    for _, leaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
+    for _, hvt in ipairs(self.HVT.EliminatedNotConfirmed) do
         self.Team:DisplayPromptToAlivePlayers(
-            leaderLocation,
+            hvt:GetLocation(),
             'ConfirmKill',
             self.PromptTimer.ShowTime,
             'ObjectivePrompt'
@@ -202,7 +196,8 @@ function ConfirmKill:ShouldConfirmKillTimer()
 		return
 	end
 	local LowestDist = self.ObjectiveTimer.TimeStep.Max * 1000.0
-	for leaderIndex, leaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
+	for leaderIndex, hvt in ipairs(self.HVT.EliminatedNotConfirmed) do
+        local leaderLocation = hvt:GetLocation()
 		for _, playerController in ipairs(self.Team:GetAlivePlayers()) do
 			local playerLocation = actor.GetLocation(
 				player.GetCharacter(playerController)
@@ -211,7 +206,7 @@ function ConfirmKill:ShouldConfirmKillTimer()
 			local Dist = vector.Size(DistVector)
 			LowestDist = math.min(LowestDist, Dist)
 			if Dist <= 250 and math.abs(DistVector.z) < 110 then
-                self:ConfirmKill(leaderIndex, playerController, leaderLocation)
+                self:ConfirmKill(leaderIndex, playerController, hvt)
 			end
 		end
 	end
@@ -232,15 +227,15 @@ function ConfirmKill:ShouldConfirmKillTimer()
 end
 
 ---Confirms the kill and updates objective tracking variables.
----@param leaderIndex integer index of the leader location in table EliminatedNotConfirmedLocations that was confirmed.
-function ConfirmKill:ConfirmKill(leaderIndex, confirmer, leaderLocation)
-    table.remove(self.HVT.EliminatedNotConfirmedLocations, leaderIndex)
-    self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmedLocations
+---@param leaderIndex integer index of the leader location in table EliminatedNotConfirmed that was confirmed.
+function ConfirmKill:ConfirmKill(leaderIndex, confirmer, hvt)
+    table.remove(self.HVT.EliminatedNotConfirmed, leaderIndex)
+    self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmed
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
     self.Team:AwardPlayerScore(confirmer, 'ConfirmHvt')
     self.Team:AwardTeamScore('ConfirmHvt')
     if self.OnConfirmedKillFunc ~= nil then
-        self.OnConfirmedKillFunc(self.OnConfirmedKillFuncOwner, leaderLocation)
+        self.OnConfirmedKillFunc(self.OnConfirmedKillFuncOwner, hvt, confirmer)
     end
     if self:AreAllConfirmed() then
 		print('All HVT kills confirmed')

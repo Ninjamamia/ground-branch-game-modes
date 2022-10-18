@@ -284,21 +284,9 @@ function KillConfirmed:PrepareExfilGuards()
 	))
 end
 
-function KillConfirmed:OnConfirmedKill(location)
+function KillConfirmed:OnConfirmedKill(hvt, confirmer)
 	if self.Settings.ReinforcementsTrigger.Value == 1 then
-		self:SpawnReinforcements(location, 0.0)
-	end
-end
-
-function KillConfirmed:SpawnReinforcements(hvtLocation, tiReinforce)
-	if self.Settings.Reinforcements.Value < 1 then
-		return
-	end
-	local sizeReinforcement = self.Settings.Reinforcements.Value
-	if sizeReinforcement > 0 then
-		AdminTools:ShowDebug("Spawning HVT reinforcements in " .. tiReinforce .. "s ...")
-		self.AiTeams.HVTSupport.Spawns:AddSpawnsFromClosestGroup(sizeReinforcement, hvtLocation)
-		self.AiTeams.HVTSupport.Spawns:EnqueueSpawning(self.SpawnQueue, tiReinforce, 0.4, sizeReinforcement, self.AiTeams.HVTSupport.Tag, self.OnReinforcementsSpawned, self, nil, nil, true, 1)
+		self.AmbushManager:OnGameTriggerBeginOverlap(hvt.SpawnPoint, confirmer, self.OnReinforcementsSpawned, self)
 	end
 end
 
@@ -314,17 +302,15 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if killedTeam ~= self.PlayerTeams.BluFor.TeamId then
-				self.SpawnQueue:OnAIKilled()
-			end
-			if actor.HasTag(CharacterController, self.HVT.Tag) then
-				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
+			local CurrAI = self.SpawnQueue:OnCharacterDied(Character, CharacterController)
+			if CurrAI ~= nil and CurrAI:HasTag(self.HVT.Tag) then
+				self.Objectives.ConfirmKill:Neutralized(CurrAI, KillerController)
 				if self.Settings.ReinforcementsTrigger.Value == 0 then
 					local tiReinforce = math.random(50, 150) * 0.1
 					local hvtLocation = actor.GetLocation(Character)
 					self:SpawnReinforcements(hvtLocation, tiReinforce)
 				end
-			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
+			elseif CurrAI ~= nil and CurrAI:HasTag(self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
@@ -347,6 +333,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 					false
 				)
 			end
+			return CurrAI
 		end
 	end
 end

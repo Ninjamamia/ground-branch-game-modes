@@ -1,5 +1,41 @@
 local AdminTools 			= require('AdminTools')
 
+local AI = {
+}
+
+AI.__index = AI
+
+---Creates a new AI object.
+---@return table AI Newly created AI object.
+function AI:Create(uuid, aiObject, spawnPoint, BaseTag)
+    local self = setmetatable({}, AI)
+	self.UUID = uuid
+    self.Object = aiObject
+	self.SpawnPoint = spawnPoint
+	self.BaseTag = BaseTag
+	self.Tags = {}
+	self.Location = nil
+	table.insert(self.Tags, BaseTag)
+    return self
+end
+
+function AI:HasTag(Tag)
+	for _, CurrTag in ipairs(self.Tags) do
+		if CurrTag == Tag then
+			return true
+		end
+	end
+	return false
+end
+
+function AI:GetTags()
+	return self.Tags
+end
+
+function AI:GetLocation()
+	return self.Location
+end
+
 local Queue = {
     SpawnQueue = {},
     tiSpawnQueue = 0,
@@ -37,6 +73,7 @@ function Queue:Reset(maxConcurrentAI)
 	self.AliveAICount = 0
 	self.PendingAICount = 0
 	self.SpawnQueue = {}
+	self.SpawnedAI = {}
 end
 
 function Queue:GetStateMessage()
@@ -47,10 +84,23 @@ function Queue:SetMaxConcurrentAICount(value)
 	self.MaxConcurrentAICount = value
 end
 
-function Queue:OnAIKilled()
-	self.KilledAICount = self.KilledAICount + 1
-	self.AliveAICount = math.max(self.AliveAICount - 1, 0)
-	AdminTools:ShowDebug(self:GetStateMessage())
+function Queue:OnCharacterDied(Character, CharacterController)
+	local uuid = actor.GetTags(CharacterController)
+	if uuid ~= nil then
+		uuid = uuid[1]
+		if uuid ~= nil then
+			local CurrAI = self.SpawnedAI[uuid]
+			if CurrAI ~= nil then
+				print('SpawnQueue: ' .. uuid .. ' died')
+				self.KilledAICount = self.KilledAICount + 1
+				self.AliveAICount = math.max(self.AliveAICount - 1, 0)
+				CurrAI.Location = actor.GetLocation(Character)
+				AdminTools:ShowDebug(self:GetStateMessage())
+				return CurrAI
+			end
+		end
+	end
+	return nil
 end
 
 function Queue:AbortPending()
@@ -90,7 +140,8 @@ function Queue:Enqueue(delay, freezeTime, count, spawnPoints, spawnTag, preSpawn
 		postSpawnCallback = postSpawnCallback or nil,
 		postSpawnCallbackOwner = postSpawnCallbackOwner or nil,
 		isBlocking = isBlocking or false,
-		prio = prio or 255
+		prio = prio or 255,
+		spawnedAI = {}
 	}
 	self.PendingAICount = self.PendingAICount + count
 	if #self.SpawnQueue == 0 then
@@ -132,13 +183,24 @@ function Queue:OnSpawnQueueTick()
 					end
 				end
 				if CurrSpawnItem.spawnedCount == 0 and CurrSpawnItem.preSpawnCallback ~= nil then
-					CurrSpawnItem.preSpawnCallback(CurrSpawnItem.preSpawnCallbackOwner)
+					CurrSpawnItem.preSpawnCallback(CurrSpawnItem.preSpawnCallbackOwner, CurrSpawnItem.spawnTag)
 				end
-				self.AliveAICount = self.AliveAICount + 1
-				self.SpawnedAICount = self.SpawnedAICount + 1
-				ai.Create(spawnPoint, CurrSpawnItem.spawnTag, CurrSpawnItem.freezeTime)
+				local uuid = "AI_" .. self.SpawnedAICount
+				ai.Create(spawnPoint, uuid, CurrSpawnItem.freezeTime)
+				local spawnedAI = gameplaystatics.GetAllActorsWithTag(uuid)
+				if spawnedAI ~= nil then
+					spawnedAI = spawnedAI[1]
+					print('SpawnQueue: Spawned ' .. uuid)
+					local NewAI = AI:Create(uuid, spawnedAI, spawnPoint, CurrSpawnItem.spawnTag)
+					self.SpawnedAI[uuid] = NewAI
+					self.AliveAICount = self.AliveAICount + 1
+					self.SpawnedAICount = self.SpawnedAICount + 1
+					table.insert(CurrSpawnItem.spawnedAI, NewAI)
+					count = count + 1
+				else
+					print('SpawnQueue: Unable to spawn an AI')
+				end
 				CurrSpawnItem.spawnedCount = CurrSpawnItem.spawnedCount + 1
-				count = count + 1
 				self.PendingAICount = self.PendingAICount - 1
 				if CurrSpawnItem.spawnedCount >= CurrSpawnItem.count then
 					break
@@ -146,7 +208,7 @@ function Queue:OnSpawnQueueTick()
 			end
         end
 		if CurrSpawnItem.postSpawnCallback ~= nil and CurrSpawnItem.postSpawnCallbackOwner ~= nil then
-			CurrSpawnItem.postSpawnCallback(CurrSpawnItem.postSpawnCallbackOwner)
+			CurrSpawnItem.postSpawnCallback(CurrSpawnItem.postSpawnCallbackOwner, CurrSpawnItem.spawnedAI)
 		end
 		if count > 0 then
 			AdminTools:ShowDebug('SpawnQueue: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's')

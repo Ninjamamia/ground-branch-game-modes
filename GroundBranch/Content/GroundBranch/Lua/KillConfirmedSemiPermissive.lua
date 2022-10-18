@@ -181,7 +181,7 @@ function Mode:OnLocalUpriseSpawned()
 end
 
 function Mode:OnCharacterDied(Character, CharacterController, KillerController)
-	super.OnCharacterDied(self, Character, CharacterController, KillerController)
+	local CurrAI = super.OnCharacterDied(self, Character, CharacterController, KillerController)
 	local goodKill = true
 
 	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress' then
@@ -224,7 +224,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 	end
 
 	if goodKill then
-		if actor.HasTag(CharacterController, self.HVT.Tag) and self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
+		if CurrAI ~= nil and CurrAI:HasTag(self.HVT.Tag) and self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
 			self:Uprise()
 		end
 	end
