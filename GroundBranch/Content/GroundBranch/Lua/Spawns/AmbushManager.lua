@@ -155,41 +155,49 @@ function AmbushManager:Create(spawnQueue, teamTag, gameMode)
     return self
 end
 
-function AmbushManager:Activate()
-    print('Activating ambush triggers based on their settings...')
-    self.Chance = 80
-    if self.GameMode.Settings.TriggerActivationChance ~= nil then
-        self.Chance = self.GameMode.Settings.TriggerActivationChance.Value
-    end
-    self.tiMin = 1
-    if self.GameMode.Settings.MinAmbushDelay ~= nil then
-        self.tiMin = self.GameMode.Settings.MinAmbushDelay.Value
-    end
-    self.tiMax = 7
-    if self.GameMode.Settings.MaxAmbushDelay ~= nil then
-        self.tiMax = self.GameMode.Settings.MaxAmbushDelay.Value
-    end
-    self.sizeMin = 0
-    if self.GameMode.Settings.MinAmbushSize ~= nil then
-        self.sizeMin = self.GameMode.Settings.MinAmbushSize.Value
-    end
-    self.sizeMax = 5
-    if self.GameMode.Settings.MaxAmbushSize ~= nil then
-        self.sizeMax = self.GameMode.Settings.MaxAmbushSize.Value
-    end
-    self.tiPresenceMin = 0
-    if self.GameMode.Settings.MinPresenceTime ~= nil then
-        self.tiPresenceMin = self.GameMode.Settings.MinPresenceTime.Value
-    end
-    self.tiPresenceMax = 0
-    if self.GameMode.Settings.MaxPresenceTime ~= nil then
-        self.tiPresenceMax = self.GameMode.Settings.MaxPresenceTime.Value
-    end
-    for _, Trigger in pairs(self.Triggers) do
-        if math.random(0, 99) < (Trigger.Chance or self.Chance) then
+function AmbushManager:Activate(GameTrigger)
+    GameTrigger = GameTrigger or nil
+    if GameTrigger == nil then
+        print('Activating ambush triggers based on their settings...')
+        self.Chance = 80
+        if self.GameMode.Settings.TriggerActivationChance ~= nil then
+            self.Chance = self.GameMode.Settings.TriggerActivationChance.Value
+        end
+        self.tiMin = 1
+        if self.GameMode.Settings.MinAmbushDelay ~= nil then
+            self.tiMin = self.GameMode.Settings.MinAmbushDelay.Value
+        end
+        self.tiMax = 7
+        if self.GameMode.Settings.MaxAmbushDelay ~= nil then
+            self.tiMax = self.GameMode.Settings.MaxAmbushDelay.Value
+        end
+        self.sizeMin = 0
+        if self.GameMode.Settings.MinAmbushSize ~= nil then
+            self.sizeMin = self.GameMode.Settings.MinAmbushSize.Value
+        end
+        self.sizeMax = 5
+        if self.GameMode.Settings.MaxAmbushSize ~= nil then
+            self.sizeMax = self.GameMode.Settings.MaxAmbushSize.Value
+        end
+        self.tiPresenceMin = 0
+        if self.GameMode.Settings.MinPresenceTime ~= nil then
+            self.tiPresenceMin = self.GameMode.Settings.MinPresenceTime.Value
+        end
+        self.tiPresenceMax = 0
+        if self.GameMode.Settings.MaxPresenceTime ~= nil then
+            self.tiPresenceMax = self.GameMode.Settings.MaxPresenceTime.Value
+        end
+        for _, Trigger in pairs(self.Triggers) do
+            if math.random(0, 99) < (Trigger.Chance or self.Chance) then
+                Trigger:Activate()
+            else
+                Trigger:Deactivate()
+            end
+        end
+    else
+        local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+        if Trigger ~= nil then
             Trigger:Activate()
-        else
-            Trigger:Deactivate()
         end
     end
 end

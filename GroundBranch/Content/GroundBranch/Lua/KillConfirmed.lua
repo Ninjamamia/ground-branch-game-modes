@@ -182,7 +182,6 @@ local KillConfirmed = {
 		},
 	},
 	SpawnQueue = nil,
-	ExfilGuardSpawns = {},
 	AmbushManager = nil,
 }
 
@@ -254,7 +253,6 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self.Objectives.Exfiltrate:SelectPoint(false)
-		self:PrepareExfilGuards()
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 	elseif RoundStage == 'PreRoundWait' then
@@ -275,13 +273,6 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 			self.Settings.DisplayObjectivePrompts.Value == 1
 		)
 	end
-end
-
-function KillConfirmed:PrepareExfilGuards()
-	self.ExfilGuardSpawns = Tables.ShuffleTable(gameplaystatics.GetAllActorsOfClassWithTag(
-		'GroundBranch.GBAISpawnPoint',
-		self.Objectives.Exfiltrate:GetSelectedPointTag()
-	))
 end
 
 function KillConfirmed:OnConfirmedKill(hvt, confirmer)
@@ -520,7 +511,8 @@ end
 
 function KillConfirmed:OnAllKillsConfirmed()
 	self.Objectives.Exfiltrate:SelectedPointSetActive(true)
-	self.SpawnQueue:Enqueue(5.0, 0.1, math.random(0, 2), self.ExfilGuardSpawns, self.AiTeams.OpFor.Tag, nil, nil, nil, nil, false, 1)
+	self.AmbushManager:Activate(self.Objectives.Exfiltrate:GetSelectedPoint())
+	self.AmbushManager:OnGameTriggerBeginOverlap(self.Objectives.Exfiltrate:GetSelectedPoint(), nil)
 end
 
 --#endregion
