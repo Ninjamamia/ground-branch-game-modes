@@ -137,8 +137,6 @@ end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
-	ai.CleanUp(self.AiTeams.CIVArmed.Tag)
-	ai.CleanUp(self.AiTeams.CIVUnarmed.Tag)
 	gamemode.SetTeamAttitude(self.PlayerTeams.BluFor.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Neutral')
 	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.PlayerTeams.BluFor.TeamId, 'Neutral')
 	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.CIVArmed.TeamId, 'Friendly')

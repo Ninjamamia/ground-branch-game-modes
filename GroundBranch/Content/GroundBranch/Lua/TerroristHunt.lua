@@ -137,7 +137,6 @@ function terroristhunt:OnRoundStageSet(RoundStage)
 	timer.ClearAll()
 	self.SpawnQueue:Start()
 	if RoundStage == "WaitingForReady" then
-		ai.CleanUp(self.AiTeams.OpFor.Tag)
 		self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 		self.SpawnQueue:Reset()
 	elseif RoundStage == "PreRoundWait" then

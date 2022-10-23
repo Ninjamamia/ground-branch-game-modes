@@ -36,6 +36,10 @@ function AI:GetLocation()
 	return self.Location
 end
 
+function AI:CleanUp()
+	ai.CleanUp(self.UUID)
+end
+
 local Queue = {
     SpawnQueue = {},
     tiSpawnQueue = 0,
@@ -59,11 +63,15 @@ function Queue:Create(maxConcurrentAI)
     self.SpawnQueue = {}
 	self.tiSpawnQueue = 0
 	self.MaxConcurrentAICount = maxConcurrentAI or ai.GetMaxCount()
+	self.SpawnedAI = {}
     return self
 end
 
 ---Resets the queue, has to be called by pre round cleanup.
 function Queue:Reset(maxConcurrentAI)
+	for _, AI in pairs(self.SpawnedAI) do
+		AI:CleanUp()
+	end
 	if maxConcurrentAI ~= nil then
 		self.MaxConcurrentAICount = maxConcurrentAI
 	end
