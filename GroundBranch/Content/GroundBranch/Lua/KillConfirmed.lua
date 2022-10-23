@@ -5,13 +5,11 @@
 ]]--
 
 local MTeams                = require('Players.Teams')
-local MSpawnsGroups         = require('Spawns.Groups')
-local MSpawnsCommon         = require('Spawns.Common')
+local MSpawnsPriority       = require('Spawns.Priority')
 local MSpawnsQueue          = require('Spawns.Queue')
 local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 local AdminTools 			= require('AdminTools')
-local Tables 				= require('Common.Tables')
 local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
 
 --#region Properties
@@ -28,10 +26,10 @@ local KillConfirmed = {
 			Value = 1,
 			AdvancedSetting = false,
 		},
-		OpForPreset = {
-			Min = 0,
-			Max = 4,
-			Value = 2,
+		OpForCount = {
+			Min = 1,
+			Max = 50,
+			Value = 15,
 			AdvancedSetting = false,
 		},
 		AIMaxConcurrentCount = {
@@ -50,12 +48,6 @@ local KillConfirmed = {
 			Min = 10,
 			Max = 60,
 			Value = 60,
-			AdvancedSetting = false,
-		},
-		Reinforcements = {
-			Min = 0,
-			Max = 30,
-			Value = 5,
 			AdvancedSetting = false,
 		},
 		ReinforcementsTrigger = {
@@ -152,12 +144,6 @@ local KillConfirmed = {
 			CalculatedAiCount = 0,
 			Spawns = nil
 		},
-		HVTSupport = {
-			TeamId = 100,
-			Tag = 'HVTSupport',
-			CalculatedAiCount = 0,
-			Spawns = nil
-		},
 	},
 	Objectives = {
 		ConfirmKill = nil,
@@ -198,10 +184,8 @@ function KillConfirmed:PreInit()
 		self.PlayerScoreTypes,
 		self.TeamScoreTypes
 	)
-	-- Gathers all OpFor spawn points by groups
-	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
-	-- Gathers all OpFor spawn points by groups
-	self.AiTeams.HVTSupport.Spawns = MSpawnsGroups:Create(self.AiTeams.HVTSupport.Tag)
+	-- Gathers all OpFor spawn points by priority
+	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
 	-- Gathers all HVT spawn points
 	self.Objectives.ConfirmKill = MObjectiveConfirmKill:Create(
 		self,
@@ -261,7 +245,6 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		else
 			self.AmbushManager:Deactivate()
 		end
-		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
 		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
@@ -456,53 +439,10 @@ end
 
 --#region Spawns
 
-function KillConfirmed:SetUpOpForStandardSpawns()
-	print('Setting up AI spawn points by groups')
-	local maxAiCount = math.min(
-		self.AiTeams.OpFor.Spawns.Total,
-		self.Settings.AIMaxConcurrentCount.Value - self.Settings.HVTCount.Value
-	)
-	self.AiTeams.OpFor.CalculatedAiCount = MSpawnsCommon.GetAiCountWithDeviationPercent(
-		5,
-		maxAiCount,
-		gamemode.GetPlayerCount(true),
-		5,
-		self.Settings.OpForPreset.Value,
-		5,
-		0.1
-	)
-	local missingAiCount = self.AiTeams.OpFor.CalculatedAiCount
-	-- Select groups guarding the HVTs and add their spawn points to spawn list
-	local maxAiCountPerHvtGroup = math.floor(
-		missingAiCount / self.Settings.HVTCount.Value
-	)
-	local aiCountPerHvtGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
-		3,
-		maxAiCountPerHvtGroup,
-		gamemode.GetPlayerCount(true),
-		1,
-		self.Settings.OpForPreset.Value,
-		1,
-		0
-	)
-	print('Adding group spawns closest to HVTs')
-	for i = 1, self.Objectives.ConfirmKill:GetHvtCount() do
-		local hvtLocation = actor.GetLocation(
-			self.Objectives.ConfirmKill:GetShuffledSpawnPoint(i)
-		)
-		self.AiTeams.OpFor.Spawns:AddSpawnsFromClosestGroup(aiCountPerHvtGroup, hvtLocation)
-	end
-	missingAiCount = self.AiTeams.OpFor.CalculatedAiCount -
-		self.AiTeams.OpFor.Spawns:GetSelectedSpawnPointsCount()
-	-- Select random groups and add their spawn points to spawn list
-	print('Adding random group spawns')
-	self.AiTeams.OpFor.Spawns:AddRandomSpawns()
-	self.AiTeams.OpFor.Spawns:AddRandomSpawnsFromReserve()
-end
-
 function KillConfirmed:SpawnOpFor()
 	self.Objectives.ConfirmKill:EnqueueSpawning(self.SpawnQueue, 0.4)
-	self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.4, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
+	self.AiTeams.OpFor.Spawns:SelectSpawnPoints()
+	self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
 end
 
 --#endregion
