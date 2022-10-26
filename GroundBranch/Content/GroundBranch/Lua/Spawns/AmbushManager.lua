@@ -207,7 +207,6 @@ function Mine:Defuse()
     self.State = 'Inactive'
     actor.SetActive(self.Actor, false)
     for _, Prop in ipairs(self.Props) do
-        actor.SetActive(Prop, false)
         if not actor.HasTag(Prop, 'Keep') then
             actor.SetHidden(Prop, true)
         end
