@@ -1,8 +1,8 @@
 local laptop = {
 	CurrentTime = 0,
-	OnSearch = "Are you in for surprises?",
-	OnSuccess = "There you go...",
-	SearchTime = 10.0,
+	tiDefuse = 10.0,
+	tiDefuseMin = 10.0,
+	tiDefuseMax = 10.0,
 	Name = "TriggerLaptop",
 	OnSuccessCallback = nil,
 	Timers = {
@@ -16,15 +16,14 @@ local laptop = {
 function laptop:ServerUseTimer(User, DeltaTime)
 	self.CurrentTime = self.CurrentTime + DeltaTime
 	self.CurrentTime = math.max(self.CurrentTime, 0)
-	self.CurrentTime = math.min(self.CurrentTime, self.SearchTime)
+	self.CurrentTime = math.min(self.CurrentTime, self.tiDefuse)
 
 	local Result = {}
-	Result.Message = self.OnSearch
+	Result.Message = ""
 	Result.Equip = false
-	Result.Percentage = self.CurrentTime / self.SearchTime
+	Result.Percentage = self.CurrentTime / self.tiDefuse
 	if Result.Percentage == 1.0 then
 		timer.Clear(self.Timers.Timeout.Name, self)
-		Result.Message = self.OnSuccess
 		gamemode.script.AmbushManager:OnDefuse(self.Object)
 	else
 		timer.Set(
@@ -48,25 +47,26 @@ function laptop:OnReset()
 	print(self.Name .. ": Reset")
 	self.CurrentTime = 0
 	self.Timers.Timeout.Name = "Timeout_" .. actor.GetName(self.Object)
-	if gamemode.script.Settings.SearchTime ~= nil then
-		SearchTime = gamemode.script.Settings.SearchTime.Value
-	end
 	for _, Tag in ipairs(actor.GetTags(self.Object)) do
 		local key
 		local value
 		_, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.*)")
 		if key ~= nil then
-			if key == "OnSearch" then
-				self.OnSearch = value
-			elseif key == "OnSuccess" then
-				self.OnSuccess = value
-			elseif key == "SearchTime" then
-				self.SearchTime = tonumber(value)
+			if key == "tiDefuseMin" then
+				self.tiDefuseMin = tonumber(value)
+			elseif key == "tiDefuseMax" then
+				self.tiDefuseMax = tonumber(value)
 			elseif key == "Timeout" then
 				self.Timers.Timeout.TimeStep = tonumber(value)
 			end
 		end
 	end
+    if self.tiDefuseMin >= self.tiDefuseMax then
+        self.tiDefuse = math.min(self.tiDefuseMin, self.tiDefuseMax)
+    else
+        self.tiDefuse = math.random(self.tiDefuseMin * 10, self.tiDefuseMax * 10) * 0.1
+    end
+	print('  tiDefuse = ' .. self.tiDefuse .. 's')
 end
 
 function laptop:LaptopPickedUp()
