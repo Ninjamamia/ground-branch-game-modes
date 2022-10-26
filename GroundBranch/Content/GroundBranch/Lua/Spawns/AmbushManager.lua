@@ -15,7 +15,8 @@ local Trigger = {
     Actor = nil,
     State = 'Inactive',
     Spawns = {},
-    Activates = {}
+    Activates = {},
+    Mines = {}
 }
 
 Trigger.__index = Trigger
@@ -29,6 +30,7 @@ function Trigger:Create(Parent, Actor)
     self.State = 'Inactive'
     self.Spawns = {}
     self.Activates = {}
+    self.Mines = {}
     print('Ambush trigger ' .. self.Name .. ' found.')
     print('  Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -45,6 +47,8 @@ function Trigger:Create(Parent, Actor)
                 )
             elseif key == "Activate" then
                 table.insert(self.Activates, value)
+            elseif key == "Mine" then
+                table.insert(self.Mines, value)
             else
                 self[key] = tonumber(value)
             end
@@ -53,6 +57,7 @@ function Trigger:Create(Parent, Actor)
     print('  Summary:')
     print("    Spawns: " .. #self.Spawns)
     print("    Activation links: " .. #self.Activates)
+    print("    Mines: " .. #self.Mines)
     return self
 end
 
@@ -119,16 +124,72 @@ end
 function Trigger:Trigger()
     self.State = 'Triggered'
     if self.sizeAmbush > 0 then
-        AdminTools:ShowDebug("Ambush trigger " .. self.Name .. " triggered, activating " .. #self.Activates .. " other triggers, spawning " .. self.sizeAmbush .. " AI of group " .. self.Tag .. " in " .. self.tiAmbush .. "s")
+        AdminTools:ShowDebug("Ambush trigger " .. self.Name .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, spawning " .. self.sizeAmbush .. " AI of group " .. self.Tag .. " in " .. self.tiAmbush .. "s")
         self.Parent.SpawnQueue:Enqueue(self.tiAmbush, 0.1, self.sizeAmbush, self.Spawns, self.Parent.TeamTag, nil, nil, self.postSpawnCallback, true)
     else
-        AdminTools:ShowDebug("Ambush trigger " .. self.Name .. " triggered, activating " .. #self.Activates .. " other triggers, nothing to spawn.")
+        AdminTools:ShowDebug("Ambush trigger " .. self.Name .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, nothing to spawn.")
     end
     for _, Activate in pairs(self.Activates) do
         local ActivateTrigger = self.Parent.Triggers[Activate]
         if ActivateTrigger ~= nil then
             ActivateTrigger:Activate(true)
         end
+    end
+    for _, MineName in pairs(self.Mines) do
+        local CurrMine = self.Parent.Mines[MineName]
+        if CurrMine ~= nil then
+            CurrMine:Trigger()
+        end
+    end
+end
+
+local Mine = {
+    Name = nil,
+    Tag = nil,
+    Actor = nil,
+    State = 'Inactive',
+}
+
+Mine.__index = Mine
+
+function Mine:Create(Parent, Actor)
+    local self = setmetatable({}, Mine)
+    self.Parent = Parent
+    self.Name = actor.GetName(Actor)
+    self.Actor = Actor
+    self.Tag = nil
+    self.State = 'Inactive'
+    print('Mine ' .. self.Name .. ' found.')
+    print('  Parameters:')
+    for _, Tag in ipairs(actor.GetTags(Actor)) do
+        local key
+        local value
+        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")
+        if key ~= nil then
+            print("    " .. Tag)
+            self[key] = tonumber(value)
+        end
+    end
+    return self
+end
+
+function Mine:Activate()
+    print('Activating mine ' .. self.Name .. '...')
+    self.State = 'Active'
+    actor.SetActive(self.Actor, true)
+end
+
+function Mine:Deactivate()
+    print('Deactivating mine ' .. self.Name .. '...')
+    self.State = 'Inactive'
+    actor.SetActive(self.Actor, false)
+end
+
+function Mine:Trigger()
+    if self.State == 'Active' then
+        self.State = 'Triggered'
+        AdminTools:ShowDebug("Mine " .. self.Name .. " triggered.")
+        GetLuaComp(self.Actor).Explode()
     end
 end
 
@@ -144,6 +205,7 @@ function AmbushManager:Create(spawnQueue, teamTag)
     self.GameMode = gamemode.script
     self.TeamTag = teamTag
     self.Triggers = {}
+    self.Mines = {}
     print('Gathering ambush triggers...')
     Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
     local count = 0
@@ -153,6 +215,15 @@ function AmbushManager:Create(spawnQueue, teamTag)
         count = count + 1
     end
     print('Found a total of ' .. count .. ' ambush triggers.')
+    print('Gathering mines...')
+    Mines = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/GameMode/BP_BigBomb.BP_BigBomb_C', 'Mine')
+    count = 0
+    for _, Actor in ipairs(Mines) do
+        local NewMine = Mine:Create(self, Actor)
+        self.Mines[NewMine.Name] = NewMine
+        count = count + 1
+    end
+    print('Found a total of ' .. count .. ' mines.')
     return self
 end
 
@@ -195,6 +266,13 @@ function AmbushManager:Activate(GameTrigger)
                 Trigger:Deactivate()
             end
         end
+        for _, Mine in pairs(self.Mines) do
+            if math.random(0, 99) < (Mine.Chance or self.Chance) then
+                Mine:Activate()
+            else
+                Mine:Deactivate()
+            end
+        end
     else
         local Trigger = self.Triggers[actor.GetName(GameTrigger)]
         if Trigger ~= nil then
@@ -207,6 +285,9 @@ function AmbushManager:Deactivate()
     print('Deactivating all ambush triggers...')
     for _, Trigger in pairs(self.Triggers) do
         Trigger:Deactivate()
+    end
+    for _, Mine in pairs(self.Mines) do
+        Mine:Deactivate()
     end
 end
 
