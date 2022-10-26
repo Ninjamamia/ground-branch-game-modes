@@ -207,6 +207,10 @@ function Mine:Trigger()
         self.State = 'Triggered'
         AdminTools:ShowDebug("Mine " .. self.Name .. " triggered.")
         GetLuaComp(self.Actor).Explode()
+        for _, Prop in ipairs(self.Props) do
+            actor.SetActive(Prop, false)
+            actor.SetHidden(Prop, true)
+        end
     end
 end
 
