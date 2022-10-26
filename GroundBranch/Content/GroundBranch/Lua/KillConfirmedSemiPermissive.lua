@@ -211,7 +211,7 @@ function Mode:OnHVTDied(killData)
 end
 
 function Mode:OnPlayerDied(killData)
-	super.OnCharacterDied(self, killData)
+	super.OnPlayerDied(self, killData)
 	if killData.KilledTeam == killData.KillerTeam then
 		-- Count fratricides as collateral damage
 		self.Objectives.AvoidFatality:ReportFatality()
