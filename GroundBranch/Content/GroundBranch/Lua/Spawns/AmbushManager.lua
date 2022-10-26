@@ -159,6 +159,8 @@ function Mine:Create(Parent, Actor)
     self.Actor = Actor
     self.Tag = nil
     self.State = 'Inactive'
+    self.Props = {}
+    self.Defusers = {}
     print('Mine ' .. self.Name .. ' found.')
     print('  Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -170,6 +172,10 @@ function Mine:Create(Parent, Actor)
             self[key] = tonumber(value)
         end
     end
+    print('  Gathering props...')
+    self.Props = gameplaystatics.GetAllActorsWithTag(self.Name)
+    self.Defusers = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/Electronics/MilitaryLaptop/BP_Laptop_Usable.BP_Laptop_Usable_C', self.Name)
+    print('  Found a total of ' .. #self.Props .. ' props and ' .. #self.Defusers .. ' defusers.')
     return self
 end
 
@@ -177,12 +183,23 @@ function Mine:Activate()
     print('Activating mine ' .. self.Name .. '...')
     self.State = 'Active'
     actor.SetActive(self.Actor, true)
+    for _, Prop in ipairs(self.Props) do
+        actor.SetActive(Prop, true)
+        actor.SetHidden(Prop, false)
+    end
+    for _, Prop in ipairs(self.Defusers) do
+        actor.SetHidden(Prop, true)
+    end
 end
 
 function Mine:Deactivate()
     print('Deactivating mine ' .. self.Name .. '...')
     self.State = 'Inactive'
     actor.SetActive(self.Actor, false)
+    for _, Prop in ipairs(self.Props) do
+        actor.SetActive(Prop, false)
+        actor.SetHidden(Prop, true)
+    end
 end
 
 function Mine:Trigger()
@@ -206,6 +223,7 @@ function AmbushManager:Create(spawnQueue, teamTag)
     self.TeamTag = teamTag
     self.Triggers = {}
     self.Mines = {}
+    self.Defusers = {}
     print('Gathering ambush triggers...')
     Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
     local count = 0
@@ -221,10 +239,20 @@ function AmbushManager:Create(spawnQueue, teamTag)
     for _, Actor in ipairs(Mines) do
         local NewMine = Mine:Create(self, Actor)
         self.Mines[NewMine.Name] = NewMine
+        for _, Defuser in ipairs(NewMine.Defusers) do
+            self.Defusers[actor.GetName(Defuser)] = NewMine
+        end
         count = count + 1
     end
     print('Found a total of ' .. count .. ' mines.')
     return self
+end
+
+function AmbushManager:OnDefuse(Defuser)
+    local Mine = self.Defusers[actor.GetName(Defuser)]
+    if Mine ~= nil then
+        Mine:Deactivate()
+    end
 end
 
 function AmbushManager:Activate(GameTrigger)
