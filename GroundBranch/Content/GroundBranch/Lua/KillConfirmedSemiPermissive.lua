@@ -24,6 +24,7 @@ local AvoidFatality = require("Objectives.AvoidFatality")
 local NoSoftFail = require("Objectives.NoSoftFail")
 local AdminTools = require('AdminTools')
 local MSpawnsGroups         = require('Spawns.Groups')
+local Callback 				= require('common.Callback')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))
@@ -105,6 +106,7 @@ function Mode:PreInit()
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	super.PreInit(self)
+	self.SpawnQueue:RegisterDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -155,7 +157,7 @@ function Mode:Uprise()
 		local sizeUprise = self.Settings.CIVUpriseSize.Value
 		if sizeUprise > 0 then
 			self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
-			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnUpriseSpawned, self, nil, nil, true)
+			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
 		end
 	end
 end
@@ -170,7 +172,7 @@ function Mode:LocalUprise(killedCivLocation)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, self.OnLocalUpriseSpawned, self, nil, nil, true)
+		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
 	end
 end
 
@@ -178,53 +180,41 @@ function Mode:OnLocalUpriseSpawned()
 	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: Armed civilians spotted nearby!', 'Upper', 5.0, 'Always')
 end
 
-function Mode:OnCharacterDied(Character, CharacterController, KillerController)
-	local CurrAI = super.OnCharacterDied(self, Character, CharacterController, KillerController)
-	local goodKill = true
-
-	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress' then
-		if CharacterController ~= nil then
-			local killedTeam = actor.GetTeamId(CharacterController)
-			local killerTeam = nil
-			if KillerController ~= nil then
-				killerTeam = actor.GetTeamId(KillerController)
-			end
-			if killerTeam == self.PlayerTeams.BluFor.TeamId then
-				if killedTeam == killerTeam then
-					-- Count fratricides as collateral damage
-					self.Objectives.AvoidFatality:ReportFatality()
-				else
-					if killedTeam == self.AiTeams.CIVUnarmed.TeamId then
-						goodKill = false
-						self.Objectives.AvoidFatality:ReportFatality()
-						self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
-						self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
-						local message = 'Collateral damage by ' .. player.GetName(KillerController)
-						self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
-						if self.IsUprise then
-							self.Objectives.NoSoftFail:Fail()
-							self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
-							gamemode.SetRoundStage('PostRoundWait')
-						end
-						local Location = actor.GetLocation(Character)
-						self:LocalUprise(Location)
-						if self:TakeChance(self.UpriseChance) then
-							self:Uprise()
-						end
-						self.UpriseChance = self.UpriseChance + self.Settings.ChanceIncreasePerCollateral.Value
-						if self.IsUprise == false then
-							AdminTools:ShowDebug("Uprise chance on next collateral damage: " .. self.UpriseChance .. "%")
-						end
-					end
-				end
-			end
+function Mode:OnCivDied(killData)
+	if killData.KillerTeam == self.PlayerTeams.BluFor.TeamId then
+		self.Objectives.AvoidFatality:ReportFatality()
+		self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'CollateralDamage')
+		self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
+		local message = 'Collateral damage by ' .. player.GetName(killData.KillerController)
+		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
+		if self.IsUprise then
+			self.Objectives.NoSoftFail:Fail()
+			self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+			gamemode.SetRoundStage('PostRoundWait')
 		end
-	end
-
-	if goodKill then
-		if CurrAI ~= nil and CurrAI:HasTag(self.HVT.Tag) and self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
+		self:LocalUprise(killData:GetLocation())
+		if self:TakeChance(self.UpriseChance) then
 			self:Uprise()
 		end
+		self.UpriseChance = self.UpriseChance + self.Settings.ChanceIncreasePerCollateral.Value
+		if self.IsUprise == false then
+			AdminTools:ShowDebug("Uprise chance on next collateral damage: " .. self.UpriseChance .. "%")
+		end
+	end
+end
+
+function Mode:OnHVTDied(killData)
+	super.OnHVTDied(self, killData)
+	if self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
+		self:Uprise()
+	end
+end
+
+function Mode:OnPlayerDied(killData)
+	super.OnCharacterDied(self, killData)
+	if killData.KilledTeam == killData.KillerTeam then
+		-- Count fratricides as collateral damage
+		self.Objectives.AvoidFatality:ReportFatality()
 	end
 end
 

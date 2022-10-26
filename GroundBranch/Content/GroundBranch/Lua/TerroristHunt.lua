@@ -2,6 +2,7 @@ local MSpawnsPriority       = require('Spawns.Priority')
 local MSpawnsQueue          = require('Spawns.Queue')
 local AdminTools 			= require('AdminTools')
 local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
+local Callback 				= require('common.Callback')
 
 local terroristhunt = {
 	UseReadyRoom = true,
@@ -73,8 +74,8 @@ local terroristhunt = {
 function terroristhunt:PreInit()
 	print('Pre initialization')
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
-	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value)
-	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag, self)
+	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
+	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
 
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AiTeams.OpFor.Spawns.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
@@ -160,26 +161,30 @@ function terroristhunt:SpawnOpFor()
 end
 
 function terroristhunt:OnCharacterDied(Character, CharacterController, KillerController)
-	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
-		if CharacterController ~= nil then
-			local CurrAI = self.SpawnQueue:OnCharacterDied(Character, CharacterController)
-			if CurrAI ~= nil and CurrAI:HasTag(self.AiTeams.OpFor.Tag) then
-				timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
-			else
-				self.AmbushManager:OnCharacterDied(Character)
-				AdminTools:NotifyKIA(CharacterController)
-				player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
-								
-				local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, false)
-				if #PlayersWithLives == 0 then
-					self:CheckBluForCountTimer()
-					-- call immediately because round is about to end and nothing more can happen
-				else
-					timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
-				end
-				
-			end
-		end
+	print('OnCharacterDied')
+	if
+		gamemode.GetRoundStage() == 'PreRoundWait' or
+		gamemode.GetRoundStage() == 'InProgress'
+	then
+		self.SpawnQueue:OnCharacterDied(Character, CharacterController, KillerController)
+	end
+end
+
+function terroristhunt:OnOpForDied(killData)
+	timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
+end
+
+function terroristhunt:OnPlayerDied(killData)
+	self.AmbushManager:OnCharacterDied(killData.Character)
+	AdminTools:NotifyKIA(killData.CharacterController)
+	player.SetLives(killData.CharacterController, player.GetLives(killData.CharacterController) - 1)
+
+	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, false)
+	if #PlayersWithLives == 0 then
+		self:CheckBluForCountTimer()
+		-- call immediately because round is about to end and nothing more can happen
+	else
+		timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
 	end
 end
 

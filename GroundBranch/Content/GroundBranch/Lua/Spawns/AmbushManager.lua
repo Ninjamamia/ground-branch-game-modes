@@ -59,7 +59,6 @@ end
 function Trigger:Activate(IsLinked)
     print('Activating ambush trigger ' .. self.Name .. '...')
     self.postSpawnCallback = nil
-    self.postSpawnCallbackOwner = nil
     local tiMin = self.tiMin or self.Parent.tiMin
     local tiMax = self.tiMax or self.Parent.tiMax
     if tiMin >= tiMax then
@@ -121,7 +120,7 @@ function Trigger:Trigger()
     self.State = 'Triggered'
     if self.sizeAmbush > 0 then
         AdminTools:ShowDebug("Ambush trigger " .. self.Name .. " triggered, activating " .. #self.Activates .. " other triggers, spawning " .. self.sizeAmbush .. " AI of group " .. self.Tag .. " in " .. self.tiAmbush .. "s")
-        self.Parent.SpawnQueue:Enqueue(self.tiAmbush, 0.1, self.sizeAmbush, self.Spawns, self.Parent.TeamTag, nil, nil, self.postSpawnCallback, self.postSpawnCallbackOwner, true)
+        self.Parent.SpawnQueue:Enqueue(self.tiAmbush, 0.1, self.sizeAmbush, self.Spawns, self.Parent.TeamTag, nil, nil, self.postSpawnCallback, true)
     else
         AdminTools:ShowDebug("Ambush trigger " .. self.Name .. " triggered, activating " .. #self.Activates .. " other triggers, nothing to spawn.")
     end
@@ -135,12 +134,14 @@ end
 
 ---Creates a new ambush manager object. At creation all relevant spawn points are
 ---gathered, default values are set.
+---@param spawnQueue table The SpawnQueue object used to spawn AI.
+---@param teamTag string The tag to assign to each spawned AI.
 ---@return table AmbushManager Newly created AmbushManager object.
-function AmbushManager:Create(spawnQueue, teamTag, gameMode)
+function AmbushManager:Create(spawnQueue, teamTag)
     local self = setmetatable({}, AmbushManager)
     -- Setting attributes
     self.SpawnQueue = spawnQueue
-    self.GameMode = gameMode
+    self.GameMode = gamemode.script
     self.TeamTag = teamTag
     self.Triggers = {}
     print('Gathering ambush triggers...')
@@ -209,12 +210,11 @@ function AmbushManager:Deactivate()
     end
 end
 
-function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player, postSpawnCallback, postSpawnCallbackOwner)
+function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player, postSpawnCallback)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         if Trigger.State == 'Active' then
             Trigger.postSpawnCallback = postSpawnCallback or nil
-            Trigger.postSpawnCallbackOwner = postSpawnCallbackOwner or nil
             local PlayerName = player.GetName(Player)
             if Trigger.Players[PlayerName] == nil then
                 Trigger.Players[PlayerName] = true

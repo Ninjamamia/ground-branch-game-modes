@@ -11,6 +11,7 @@ local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 local AdminTools 			= require('AdminTools')
 local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
+local Callback 				= require('common.Callback')
 
 --#region Properties
 
@@ -188,18 +189,16 @@ function KillConfirmed:PreInit()
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
 	-- Gathers all HVT spawn points
 	self.Objectives.ConfirmKill = MObjectiveConfirmKill:Create(
-		self,
-		self.OnAllKillsConfirmed,
+		Callback:Create(self, self.OnAllKillsConfirmed),
 		self.PlayerTeams.BluFor.Script,
 		self.HVT.Tag,
 		self.Settings.HVTCount.Value,
-		self,
-		self.OnConfirmedKill
+		Callback:Create(self, self.OnConfirmedKill),
+		Callback:Create(self, self.OnHVTDied)
 	)
 	-- Gathers all extraction points placed in the mission
 	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
-		self,
-		self.OnExfiltrated,
+		Callback:Create(self, self.OnExfiltrated),
 		self.PlayerTeams.BluFor.Script,
 		5.0,
 		1.0
@@ -213,8 +212,8 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Value,
 		self.Settings.HVTCount.Max
 	)
-	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value)
-	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag, self)
+	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
+	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
 end
 
 function KillConfirmed:PostInit()
@@ -260,7 +259,7 @@ end
 
 function KillConfirmed:OnConfirmedKill(hvt, confirmer)
 	if self.Settings.ReinforcementsTrigger.Value == 1 then
-		self.AmbushManager:OnGameTriggerBeginOverlap(hvt.SpawnPoint, confirmer, self.OnReinforcementsSpawned, self)
+		self.AmbushManager:OnGameTriggerBeginOverlap(hvt.AI.SpawnPoint, confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
 	end
 end
 
@@ -270,45 +269,43 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		if CharacterController ~= nil then
-			local killedTeam = actor.GetTeamId(CharacterController)
-			local killerTeam = nil
-			if KillerController ~= nil then
-				killerTeam = actor.GetTeamId(KillerController)
-			end
-			local CurrAI = self.SpawnQueue:OnCharacterDied(Character, CharacterController)
-			if CurrAI ~= nil and CurrAI:HasTag(self.HVT.Tag) then
-				self.Objectives.ConfirmKill:Neutralized(CurrAI, KillerController)
-				if self.Settings.ReinforcementsTrigger.Value == 0 then
-					local tiReinforce = math.random(50, 150) * 0.1
-					local hvtLocation = actor.GetLocation(Character)
-					self:SpawnReinforcements(hvtLocation, tiReinforce)
-				end
-			elseif CurrAI ~= nil and CurrAI:HasTag(self.AiTeams.OpFor.Tag) then
-				print('OpFor standard eliminated')
-				if killerTeam == self.PlayerTeams.BluFor.TeamId then
-					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
-				end
-			elseif killedTeam == self.PlayerTeams.BluFor.TeamId then
-				print('BluFor eliminated')
-				self.AmbushManager:OnCharacterDied(Character)
-				AdminTools:NotifyKIA(CharacterController)
-				if CharacterController == KillerController then
-					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
-				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'TeamKill')
-				end
-				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
-				timer.Set(
-					self.Timers.CheckBluForCount.Name,
-					self,
-					self.CheckBluForCountTimer,
-					self.Timers.CheckBluForCount.TimeStep,
-					false
-				)
-			end
-			return CurrAI
+		self.SpawnQueue:OnCharacterDied(Character, CharacterController, KillerController)
+	end
+end
+
+function KillConfirmed:OnOpForDied(killData)
+	print('OpFor standard eliminated')
+	if killData.KillerTeam == self.PlayerTeams.BluFor.TeamId then
+		self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'KillStandard')
+	end
+end
+
+function KillConfirmed:OnHVTDied(killData)
+	if self.Settings.ReinforcementsTrigger.Value == 0 then
+		local tiReinforce = math.random(50, 150) * 0.1
+		local hvtLocation = killData:GetLocation()
+		self:SpawnReinforcements(hvtLocation, tiReinforce)
+	end
+end
+
+function KillConfirmed:OnPlayerDied(killData)
+	if killData.KilledTeam == self.PlayerTeams.BluFor.TeamId then
+		print('BluFor eliminated')
+		self.AmbushManager:OnCharacterDied(killData.Character)
+		AdminTools:NotifyKIA(killData.CharacterController)
+		if killData.CharacterController == killData.KillerController then
+			self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.CharacterController, 'Accident')
+		elseif killData.KillerTeam == killData.KilledTeam then
+			self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'TeamKill')
 		end
+		self.PlayerTeams.BluFor.Script:PlayerDied(killData.CharacterController, killData.Character)
+		timer.Set(
+			self.Timers.CheckBluForCount.Name,
+			self,
+			self.CheckBluForCountTimer,
+			self.Timers.CheckBluForCount.TimeStep,
+			false
+		)
 	end
 end
 

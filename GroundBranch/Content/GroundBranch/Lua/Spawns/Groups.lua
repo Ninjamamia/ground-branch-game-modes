@@ -16,10 +16,12 @@ Groups.__index = Groups
 ---gathered, default values are set.
 ---@param groupTagPrefix string The tag prefix assigned to group spawn points.
 ---@return table Groups Newly create Groups object.
-function Groups:Create(groupTagPrefix)
+---@param eliminationCallback table A callback object to call after the AI has been killed (optional).
+function Groups:Create(groupTagPrefix, eliminationCallback)
     local self = setmetatable({}, Groups)
     -- Setting attributes
     self.GroupTagPrefix = groupTagPrefix or 'Group'
+    self.eliminationCallback = eliminationCallback or nil
     -- Gathering all relevant spawn points
     print('Gathering group spawn points (Prefix: ' .. self.GroupTagPrefix .. ')')
     self.Spawns = {}
@@ -284,17 +286,15 @@ end
 ---@param freezeTime number the time for which the ai should be frozen.
 ---@param count integer The amount of the AI to spawn.
 ---@param spawnTag string The tag that will be assigned to spawned AI.
----@param preSpawnCallback function A function to call immediately before the first AI is spawned (optional).
----@param preSpawnCallbackOwner table A owner object of preSpawnCallback (optional).
----@param postSpawnCallback function A function to call after spawning is complete (optional).
----@param postSpawnCallbackOwner table A owner object of postSpawnCallback (optional).
+---@param preSpawnCallback table A callback object to call immediately before the first AI is spawned (optional).
+---@param postSpawnCallback table A callback object to call after spawning is complete (optional).
 ---@param isBlocking boolean If set to true, the next queue item will only be processed after all AI have been spawned (optional, default = false).
 ---@param prio number Higher prios will spawn before (optional, default = 255).
-function Groups:EnqueueSpawning(spawnQueue, delay, freezeTime, count, spawnTag, preSpawnCallback, preSpawnCallbackOwner, postSpawnCallback, postSpawnCallbackOwner, isBlocking, prio)
+function Groups:EnqueueSpawning(spawnQueue, delay, freezeTime, count, spawnTag, preSpawnCallback, postSpawnCallback, isBlocking, prio)
     if count > #self.SelectedSpawnPoints then
         count = #self.SelectedSpawnPoints
     end
-	spawnQueue:Enqueue(delay, freezeTime, count, self:PopSelectedSpawnPoints(), spawnTag, preSpawnCallback, preSpawnCallbackOwner, postSpawnCallback, postSpawnCallbackOwner, isBlocking, prio)
+	spawnQueue:Enqueue(delay, freezeTime, count, self:PopSelectedSpawnPoints(), spawnTag, self.eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
 end
 
 --#endregion

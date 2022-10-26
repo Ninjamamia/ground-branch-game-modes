@@ -15,8 +15,10 @@ Priority.__index = Priority
 
 ---Creates new Priority spawns object.
 ---@return table Priority Newly created Priority spawns object.
-function Priority:Create()
+---@param eliminationCallback table A callback object to call after the AI has been killed (optional).
+function Priority:Create(eliminationCallback)
     local self = setmetatable({}, Priority)
+    self.eliminationCallback = eliminationCallback or nil
 	self.Spawns = {}
     self.Total = 0
 	self.Tags = Priority.Tags
@@ -71,17 +73,15 @@ end
 ---@param freezeTime number the time for which the ai should be frozen.
 ---@param count integer The amount of the AI to spawn.
 ---@param spawnTag string The tag that will be assigned to spawned AI.
----@param preSpawnCallback function A function to call immediately before the first AI is spawned (optional).
----@param preSpawnCallbackOwner table A owner object of preSpawnCallback (optional).
----@param postSpawnCallback function A function to call after spawning is complete (optional).
----@param postSpawnCallbackOwner table A owner object of postSpawnCallback (optional).
+---@param preSpawnCallback table A callback object to call immediately before the first AI is spawned (optional).
+---@param postSpawnCallback table A callback object to call after spawning is complete (optional).
 ---@param isBlocking boolean If set to true, the next queue item will only be processed after all AI have been spawned (optional, default = false).
 ---@param prio number Higher prios will spawn before (optional, default = 255).
-function Priority:EnqueueSpawning(spawnQueue, delay, freezeTime, count, spawnTag, preSpawnCallback, preSpawnCallbackOwner, postSpawnCallback, postSpawnCallbackOwner, isBlocking, prio)
+function Priority:EnqueueSpawning(spawnQueue, delay, freezeTime, count, spawnTag, preSpawnCallback, postSpawnCallback, isBlocking, prio)
     if count > #self.Selected then
         count = #self.Selected
     end
-	spawnQueue:Enqueue(delay, freezeTime, count, self.Selected, spawnTag, preSpawnCallback, preSpawnCallbackOwner, postSpawnCallback, postSpawnCallbackOwner, isBlocking, prio)
+	spawnQueue:Enqueue(delay, freezeTime, count, self.Selected, spawnTag, self.eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
 end
 
 return Priority

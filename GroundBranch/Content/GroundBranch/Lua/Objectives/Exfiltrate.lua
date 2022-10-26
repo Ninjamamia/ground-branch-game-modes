@@ -1,7 +1,5 @@
 local Exfiltrate = {
     PlayersIn = 0,
-    OnObjectiveCompleteFuncOwner = nil,
-    OnObjectiveCompleteFunc = nil,
     Team = 1,
     ExfilTimer = {
         Name = 'ExfilTimer',
@@ -25,15 +23,13 @@ local Exfiltrate = {
 ---used for setting up and tracking an exifltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
----@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
----@param onObjectiveCompleteFunc function Function to be run when the objective is completed.
+---@param onObjectiveCompleteCallback table A callback object to be called when the objective is completed.
 ---@param team table the team object of the eligible team.
 ---@param timeToExfil number How long the exfiltration should take.
 ---@param timeStep number How much time should pass between each exfiltration check.
 ---@return table Exfiltrate The newly created Exfiltrate object.
 function Exfiltrate:Create(
-    onObjectiveCompleteFuncOwner,
-    onObjectiveCompleteFunc,
+    onObjectiveCompleteCallback,
     team,
     timeToExfil,
     timeStep
@@ -41,8 +37,7 @@ function Exfiltrate:Create(
     local exfiltration = {}
     setmetatable(exfiltration, self)
     self.__index = self
-    self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
-    self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
+    self.OnObjectiveCompleteCallback = onObjectiveCompleteCallback
     self.Team = team
 	self.PlayersIn = 0
     self.ExfilTimer.CurrentTime = timeToExfil or Exfiltrate.ExfilTimer.CurrentTime
@@ -188,7 +183,7 @@ function Exfiltrate:CheckExfilTimer()
 		if self.Team:GetAlivePlayersCount() > 0 then
 			self.ExfilDone = true
 		end
-		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
+		self.OnObjectiveCompleteCallback:Call()
 		timer.Clear(self, self.ExfilTimer.Name)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime
 		return

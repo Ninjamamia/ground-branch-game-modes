@@ -1,9 +1,8 @@
-local Actors = require('Common.Actors')
-local Tables = require('Common.Tables')
+local Actors   = require('Common.Actors')
+local Tables   = require('Common.Tables')
+local Callback = require('common.Callback')
 
 local ConfirmKill = {
-    OnObjectiveCompleteFuncOwner = nil,
-    OnObjectiveCompleteFunc = nil,
     Team = {},
     HVT = {
         Count = 1,
@@ -36,30 +35,27 @@ local ConfirmKill = {
 ---the HVT kills by walking over HVTs bodies.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
----@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
----@param onObjectiveCompleteFunc function Function to be run when the objective is completed.
+---@param onObjectiveCompleteCallback table A callback object to be called when the objective is completed.
 ---@param team table the team object of the eligible team.
 ---@param hvtTag string Tag assigned to HVT spawn points in mission editor. Used to find HVT spawn points.
 ---@param hvtCount integer How many HVTs are in play.
+---@param onConfirmedKillCallback table A callback object to be called when a kill is confirmed (optional).
+---@param OnNeutralizationCallback table A callback object to be called when a HVT is killed (optional).
 ---@return table ConfirmKill The newly created ConfirmKill object.
----@param onConfirmedKillFuncOwner table The object owning function to be run when a kill is confirmed.
----@param onConfirmedKillFunc function Function to be run when a kill is confirmed.
 function ConfirmKill:Create(
-    onObjectiveCompleteFuncOwner,
-    onObjectiveCompleteFunc,
+    onObjectiveCompleteCallback,
     team,
     hvtTag,
     hvtCount,
-    onConfirmedKillFuncOwner,
-    onConfirmedKillFunc
+    onConfirmedKillCallback,
+    OnNeutralizationCallback
 )
     local killConfirmation = {}
     setmetatable(killConfirmation, self)
     self.__index = self
-    self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
-    self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
-    self.OnConfirmedKillFuncOwner = onConfirmedKillFuncOwner or nil
-    self.OnConfirmedKillFunc = onConfirmedKillFunc or nil
+    self.OnObjectiveCompleteCallback = onObjectiveCompleteCallback
+    self.OnConfirmedKillCallback = onConfirmedKillCallback or nil
+    self.OnNeutralizationCallback = OnNeutralizationCallback or nil
     self.Team = team
     self.HVT.Count = hvtCount or 1
     self.HVT.Tag = hvtTag or 'HVT'
@@ -136,7 +132,7 @@ end
 ---@param freezeTime number time for which the ai should be frozen.
 function ConfirmKill:EnqueueSpawning(spawnQueue, freezeTime)
     print('Schedule spawning ' .. self.HVT.Tag)
-	spawnQueue:Enqueue(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, nil, nil, self.checkSpawnsTimer, self)
+	spawnQueue:Enqueue(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, Callback:Create(self, self.Neutralized), nil, Callback:Create(self, self.checkSpawnsTimer))
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.
@@ -151,8 +147,8 @@ end
 ---at object creation, displays a message to the players. If the WorldPromptBroker
 ---was provided at object creation, displays a message to the players. Should be
 ---called whenever an HVT is eliminated.
----@param hvt userdata Character of the neutralized HVT.
-function ConfirmKill:Neutralized(hvt, killer)
+---@param killData userdata KillData of the neutralized HVT.
+function ConfirmKill:Neutralized(killData)
     print('OpFor HVT eliminated')
     self.Team:DisplayMessageToAlivePlayers('HVTEliminated', 'Upper', 5.0, 'ObjectiveMessage')
     timer.Set(
@@ -162,15 +158,18 @@ function ConfirmKill:Neutralized(hvt, killer)
         self.PromptTimer.DelayTime,
         true
     )
-    self.Team:AwardPlayerScore(killer, 'KillHvt')
+    self.Team:AwardPlayerScore(killData.KillerController, 'KillHvt')
     self.Team:AwardTeamScore('KillHvt')
     table.insert(
         self.HVT.EliminatedNotConfirmed,
-        hvt
+        killData
     )
     self.HVT.EliminatedNotConfirmedCount =
         self.HVT.EliminatedNotConfirmedCount + 1
     self:ShouldConfirmKillTimer()
+    if self.OnNeutralizationCallback ~= nil then
+        self.OnNeutralizationCallback:Call(killData)
+    end
 end
 
 ---Used to display world prompt guiding players to the neutralized HVT for confirming
@@ -234,13 +233,13 @@ function ConfirmKill:ConfirmKill(leaderIndex, confirmer, hvt)
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
     self.Team:AwardPlayerScore(confirmer, 'ConfirmHvt')
     self.Team:AwardTeamScore('ConfirmHvt')
-    if self.OnConfirmedKillFunc ~= nil then
-        self.OnConfirmedKillFunc(self.OnConfirmedKillFuncOwner, hvt, confirmer)
+    if self.OnConfirmedKillCallback ~= nil then
+        self.OnConfirmedKillCallback:Call(hvt, confirmer)
     end
     if self:AreAllConfirmed() then
 		print('All HVT kills confirmed')
         self.Team:DisplayMessageToAlivePlayers('HVTConfirmedAll', 'Upper', 5.0, 'ObjectiveMessage')
-        self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
+        self.OnObjectiveCompleteCallback:Call()
 	else
         self.Team:DisplayMessageToAlivePlayers('HVTConfirmed', 'Upper', 5.0, 'ObjectiveMessage')
 	end

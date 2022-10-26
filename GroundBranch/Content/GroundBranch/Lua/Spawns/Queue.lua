@@ -1,4 +1,4 @@
-local AdminTools 			= require('AdminTools')
+local AdminTools = require('AdminTools')
 
 local AI = {
 }
@@ -7,12 +7,15 @@ AI.__index = AI
 
 ---Creates a new AI object.
 ---@return table AI Newly created AI object.
-function AI:Create(uuid, aiObject, spawnPoint, BaseTag)
+function AI:Create(Queue, uuid, aiObject, spawnPoint, BaseTag, eliminationCallback)
     local self = setmetatable({}, AI)
+	self.Queue = Queue
 	self.UUID = uuid
     self.Object = aiObject
+	self.TeamId = actor.GetTeamId(aiObject)
 	self.SpawnPoint = spawnPoint
 	self.BaseTag = BaseTag
+	self.eliminationCallback = eliminationCallback or Queue:GetDefaultEliminationCallback(self.TeamId)
 	self.Tags = {}
 	self.Location = nil
 	table.insert(self.Tags, BaseTag)
@@ -32,12 +35,45 @@ function AI:GetTags()
 	return self.Tags
 end
 
-function AI:GetLocation()
+function AI:CleanUp()
+	ai.CleanUp(self.UUID)
+end
+
+function AI:OnCharacterDied(KillData)
+	KillData.AI = self
+	self.eliminationCallback:Call(KillData)
+end
+
+local KillData = {
+}
+
+KillData.__index = KillData
+
+function KillData:Create(Character, CharacterController, KillerController)
+    local self = setmetatable({}, KillData)
+	self.Character = Character
+	self.CharacterController = CharacterController
+	self.KillerController = KillerController
+	self.AI = nil
+	self.KilledTeam = actor.GetTeamId(CharacterController)
+	self.KillerTeam = nil
+	if KillerController ~= nil then
+		self.KillerTeam = actor.GetTeamId(KillerController)
+	end
+	self.Location = actor.GetLocation(Character)
+	return self
+end
+
+function KillData:GetLocation()
 	return self.Location
 end
 
-function AI:CleanUp()
-	ai.CleanUp(self.UUID)
+function KillData:HasTag(Tag)
+	if self.AI == nil then
+		return false
+	else
+		return self.AI:HasTag(Tag)
+	end
 end
 
 local Queue = {
@@ -58,13 +94,23 @@ Queue.__index = Queue
 
 ---Creates a new spawn queue object.
 ---@return table Queue Newly create Queue object.
-function Queue:Create(maxConcurrentAI)
+function Queue:Create(maxConcurrentAI, fallbackEliminationCallback)
     local self = setmetatable({}, Queue)
     self.SpawnQueue = {}
 	self.tiSpawnQueue = 0
 	self.MaxConcurrentAICount = maxConcurrentAI or ai.GetMaxCount()
+	self.DefaultEliminationCallbacks = {}
+	self.FallbackEliminationCallback = fallbackEliminationCallback
 	self.SpawnedAI = {}
     return self
+end
+
+function Queue:RegisterDefaultEliminationCallback(TeamId, Callback)
+	self.DefaultEliminationCallbacks[TeamId] = Callback
+end
+
+function Queue:GetDefaultEliminationCallback(TeamId)
+	return self.DefaultEliminationCallbacks[TeamId] or self.FallbackEliminationCallback
 end
 
 ---Resets the queue, has to be called by pre round cleanup.
@@ -92,7 +138,8 @@ function Queue:SetMaxConcurrentAICount(value)
 	self.MaxConcurrentAICount = value
 end
 
-function Queue:OnCharacterDied(Character, CharacterController)
+function Queue:OnCharacterDied(Character, CharacterController, KillerController)
+	local killData = KillData:Create(Character, CharacterController, KillerController)
 	local uuid = actor.GetTags(CharacterController)
 	if uuid ~= nil then
 		uuid = uuid[1]
@@ -102,20 +149,20 @@ function Queue:OnCharacterDied(Character, CharacterController)
 				print('SpawnQueue: ' .. uuid .. ' died')
 				self.KilledAICount = self.KilledAICount + 1
 				self.AliveAICount = math.max(self.AliveAICount - 1, 0)
-				CurrAI.Location = actor.GetLocation(Character)
+				CurrAI:OnCharacterDied(killData)
 				AdminTools:ShowDebug(self:GetStateMessage())
-				return CurrAI
+				return
 			end
 		end
 	end
-	return nil
+	gamemode.script:OnPlayerDied(killData)
 end
 
 function Queue:AbortPending()
 	if #self.SpawnQueue > 0 then
 		local CurrSpawnItem = self.SpawnQueue[1]
-		if CurrSpawnItem.postSpawnCallback ~= nil and CurrSpawnItem.postSpawnCallbackOwner ~= nil then
-			CurrSpawnItem.postSpawnCallback(CurrSpawnItem.postSpawnCallbackOwner)
+		if CurrSpawnItem.postSpawnCallback ~= nil then
+			CurrSpawnItem.postSpawnCallback:Call()
 		end
 	end
 	self.SpawnQueue = {}
@@ -128,13 +175,12 @@ end
 ---@param count integer The amount of the AI to spawn.
 ---@param spawnPoints table The list of spawn points to use.
 ---@param spawnTag string The tag that will be assigned to spawned AI.
----@param preSpawnCallback function A function to call immediately before the first AI is spawned (optional).
----@param preSpawnCallbackOwner table A owner object of preSpawnCallback (optional).
----@param postSpawnCallback function A function to call after spawning is complete (optional).
----@param postSpawnCallbackOwner table A owner object of postSpawnCallback (optional).
+---@param eliminationCallback table A callback object to call after the AI has been killed (optional).
+---@param preSpawnCallback table A callback object to call immediately before the first AI is spawned (optional).
+---@param postSpawnCallback table A callback object to call after spawning is complete (optional).
 ---@param isBlocking boolean If set to true, the next queue item will only be processed after all AI have been spawned (optional, default = false).
 ---@param prio number Higher prios will spawn before (optional, default = 255).
-function Queue:Enqueue(delay, freezeTime, count, spawnPoints, spawnTag, preSpawnCallback, preSpawnCallbackOwner, postSpawnCallback, postSpawnCallbackOwner, isBlocking, prio)
+function Queue:Enqueue(delay, freezeTime, count, spawnPoints, spawnTag, eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
 	count = math.min(#spawnPoints, count)
 	local NewItem = {
 		tiSpawn = self.tiSpawnQueue + delay,
@@ -143,10 +189,9 @@ function Queue:Enqueue(delay, freezeTime, count, spawnPoints, spawnTag, preSpawn
 		spawnedCount = 0,
 		spawnPoints = spawnPoints,
 		spawnTag = spawnTag,
+		eliminationCallback = eliminationCallback or nil,
 		preSpawnCallback = preSpawnCallback or nil,
-		preSpawnCallbackOwner = preSpawnCallbackOwner or nil,
 		postSpawnCallback = postSpawnCallback or nil,
-		postSpawnCallbackOwner = postSpawnCallbackOwner or nil,
 		isBlocking = isBlocking or false,
 		prio = prio or 255,
 		spawnedAI = {}
@@ -191,7 +236,7 @@ function Queue:OnSpawnQueueTick()
 					end
 				end
 				if CurrSpawnItem.spawnedCount == 0 and CurrSpawnItem.preSpawnCallback ~= nil then
-					CurrSpawnItem.preSpawnCallback(CurrSpawnItem.preSpawnCallbackOwner, CurrSpawnItem.spawnTag)
+					CurrSpawnItem.preSpawnCallback:Call(CurrSpawnItem.spawnTag)
 				end
 				local uuid = "AI_" .. self.SpawnedAICount
 				ai.Create(spawnPoint, uuid, CurrSpawnItem.freezeTime)
@@ -199,7 +244,7 @@ function Queue:OnSpawnQueueTick()
 				if spawnedAI ~= nil then
 					spawnedAI = spawnedAI[1]
 					print('SpawnQueue: Spawned ' .. uuid)
-					local NewAI = AI:Create(uuid, spawnedAI, spawnPoint, CurrSpawnItem.spawnTag)
+					local NewAI = AI:Create(self, uuid, spawnedAI, spawnPoint, CurrSpawnItem.spawnTag, CurrSpawnItem.eliminationCallback)
 					self.SpawnedAI[uuid] = NewAI
 					self.AliveAICount = self.AliveAICount + 1
 					self.SpawnedAICount = self.SpawnedAICount + 1
@@ -215,8 +260,8 @@ function Queue:OnSpawnQueueTick()
 				end
 			end
         end
-		if CurrSpawnItem.postSpawnCallback ~= nil and CurrSpawnItem.postSpawnCallbackOwner ~= nil then
-			CurrSpawnItem.postSpawnCallback(CurrSpawnItem.postSpawnCallbackOwner, CurrSpawnItem.spawnedAI)
+		if CurrSpawnItem.postSpawnCallback ~= nil then
+			CurrSpawnItem.postSpawnCallback:Call(CurrSpawnItem.spawnedAI)
 		end
 		if count > 0 then
 			AdminTools:ShowDebug('SpawnQueue: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's')
