@@ -202,10 +202,22 @@ function Mine:Deactivate()
     end
 end
 
+function Mine:Defuse()
+    AdminTools:ShowDebug(self.Name .. ' defused.')
+    self.State = 'Inactive'
+    actor.SetActive(self.Actor, false)
+    for _, Prop in ipairs(self.Props) do
+        actor.SetActive(Prop, false)
+        if not actor.HasTag(Prop, 'Keep') then
+            actor.SetHidden(Prop, true)
+        end
+    end
+end
+
 function Mine:Trigger()
     if self.State == 'Active' then
         self.State = 'Triggered'
-        AdminTools:ShowDebug("Mine " .. self.Name .. " triggered.")
+        AdminTools:ShowDebug(self.Name .. " triggered.")
         GetLuaComp(self.Actor).Explode()
         for _, Prop in ipairs(self.Props) do
             actor.SetActive(Prop, false)
@@ -255,7 +267,7 @@ end
 function AmbushManager:OnDefuse(Defuser)
     local Mine = self.Defusers[actor.GetName(Defuser)]
     if Mine ~= nil then
-        Mine:Deactivate()
+        Mine:Defuse()
     end
 end
 
