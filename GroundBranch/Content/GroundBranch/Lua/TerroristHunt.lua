@@ -3,6 +3,7 @@ local MSpawnsQueue          = require('Spawns.Queue')
 local AdminTools 			= require('AdminTools')
 local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
 local Callback 				= require('common.Callback')
+local CallbackList			= require('common.CallbackList')
 
 local terroristhunt = {
 	UseReadyRoom = true,
@@ -73,6 +74,9 @@ local terroristhunt = {
 
 function terroristhunt:PreInit()
 	print('Pre initialization')
+	self.OnCharacterDiedCallback = CallbackList:Create()
+	self.OnGameTriggerBeginOverlapCallback = CallbackList:Create()
+	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
 	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
 	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
@@ -166,7 +170,7 @@ function terroristhunt:OnCharacterDied(Character, CharacterController, KillerCon
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		self.SpawnQueue:OnCharacterDied(Character, CharacterController, KillerController)
+		self.OnCharacterDiedCallback:Call(Character, CharacterController, KillerController)
 	end
 end
 
@@ -175,7 +179,6 @@ function terroristhunt:OnOpForDied(killData)
 end
 
 function terroristhunt:OnPlayerDied(killData)
-	self.AmbushManager:OnCharacterDied(killData.Character)
 	AdminTools:NotifyKIA(killData.CharacterController)
 	player.SetLives(killData.CharacterController, player.GetLives(killData.CharacterController) - 1)
 
@@ -195,17 +198,12 @@ end
 
 function terroristhunt:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
-	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
+	self.OnGameTriggerBeginOverlapCallback:Call(GameTrigger, Player)
 end
 
 function terroristhunt:OnGameTriggerEndOverlap(GameTrigger, Player)
 	print('OnGameTriggerEndOverlap')
-	self.AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
-end
-
-function terroristhunt:OnLaptopTriggered(Laptop)
-	-- this is called from the laptop TriggerLaptop.lua script when a laptop is successfully hacked
-	self.AmbushManager:OnGameTriggerBeginOverlap(Laptop, nil)
+	self.OnGameTriggerEndOverlapCallback:Call(GameTrigger, Player)
 end
 
 function terroristhunt:CheckOpForCountTimer()

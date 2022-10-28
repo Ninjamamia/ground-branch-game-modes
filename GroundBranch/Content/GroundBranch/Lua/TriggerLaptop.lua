@@ -1,3 +1,5 @@
+local AdminTools = require('AdminTools')
+
 local laptop = {
 	CurrentTime = 0,
 	OnSearch = "Are you in for surprises?",
@@ -24,7 +26,11 @@ function laptop:ServerUseTimer(User, DeltaTime)
 	if Result.Percentage == 1.0 then
 		timer.Clear(self.Timers.Timeout.Name, self)
 		Result.Message = self.OnSuccess
-		gamemode.script:OnLaptopTriggered(self.Object)
+		if gamemode.script.AmbushManager ~= nil then
+			gamemode.script.AmbushManager:OnLaptopSuccess(self.Object)
+		else
+			AdminTools:ShowDebug("TriggerLaptop: gamemode doesn't define AmbushManager")
+		end
 	else
 		timer.Set(
 			self.Timers.Timeout.Name,

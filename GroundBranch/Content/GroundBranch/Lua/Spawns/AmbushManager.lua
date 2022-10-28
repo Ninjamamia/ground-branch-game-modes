@@ -1,5 +1,6 @@
 local Tables = require('Common.Tables')
 local AdminTools = require('AdminTools')
+local Callback = require('common.Callback')
 
 local AmbushManager = {
     SpawnQueue = nil,
@@ -260,6 +261,22 @@ function AmbushManager:Create(spawnQueue, teamTag)
         count = count + 1
     end
     print('Found a total of ' .. count .. ' mines.')
+	print('Hooking to callbacks')
+	if gamemode.script.OnCharacterDiedCallback ~= nil then
+		gamemode.script.OnCharacterDiedCallback:Add(Callback:Create(self, self.OnCharacterDied))
+	else
+		AdminTools:ShowDebug("AmbushManager: gamemode doesn't define OnCharacterDiedCallback, cant't hook to it")
+	end
+	if gamemode.script.OnGameTriggerBeginOverlapCallback ~= nil then
+		gamemode.script.OnGameTriggerBeginOverlapCallback:Add(Callback:Create(self, self.OnGameTriggerBeginOverlap))
+	else
+		AdminTools:ShowDebug("AmbushManager: gamemode doesn't define OnGameTriggerBeginOverlapCallback, cant't hook to it")
+	end
+	if gamemode.script.OnGameTriggerEndOverlapCallback ~= nil then
+		gamemode.script.OnGameTriggerEndOverlapCallback:Add(Callback:Create(self, self.OnGameTriggerEndOverlap))
+	else
+		AdminTools:ShowDebug("AmbushManager: gamemode doesn't define OnGameTriggerEndOverlapCallback, cant't hook to it")
+	end
     return self
 end
 
@@ -334,11 +351,10 @@ function AmbushManager:Deactivate()
     end
 end
 
-function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player, postSpawnCallback)
+function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         if Trigger.State == 'Active' then
-            Trigger.postSpawnCallback = postSpawnCallback or nil
             local PlayerName = player.GetName(Player)
             if Trigger.Players[PlayerName] == nil then
                 Trigger.Players[PlayerName] = true
@@ -383,7 +399,61 @@ function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
     end
 end
 
-function AmbushManager:OnCharacterDied(Character)
+function AmbushManager:OnLaptopSuccess(GameTrigger)
+    local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+    if Trigger ~= nil then
+        if Trigger.State == 'Active' then
+            local Message = 'Laptop ' .. Trigger.Name .. ' used successfully'
+            if Trigger.tiPresence < 0.2 then
+                Trigger:Trigger()
+            else
+                timer.Set(
+                    "Trigger_" .. Trigger.Name,
+                    Trigger,
+                    Trigger.Trigger,
+                    Trigger.tiPresence,
+                    false
+                )
+                Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
+            end
+            AdminTools:ShowDebug(Message)
+        end
+    end
+end
+
+function AmbushManager:OnCustomEvent(GameTrigger, Player, postSpawnCallback, force)
+    local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+    if Trigger ~= nil then
+        force = force or false
+        if force then
+            Trigger:Activate()
+        end
+        if Trigger.State == 'Active' then
+            Trigger.postSpawnCallback = postSpawnCallback or nil
+            local PlayerName = player.GetName(Player)
+            if Trigger.Players[PlayerName] == nil then
+                Trigger.Players[PlayerName] = true
+                Trigger.PlayersCount = Trigger.PlayersCount + 1
+                local Message = 'Player ' .. PlayerName .. ' caused event trigger ' .. Trigger.Name
+                if Trigger.tiPresence < 0.2 then
+                    Trigger:Trigger()
+                else
+                    timer.Set(
+                        "Trigger_" .. Trigger.Name,
+                        Trigger,
+                        Trigger.Trigger,
+                        Trigger.tiPresence,
+                        false
+                    )
+                    Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
+                end
+                AdminTools:ShowDebug(Message)
+            end
+        end
+    end
+end
+
+function AmbushManager:OnCharacterDied(Character, CharacterController, KillerController)
     local PlayerName = player.GetName(Character)
     for _, Trigger in pairs(self.Triggers) do
         if Trigger.State == 'Active' then

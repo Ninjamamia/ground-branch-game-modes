@@ -1,9 +1,11 @@
+local AdminTools = require('AdminTools')
+
 local laptop = {
 	CurrentTime = 0,
 	tiDefuse = 10.0,
 	tiDefuseMin = 10.0,
 	tiDefuseMax = 10.0,
-	Name = "TriggerLaptop",
+	Name = "Defuser",
 	OnSuccessCallback = nil,
 	Timers = {
 		Timeout = {
@@ -24,7 +26,11 @@ function laptop:ServerUseTimer(User, DeltaTime)
 	Result.Percentage = self.CurrentTime / self.tiDefuse
 	if Result.Percentage == 1.0 then
 		timer.Clear(self.Timers.Timeout.Name, self)
-		gamemode.script.AmbushManager:OnDefuse(self.Object)
+		if gamemode.script.AmbushManager ~= nil then
+			gamemode.script.AmbushManager:OnDefuse(self.Object)
+		else
+			AdminTools:ShowDebug("Defuser: gamemode doesn't define AmbushManager")
+		end
 	else
 		timer.Set(
 			self.Timers.Timeout.Name,

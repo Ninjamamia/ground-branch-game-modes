@@ -1,3 +1,5 @@
+local Callback = require('common.Callback')
+
 local Exfiltrate = {
     PlayersIn = 0,
     Team = 1,
@@ -19,6 +21,8 @@ local Exfiltrate = {
     },
 }
 
+Exfiltrate.__index = Exfiltrate
+
 ---Creates a new object of type Objectives Exfiltrate. This prototype can be
 ---used for setting up and tracking an exifltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
@@ -34,9 +38,7 @@ function Exfiltrate:Create(
     timeToExfil,
     timeStep
 )
-    local exfiltration = {}
-    setmetatable(exfiltration, self)
-    self.__index = self
+	local self = setmetatable({}, Exfiltrate)
     self.OnObjectiveCompleteCallback = onObjectiveCompleteCallback
     self.Team = team
 	self.PlayersIn = 0
@@ -45,6 +47,7 @@ function Exfiltrate:Create(
     self.ExfilTimer.TimeStep = timeStep or Exfiltrate.ExfilTimer.TimeStep
 	self.Points.All = {}
 	self.ExfilDone = false
+	self.AllowExfil = false
 	local allExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
@@ -68,14 +71,26 @@ function Exfiltrate:Create(
 		)
 	end
 	print('Added inactive objective markers for extraction points')
-	print('Initialized Objective Exfiltrate ' .. tostring(exfiltration))
-    return exfiltration
+	print('Hooking to callbacks')
+	if gamemode.script.OnGameTriggerBeginOverlapCallback ~= nil then
+		gamemode.script.OnGameTriggerBeginOverlapCallback:Add(Callback:Create(self, self.OnGameTriggerBeginOverlap))
+	else
+		AdminTools:ShowDebug("Exfiltrate: gamemode doesn't define OnGameTriggerBeginOverlapCallback, cant't hook to it")
+	end
+	if gamemode.script.OnGameTriggerEndOverlapCallback ~= nil then
+		gamemode.script.OnGameTriggerEndOverlapCallback:Add(Callback:Create(self, self.OnGameTriggerEndOverlap))
+	else
+		AdminTools:ShowDebug("Exfiltrate: gamemode doesn't define OnGameTriggerEndOverlapCallback, cant't hook to it")
+	end
+	print('Initialized Objective Exfiltrate ' .. tostring(self))
+    return self
 end
 
 ---Resets the object attributes to default values. Should be called before every round.
 function Exfiltrate:Reset()
 	self.PlayersIn = 0
 	self.ExfilDone = false
+	self.AllowExfil = false
 end
 
 function Exfiltrate:GetCompletedObjectives()
@@ -119,6 +134,11 @@ function Exfiltrate:SelectedPointSetActive(active)
 	)
 end
 
+function Exfiltrate:EnableExfiltration()
+	self:SelectedPointSetActive(true)
+	self.AllowExfil = true
+end
+
 ---Returns the selected extraction point.
 ---@return userdata ExtractionPoint the selected extraction point.
 function Exfiltrate:GetSelectedPoint()
@@ -155,12 +175,23 @@ function Exfiltrate:CheckTriggerAndPlayer(trigger, playerIn)
     return false
 end
 
+function Exfiltrate:OnGameTriggerBeginOverlap(GameTrigger, Player)
+	if self:CheckTriggerAndPlayer(GameTrigger, Player) then
+		self:PlayerEnteredExfiltration()
+	end
+end
+
+function Exfiltrate:OnGameTriggerEndOverlap(GameTrigger, Player)
+	if self:CheckTriggerAndPlayer(GameTrigger, Player) then
+		self:PlayerLeftExfiltration()
+	end
+end
+
 ---Updates the player in extraction zone count when player enters extraction zone
----and, if the exfilCondition is true, starts the exfiltration check timer.
----@param exfilCondition boolean whether or not exfiltration should be possible at the moment.
-function Exfiltrate:PlayerEnteredExfiltration(exfilCondition)
+---and, if exfil is allowed, starts the exfiltration check timer.
+function Exfiltrate:PlayerEnteredExfiltration()
 	self.PlayersIn = self.PlayersIn + 1
-	if exfilCondition then
+	if self.AllowExfil then
 		self:CheckExfilTimer()
 	end
 end

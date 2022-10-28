@@ -12,6 +12,7 @@ local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 local AdminTools 			= require('AdminTools')
 local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
 local Callback 				= require('common.Callback')
+local CallbackList			= require('common.CallbackList')
 
 --#region Properties
 
@@ -179,6 +180,9 @@ local KillConfirmed = {
 function KillConfirmed:PreInit()
 	print('Pre initialization')
 	print('Initializing Kill Confirmed')
+	self.OnCharacterDiedCallback = CallbackList:Create()
+	self.OnGameTriggerBeginOverlapCallback = CallbackList:Create()
+	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		1,
 		false,
@@ -259,7 +263,7 @@ end
 
 function KillConfirmed:OnConfirmedKill(hvt, confirmer)
 	if self.Settings.ReinforcementsTrigger.Value == 1 then
-		self.AmbushManager:OnGameTriggerBeginOverlap(hvt.AI.SpawnPoint, confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
+		self.AmbushManager:OnCustomEvent(hvt.AI.SpawnPoint, confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
 	end
 end
 
@@ -269,7 +273,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		self.SpawnQueue:OnCharacterDied(Character, CharacterController, KillerController)
+		self.OnCharacterDiedCallback:Call(Character, CharacterController, KillerController)
 	end
 end
 
@@ -291,7 +295,6 @@ end
 function KillConfirmed:OnPlayerDied(killData)
 	if killData.KilledTeam == self.PlayerTeams.BluFor.TeamId then
 		print('BluFor eliminated')
-		self.AmbushManager:OnCharacterDied(killData.Character)
 		AdminTools:NotifyKIA(killData.CharacterController)
 		if killData.CharacterController == killData.KillerController then
 			self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.CharacterController, 'Accident')
@@ -447,9 +450,8 @@ end
 --#region Objective: Kill confirmed
 
 function KillConfirmed:OnAllKillsConfirmed()
-	self.Objectives.Exfiltrate:SelectedPointSetActive(true)
-	self.AmbushManager:Activate(self.Objectives.Exfiltrate:GetSelectedPoint())
-	self.AmbushManager:OnGameTriggerBeginOverlap(self.Objectives.Exfiltrate:GetSelectedPoint(), nil)
+	self.Objectives.Exfiltrate:EnableExfiltration()
+	self.AmbushManager:OnCustomEvent(self.Objectives.Exfiltrate:GetSelectedPoint(), nil, nil, true)
 end
 
 --#endregion
@@ -458,25 +460,12 @@ end
 
 function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
-	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
-		self.Objectives.Exfiltrate:PlayerEnteredExfiltration(
-			self.Objectives.ConfirmKill:AreAllConfirmed()
-		)
-	end
-	self.AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
-end
-
-function KillConfirmed:OnLaptopTriggered(Laptop)
-	-- this is called from the laptop TriggerLaptop.lua script when a laptop is successfully hacked
-	self.AmbushManager:OnGameTriggerBeginOverlap(Laptop, nil)
+	self.OnGameTriggerBeginOverlapCallback:Call(GameTrigger, Player)
 end
 
 function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
 	print('OnGameTriggerEndOverlap')
-	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
-		self.Objectives.Exfiltrate:PlayerLeftExfiltration()
-	end
-	self.AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
+	self.OnGameTriggerEndOverlapCallback:Call(GameTrigger, Player)
 end
 
 function KillConfirmed:OnExfiltrated()

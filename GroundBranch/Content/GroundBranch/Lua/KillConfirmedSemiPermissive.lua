@@ -106,7 +106,7 @@ function Mode:PreInit()
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	super.PreInit(self)
-	self.SpawnQueue:RegisterDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
+	self.SpawnQueue:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)

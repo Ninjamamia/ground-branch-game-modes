@@ -1,4 +1,5 @@
 local AdminTools = require('AdminTools')
+local Callback   = require('common.Callback')
 
 local AI = {
 }
@@ -102,10 +103,15 @@ function Queue:Create(maxConcurrentAI, fallbackEliminationCallback)
 	self.DefaultEliminationCallbacks = {}
 	self.FallbackEliminationCallback = fallbackEliminationCallback
 	self.SpawnedAI = {}
+	if gamemode.script.OnCharacterDiedCallback ~= nil then
+		gamemode.script.OnCharacterDiedCallback:Add(Callback:Create(self, self.OnCharacterDied))
+	else
+		AdminTools:ShowDebug("SpawnQueue: gamemode doesn't define OnCharacterDiedCallback, cant't hook to it")
+	end
     return self
 end
 
-function Queue:RegisterDefaultEliminationCallback(TeamId, Callback)
+function Queue:AddDefaultEliminationCallback(TeamId, Callback)
 	self.DefaultEliminationCallbacks[TeamId] = Callback
 end
 

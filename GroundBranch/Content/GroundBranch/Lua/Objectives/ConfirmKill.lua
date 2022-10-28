@@ -29,6 +29,8 @@ local ConfirmKill = {
     }
 }
 
+ConfirmKill.__index = ConfirmKill
+
 ---Creates a new object of type Objectives Kill Confirmation. This prototype can be
 ---used for setting up and tracking an Kill Confirmation objective for a specific team.
 ---Kill Confirmation requires players to kill selected targets (HVTs), and confirm
@@ -50,8 +52,7 @@ function ConfirmKill:Create(
     onConfirmedKillCallback,
     OnNeutralizationCallback
 )
-    local killConfirmation = {}
-    setmetatable(killConfirmation, self)
+    local self = setmetatable({}, ConfirmKill)
     self.__index = self
     self.OnObjectiveCompleteCallback = onObjectiveCompleteCallback
     self.OnConfirmedKillCallback = onConfirmedKillCallback or nil
@@ -80,8 +81,8 @@ function ConfirmKill:Create(
     self.HVT.EliminatedNotConfirmed = {}
     self.HVT.EliminatedNotConfirmedCount = 0
     self.HVT.EliminatedAndConfirmedCount = 0
-    print('Intialized Objective Kill Confirmation ' .. tostring(killConfirmation))
-    return killConfirmation
+    print('Intialized Objective Kill Confirmation ' .. tostring(self))
+    return self
 end
 
 ---Resets the object attributes to default values. Should be called before every round.
