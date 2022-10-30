@@ -265,7 +265,7 @@ end
 ---Returns true if all HVTs are neutralized, false otherwise.
 ---@return boolean areAllNeutralized
 function ConfirmKill:AreAllNeutralized()
-    return self.HVT.EliminatedNotConfirmedCount >= self.HVT.Count
+    return (self.HVT.EliminatedNotConfirmedCount + self.HVT.EliminatedAndConfirmedCount) >= self.HVT.Count
 end
 
 ---Returns true if all HVT kill are confirmed, false otherwise.

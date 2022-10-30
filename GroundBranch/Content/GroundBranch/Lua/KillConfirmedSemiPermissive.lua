@@ -29,50 +29,50 @@ local Callback 				= require('common.Callback')
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))
 
--- Use a separate loadout
-super.PlayerTeams.BluFor.Loadout='NoTeamCamouflage'
+-- Our sub-class of the singleton
+local Mode = setmetatable({}, { __index = super })
 
 -- Add new score types
-super.PlayerScoreTypes.CollateralDamage = {
+Mode.PlayerScoreTypes.CollateralDamage = {
 	Score = -250,
 	OneOff = false,
 	Description = 'Killed a non-combatant'
 }
-super.TeamScoreTypes.CollateralDamage = {
+Mode.TeamScoreTypes.CollateralDamage = {
 	Score = -250,
 	OneOff = false,
 	Description = 'Killed a non-combatant'
 }
 -- Add additional objectives
-super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
-super.Objectives.NoSoftFail = NoSoftFail.new()
+Mode.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
+Mode.Objectives.NoSoftFail = NoSoftFail.new()
 
 -- Add additional settings
-super.Settings.UpriseOnHVTKillChance = {
+Mode.Settings.UpriseOnHVTKillChance = {
 	Min = 0,
 	Max = 100,
 	Value = 0,
 	AdvancedSetting = false,
 }
-super.Settings.InitialUpriseChance = {
+Mode.Settings.InitialUpriseChance = {
 	Min = 0,
 	Max = 100,
 	Value = 50,
 	AdvancedSetting = false,
 }
-super.Settings.ChanceIncreasePerCollateral = {
+Mode.Settings.ChanceIncreasePerCollateral = {
 	Min = 0,
 	Max = 100,
 	Value = 20,
 	AdvancedSetting = false,
 }
-super.Settings.CIVUpriseSize = {
+Mode.Settings.CIVUpriseSize = {
 	Min = 0,
 	Max = 30,
 	Value = 10,
 	AdvancedSetting = false,
 }
-super.Settings.CIVPopulation = {
+Mode.Settings.CIVPopulation = {
 	Min = 0,
 	Max = 30,
 	Value = 10,
@@ -80,21 +80,18 @@ super.Settings.CIVPopulation = {
 }
 
 -- Add additional teams
-super.AiTeams.CIVUnarmed = {
+Mode.AiTeams.CIVUnarmed = {
 	Tag = 'CIV_Unarmed',
 	TeamId = 10,
 	CalculatedAiCount = 0,
 	Spawns = nil
 }
-super.AiTeams.CIVArmed = {
+Mode.AiTeams.CIVArmed = {
 	Tag = 'CIV_Armed',
 	TeamId = 20,
 	CalculatedAiCount = 0,
 	Spawns = nil
 }
-
--- Our sub-class of the singleton
-local Mode = setmetatable({}, { __index = super })
 
 -- Indicates that the uprise is triggered already
 Mode.IsUprise = false
@@ -103,9 +100,9 @@ Mode.IsUprise = false
 Mode.UpriseChance = 0
 
 function Mode:PreInit()
+	super.PreInit(self)
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
-	super.PreInit(self)
 	self.SpawnQueue:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
 end
 
@@ -114,13 +111,12 @@ function Mode:TakeChance(chance)
 end
 
 function Mode:PostInit()
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
+	super.PostInit(self)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NoCollateralDamage', 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
 end
 
 function Mode:OnRoundStageSet(RoundStage)
+	super.OnRoundStageSet(self, RoundStage)
 	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
 		-- Make sure the 'SOFT FAIL' message is cleared
 		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
@@ -129,7 +125,6 @@ function Mode:OnRoundStageSet(RoundStage)
 		self.UpriseChance = self.Settings.InitialUpriseChance.Value
 		self:SpawnCIVs()
 	end
-	super.OnRoundStageSet(self, RoundStage)
 end
 
 function Mode:SpawnCIVs()
@@ -218,18 +213,7 @@ function Mode:OnPlayerDied(killData)
 	end
 end
 
-function Mode:OnExfiltrated()
-	if gamemode.GetRoundStage() ~= 'InProgress' then
-		return
-	end
-	-- Award surviving players
-	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
-	for _, alivePlayer in ipairs(alivePlayers) do
-		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
-	end
-
-	-- Prepare summary
-	self:UpdateCompletedObjectives()
+function Mode:UpdateGameStatsOnExfil()
 	if self.Objectives.NoSoftFail:IsOK() then
 		gamemode.AddGameStat('Summary=HVTsConfirmed')
 		gamemode.AddGameStat('Result=Team1')
@@ -237,7 +221,6 @@ function Mode:OnExfiltrated()
 		gamemode.AddGameStat('Summary=SoftFail')
 		gamemode.AddGameStat('Result=None')
 	end
-	gamemode.SetRoundStage('PostRoundWait')
 end
 
 return Mode
