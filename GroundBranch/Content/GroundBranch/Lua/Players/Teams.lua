@@ -61,19 +61,31 @@ function Teams:GetId()
 end
 
 function Teams:RoundStart(
-    respawnCost,
-    displayScoreMessage,
-    displayScoreMilestone,
-    displayObjectiveMessage,
-    displayObjectivePrompt
+    respawnCost
 )
     self.Score = 0
     self.Milestones = 0
-    self.RespawnCost = respawnCost
-    self.Display.ScoreMessage = displayScoreMessage
-    self.Display.ScoreMilestone = displayScoreMilestone
-    self.Display.ObjectiveMessage = displayObjectiveMessage
-    self.Display.ObjectivePrompt = displayObjectivePrompt
+    self.RespawnCost = respawnCost or 10000000
+    if gamemode.script.Settings.DisplayScoreMessages ~= nil then
+        self.Display.ScoreMessage = gamemode.script.Settings.DisplayScoreMessages.Value == 1
+    else
+        self.Display.ScoreMessage = false
+    end
+    if gamemode.script.Settings.DisplayScoreMilestones ~= nil then
+        self.Display.ScoreMilestone = gamemode.script.Settings.DisplayScoreMilestones.Value == 1
+    else
+        self.Display.ScoreMilestone = false
+    end
+    if gamemode.script.Settings.DisplayObjectiveMessages ~= nil then
+        self.Display.ObjectiveMessage = gamemode.script.Settings.DisplayObjectiveMessages.Value == 1
+    else
+        self.Display.ObjectiveMessage = false
+    end
+    if gamemode.script.Settings.DisplayObjectivePrompts ~= nil then
+        self.Display.ObjectivePrompt = gamemode.script.Settings.DisplayObjectivePrompts.Value == 1
+    else
+        self.Display.ObjectivePrompt = false
+    end
     gamemode.ResetTeamScores()
 	gamemode.ResetPlayerScores()
     self:SetAllowedToRespawn(self:CanRespawn())

@@ -48,18 +48,6 @@ local Mode = {
 			Value = 1,
 			AdvancedSetting = false,
 		},
-		DisplayObjectiveMessages = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
-		},
-		DisplayObjectivePrompts = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
-		},
 	},
 	PlayerScoreTypes = {
 	},
@@ -142,13 +130,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 	elseif RoundStage == 'InProgress' then
 		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
-		self.PlayerTeams.BluFor.Script:RoundStart(
-			1000000,
-			false,
-			false,
-			self.Settings.DisplayObjectiveMessages.Value == 1,
-			self.Settings.DisplayObjectivePrompts.Value == 1
-		)
+		self.PlayerTeams.BluFor.Script:RoundStart()
 	end
 end
 

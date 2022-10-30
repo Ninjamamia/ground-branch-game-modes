@@ -30,6 +30,18 @@ Mode.Settings.ReinforcementsTrigger = {
 	Value = 1,
 	AdvancedSetting = true,
 }
+Mode.Settings.DisplayObjectiveMessages = {
+	Min = 0,
+	Max = 1,
+	Value = 1,
+	AdvancedSetting = true,
+}
+Mode.Settings.DisplayObjectivePrompts = {
+	Min = 0,
+	Max = 1,
+	Value = 1,
+	AdvancedSetting = true,
+}
 Mode.PlayerScoreTypes = {
 	KillStandard = {
 		Score = 100,
