@@ -48,6 +48,12 @@ local Mode = {
 			Value = 1,
 			AdvancedSetting = false,
 		},
+		MaxMedEvac = {
+			Min = 0,
+			Max = 2,
+			Value = 2,
+			AdvancedSetting = false,
+		},
 	},
 	PlayerScoreTypes = {
 	},
@@ -130,7 +136,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 	elseif RoundStage == 'InProgress' then
 		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
-		self.PlayerTeams.BluFor.Script:RoundStart()
+		self.PlayerTeams.BluFor.Script:RoundStart(self.Settings.MaxMedEvac.Value)
 	end
 end
 
@@ -232,7 +238,7 @@ end
 function Mode:GetSpawnInfo(PlayerState)
 	print('GetSpawnInfo')
 	if gamemode.GetRoundStage() == 'InProgress' then
-		self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
+		return self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
 	end
 end
 
