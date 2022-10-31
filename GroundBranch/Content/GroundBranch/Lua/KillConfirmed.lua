@@ -170,7 +170,7 @@ function Mode:OnPlayerDied(killData)
 		elseif killData.KillerTeam == killData.KilledTeam then
 			self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'TeamKill')
 		end
-		self.PlayerTeams.BluFor.Script:PlayerDied(killData.CharacterController, killData.Character)
+		self.PlayerTeams.BluFor.Script:PlayerDied(killData)
 		timer.Set(
 			self.Timers.CheckBluForCount.Name,
 			self,

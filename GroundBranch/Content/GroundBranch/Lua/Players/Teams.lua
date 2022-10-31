@@ -198,20 +198,20 @@ function Teams:SetAllowedToRespawn(respawnAllowed)
     end
 end
 
-function Teams:PlayerDied(playerController, playerCharacter)
+function Teams:PlayerDied(killData)
     print('Player died')
     if gamemode.GetRoundStage() ~= 'InProgress' then
         return
     end
     if self.Score >= self.RespawnCost then
         player.ShowGameMessage(
-            playerController,
+            killData.CharacterController,
             'RespawnAvailable',
             'Lower',
             2.5
         )
     end
-    player.SetLives(playerController, 0)
+    player.SetLives(killData.CharacterController, 0)
     self:UpdatePlayers()
 end
 

@@ -326,7 +326,7 @@ end
 
 function Mode:OnPlayerDied(killData)
 	AdminTools:NotifyKIA(killData.CharacterController)
-	self.PlayerTeams.BluFor.Script:PlayerDied(killData.CharacterController, killData.Character)
+	self.PlayerTeams.BluFor.Script:PlayerDied(killData)
 	timer.Set(
 		self.Timers.CheckBluForCount.Name,
 		self,
