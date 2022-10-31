@@ -127,6 +127,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:PreRoundCleanUp()
 		self:PrepareObjectives()
 	elseif RoundStage == 'PreRoundWait' then
+		self.PlayerTeams.BluFor.Script:RoundStart(self.Settings.MaxMedEvac.Value)
 		if self.Settings.TriggersEnabled.Value == 1 then
 			self.AmbushManager:Activate()
 		else
@@ -136,7 +137,6 @@ function Mode:OnRoundStageSet(RoundStage)
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 	elseif RoundStage == 'InProgress' then
 		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
-		self.PlayerTeams.BluFor.Script:RoundStart(self.Settings.MaxMedEvac.Value)
 	end
 end
 
@@ -237,9 +237,14 @@ end
 
 function Mode:GetSpawnInfo(PlayerState)
 	print('GetSpawnInfo')
+	local PlayerStart = nil
 	if gamemode.GetRoundStage() == 'InProgress' then
-		return self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
+		PlayerStart = self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
 	end
+	if PlayerStart == nil then
+		PlayerStart = self.PlayerTeams.BluFor.Script:GetPlayerStart(PlayerState)
+	end
+	return PlayerStart
 end
 
 function Mode:PlayerEnteredPlayArea(PlayerState)

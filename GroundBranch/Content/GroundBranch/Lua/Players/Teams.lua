@@ -1,4 +1,5 @@
 local AdminTools = require "AdminTools"
+local Tables = require('Common.Tables')
 
 local Respawn = {
     tiIdle = 30,
@@ -13,6 +14,7 @@ function Respawn:Create(Team, killData)
     self.Team = Team
 	self.KillData = killData
     self.PlayerName = player.GetName(killData.CharacterController)
+    self.OriginalInsertionPoint = self.Team.CurrentInsertionPoints[player.GetName(killData.CharacterController)]
     self.State = 'Idle'
     self.tiState = self.tiIdle
     self.tiTimeout = self.tiIdle
@@ -23,13 +25,13 @@ function Respawn:OnCheckTick()
     if self.State == 'Waiting' then
         self.tiState = self.tiState - 1
         if self.tiState <= 0 then
-            self.Team:SetCurrentPlayerStart(self.PlayerName, self.Team:GetClosestHospitalStart(actor.GetLocation(self.KillData.Character)))
+            self.Team:SetCurrentPlayerStart(self.PlayerName, self.Team:GetClosestHospitalStart(actor.GetLocation(self.KillData.Character), self.OriginalInsertionPoint))
             gamemode.EnterPlayArea(self.KillData.CharacterController)
             self.State = 'Done'
             AdminTools:ShowDebug(self.PlayerName .. ' respawned')
             return true
         else
-            self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'You will respawn in ' .. self.tiState .. 's!', 'Upper', 1.0, 'Always')
+            self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'You will respawn in ' .. self.tiState .. 's!', 'Upper', 0.9, 'Always')
         end
     elseif self.State == 'Idle' then
         self.tiState = self.tiState - 1
@@ -38,27 +40,27 @@ function Respawn:OnCheckTick()
         if Healer ~= nil then
             self.State = 'Healing'
             self.tiState = self.tiHeal
-            self.Team:DisplayMessageToPlayer(Healer, 'Healing (' .. self.tiState .. 's remaining)...', 'Upper', 1.0, 'Always')
-            self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'You are getting healed (' .. self.tiState .. 's remaining)...', 'Upper', 1.0, 'Always')
+            self.Team:DisplayMessageToPlayer(Healer, 'Healing (' .. self.tiState .. 's remaining)...', 'Upper', 0.9, 'Always')
+            self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'You are getting healed (' .. self.tiState .. 's remaining)...', 'Upper', 0.9, 'Always')
         elseif self.tiState <= 0 then
             self.State = 'Timeout'
             AdminTools:ShowDebug('Healing of ' .. self.PlayerName .. ' timed out')
             return true
         else
-            self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'Your time will run out in ' .. self.tiState .. 's!', 'Upper', 1.0, 'Always')
+            self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'Your time will run out in ' .. self.tiState .. 's!', 'Upper', 0.9, 'Always')
         end
     elseif self.State == 'Healing' then
         self.tiState = self.tiState - 1
         local Healer = self:GetHealer()
         if Healer ~= nil then
             if self.tiState <= 0 then
-                self.Team:DisplayMessageToPlayer(Healer, 'Healed.', 'Upper', 1.0, 'Always')
+                self.Team:DisplayMessageToPlayer(Healer, 'Healed.', 'Upper', 0.9, 'Always')
                 AdminTools:ShowDebug('Healing of ' .. self.PlayerName .. ' successful')
                 self.State = 'Waiting'
                 self.tiState = self.tiWait
             else
-                self.Team:DisplayMessageToPlayer(Healer, 'Healing (' .. self.tiState .. 's remaining)...', 'Upper', 1.0, 'Always')
-                self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'You are getting healed (' .. self.tiState .. 's remaining)...', 'Upper', 1.0, 'Always')
+                self.Team:DisplayMessageToPlayer(Healer, 'Healing (' .. self.tiState .. 's remaining)...', 'Upper', 0.9, 'Always')
+                self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, 'You are getting healed (' .. self.tiState .. 's remaining)...', 'Upper', 0.9, 'Always')
             end
         else
             self.State = 'Idle'
@@ -80,6 +82,51 @@ function Respawn:GetHealer()
         end
     end
     return nil
+end
+
+local InsertionPoint = {
+}
+
+InsertionPoint.__index = InsertionPoint
+
+function InsertionPoint:Create(Team, insertionPoint)
+    local self = setmetatable({}, InsertionPoint)
+    self.Team = Team
+    self.InsertionPoint = insertionPoint
+    self.Name = gamemode.GetInsertionPointName(insertionPoint)
+    self.PlayerStarts = {}
+	return self
+end
+
+function InsertionPoint:AddPlayerStart(playerStart)
+    table.insert(self.PlayerStarts, playerStart)
+end
+
+function InsertionPoint:OnRoundStart()
+    self.UnusedPlayerStarts = Tables.Copy(self.PlayerStarts)
+    self.UsedPlayerStartsCount = 0
+    self.EnforcedIndex = 1
+end
+
+function InsertionPoint:GetPlayerStart(force)
+    force = force or false
+    local playerStart = nil
+    if #self.UnusedPlayerStarts > 0 then
+        playerStart = self.UnusedPlayerStarts[1]
+        table.remove(self.UnusedPlayerStarts, 1)
+        self.UsedPlayerStartsCount = self.UsedPlayerStartsCount + 1
+    end
+    if playerStart ~= nil then
+        print('Found a free player start on insertion point ' .. self.Name .. ' (' .. actor.GetName(playerStart) .. '), ' .. #self.UnusedPlayerStarts .. ' left')
+    elseif force then
+        playerStart = self.PlayerStarts[self.EnforcedIndex]
+        self.EnforcedIndex = self.EnforcedIndex + 1
+        if self.EnforcedIndex > #self.PlayerStarts then
+            self.EnforcedIndex = 1
+        end
+        print('No free player start found on insertion point ' .. self.Name .. ', enforcing one (' .. actor.GetName(playerStart) .. ')')
+    end
+    return playerStart
 end
 
 local Teams = {
@@ -129,24 +176,38 @@ function Teams:Create(
     self.Display.ScoreMilestone = true
     self.Display.ObjectiveMessage = true
     self.Display.ObjectivePrompt = true
+    self.Display.Always = true
     self.PlayerScoreTypes = playerScoreTypes or {}
     self.TeamScoreTypes = teamScoreTypes or {}
-    self.PlayerStarts = {}
+    self.InsertionPoints = {}
     self.HospitalStarts = {}
     self.CurrentPlayerStart = {}
-    local allPlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
-	for _, playerStart in ipairs(allPlayerStarts) do
-		if actor.GetTeamId(playerStart) == teamId then
-			table.insert(self.PlayerStarts, playerStart)
+    self.CurrentInsertionPoints = {}
+    self.HospitalStartsCount = 0
+    self.InsertionPointsCount = 0
+    for _, insertionPoint in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
+        local newInsertionPoint = InsertionPoint:Create(self, insertionPoint)
+        self.InsertionPoints[newInsertionPoint.Name] = newInsertionPoint
+        self.InsertionPointsCount = self.InsertionPointsCount + 1
+    end
+	for _, playerStart in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')) do
+        local insertionPointName = gamemode.GetInsertionPointName(playerStart)
+		if actor.HasTag(playerStart, 'Hospital') then
+            self.HospitalStartsCount = self.HospitalStartsCount + 1
+            self.HospitalStarts[actor.GetLocation(playerStart)] = playerStart
+        else
+            local insertionPoint = self.InsertionPoints[insertionPointName]
+            if insertionPoint ~= nil then
+                insertionPoint:AddPlayerStart(playerStart)
+            else
+                print('  Player start ' .. actor.GetName(playerStart) .. ' is neither assigned to any insertion point nor tagged as "Hospital"!')
+            end
 		end
-	end
-    local allHospitalStarts = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBPlayerStart', 'Hospital')
-	for _, playerStart in ipairs(allHospitalStarts) do
-		self.HospitalStarts[actor.GetLocation(playerStart)] = playerStart
 	end
 	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
-    print('Intialized Team ' .. tostring(self))
+    print('  Found ' .. self.InsertionPointsCount .. ' insertion points and ' .. self.HospitalStartsCount .. ' hospital starts')
+    print('  Intialized Team ' .. tostring(self))
     return self
 end
 
@@ -184,6 +245,10 @@ function Teams:RoundStart(
     self.MedEvacCounts = {}
     self.CurrentPlayerStart = {}
     self.PendingRespawns = {}
+    self.CurrentInsertionPoints = {}
+    for _, insertionPoint in pairs(self.InsertionPoints) do
+        insertionPoint:OnRoundStart()
+    end
     gamemode.ResetTeamScores()
 	gamemode.ResetPlayerScores()
     self:SetAllowedToRespawn(self:CanRespawn())
@@ -342,7 +407,7 @@ function Teams:SetCurrentPlayerStart(PlayerName, PlayerStart)
     self.CurrentPlayerStart[PlayerName] = PlayerStart
 end
 
-function Teams:GetClosestHospitalStart(Location)
+function Teams:GetClosestHospitalStart(Location, originalInsertionPoint)
 	local LowestDist = 100000000
     local ClosestHospital = nil
     for HospitalLocation, Hospital in pairs(self.HospitalStarts) do
@@ -357,7 +422,15 @@ function Teams:GetClosestHospitalStart(Location)
     if ClosestHospital ~= nil then
         AdminTools:ShowDebug('Closest hospital start: ' .. actor.GetName(ClosestHospital))
     else
-        AdminTools:ShowDebug('No hospital start found, will use default player start')
+        local insertionPoint = self.InsertionPoints[originalInsertionPoint]
+        if insertionPoint ~= nil then
+            ClosestHospital = insertionPoint:GetPlayerStart(true)
+        end
+        if ClosestHospital ~= nil then
+            AdminTools:ShowDebug('No hospital start found, using one of the original insertion point (' .. actor.GetName(ClosestHospital) .. ')')
+        else
+            AdminTools:ShowDebug('No hospital start found, will use default player start')
+        end
     end
     return ClosestHospital
 end
@@ -391,6 +464,40 @@ function Teams:RespawnCleanUp(playerState)
     self:UpdatePlayers()
     self:AwardTeamScore('Respawn')
     return self.CurrentPlayerStart[player.GetName(playerState)]
+end
+
+function Teams:GetPlayerStart(playerState)
+    local insertionPointName = gamemode.GetInsertionPointName(player.GetInsertionPoint(playerState))
+    local playerStart = nil
+    if insertionPointName ~= nil then
+        local insertionPoint = self.InsertionPoints[insertionPointName]
+        if insertionPoint ~= nil then
+            playerStart = insertionPoint:GetPlayerStart()
+        end
+    else
+        playerStart = self:GetClosestPlayerStart()
+    end
+    self.CurrentInsertionPoints[player.GetName(playerState)] = gamemode.GetInsertionPointName(playerStart)
+    return playerStart
+end
+
+function Teams:GetClosestPlayerStart()
+    print('Teams:GetClosestPlayerStart')
+    local insertionPoint = nil
+    local maxPlayersCount = 0
+    for _, currInsertionPoint in pairs(self.InsertionPoints) do
+        if currInsertionPoint.UsedPlayerStartsCount > maxPlayersCount and #currInsertionPoint.UnusedPlayerStarts > 0 then
+            insertionPoint = currInsertionPoint
+            maxPlayersCount = currInsertionPoint.UsedPlayerStartsCount
+        end
+    end
+    if insertionPoint == nil then
+        for _, currInsertionPoint in pairs(self.InsertionPoints) do
+            insertionPoint = currInsertionPoint
+            break
+        end
+    end
+    return insertionPoint:GetPlayerStart(true)
 end
 
 function Teams:CanRespawn()
