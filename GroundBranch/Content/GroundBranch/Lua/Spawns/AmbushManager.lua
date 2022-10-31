@@ -362,8 +362,11 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
                 local Message = 'Player ' .. PlayerName .. ' entered trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present'
                 if Trigger.PlayersCount == 1 then
                     if Trigger.tiPresence < 0.2 then
+                        AdminTools:ShowDebug(Message)
                         Trigger:Trigger()
                     else
+                        Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
+                        AdminTools:ShowDebug(Message)
                         timer.Set(
                             "Trigger_" .. Trigger.Name,
                             Trigger,
@@ -371,10 +374,8 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
                             Trigger.tiPresence,
                             false
                         )
-                        Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
                     end
                 end
-                AdminTools:ShowDebug(Message)
             end
         end
     end
