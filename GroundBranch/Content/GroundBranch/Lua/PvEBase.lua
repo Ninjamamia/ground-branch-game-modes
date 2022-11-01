@@ -249,6 +249,7 @@ end
 
 function Mode:PlayerEnteredPlayArea(PlayerState)
 	print('PlayerEnteredPlayArea')
+	self.PlayerTeams.BluFor.Script:UpdatePlayers()
 	player.SetInsertionPoint(PlayerState, nil)
 end
 
@@ -258,6 +259,7 @@ function Mode:LogOut(Exiting)
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
+		self.PlayerTeams.BluFor.Script:UpdatePlayers()
 		timer.Set(
 			self.Timers.CheckBluForCount.Name,
 			self,
