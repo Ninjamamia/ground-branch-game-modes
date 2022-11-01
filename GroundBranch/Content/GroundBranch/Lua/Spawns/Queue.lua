@@ -18,7 +18,7 @@ function AI:Create(Queue, uuid, aiObject, spawnPoint, BaseTag, eliminationCallba
 	self.BaseTag = BaseTag
 	self.eliminationCallback = eliminationCallback or Queue:GetDefaultEliminationCallback(self.TeamId)
 	self.Tags = {}
-	self.Location = nil
+	self.Position = nil
 	table.insert(self.Tags, BaseTag)
     return self
 end
@@ -61,12 +61,32 @@ function KillData:Create(Character, CharacterController, KillerController)
 	if KillerController ~= nil then
 		self.KillerTeam = actor.GetTeamId(KillerController)
 	end
-	self.Location = actor.GetLocation(Character)
+    local location = actor.GetLocation(Character)
+    local rotation = actor.GetRotation(Character)
+    -- fix first letter case of rotation indices, no way around since
+    -- actor.GetLocation uses lowercase but we are supposed to return
+    -- PascalCase in the GetSpawnInfo() function
+    rotation = {
+        Pitch = rotation.pitch,
+        Yaw = rotation.yaw,
+        Roll = rotation.roll,
+    }
+    -- add the dead player's postion to the deadPlayerPositions the
+    -- PlayerState is used as an id to select the correct position in
+    -- the list later in the GetSpawnInfo() function
+    self.Position = {
+        Location = location,
+        Rotation = rotation,
+    }
 	return self
 end
 
+function KillData:GetPosition()
+	return self.Position
+end
+
 function KillData:GetLocation()
-	return self.Location
+	return self.Position.Location
 end
 
 function KillData:HasTag(Tag)

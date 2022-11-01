@@ -1,0 +1,83 @@
+Key,SourceString,Comment
+"missionsetting_timeofday","Insertion time","Opsboard"
+"missionsetting_trainingtimeofday","Set local time","Opsboard"
+"missionsetting_roundtime","Time limit","Opsboard"
+"missionsetting_roundtime_5","5 min","Opsboard"
+"missionsetting_roundtime_10","10 min","Opsboard"
+"missionsetting_roundtime_15","15 min","Opsboard"
+"missionsetting_roundtime_20","20 min","Opsboard"
+"missionsetting_roundtime_25","25 min","Opsboard"
+"missionsetting_roundtime_30","30 min","Opsboard"
+"missionsetting_roundtime_35","35 min","Opsboard"
+"missionsetting_roundtime_40","40 min","Opsboard"
+"missionsetting_roundtime_45","45 min","Opsboard"
+"missionsetting_roundtime_50","50 min","Opsboard"
+"missionsetting_roundtime_55","55 min","Opsboard"
+"missionsetting_roundtime_60","60 min","Opsboard"
+"missionsetting_difficulty","Enemy experience","Opsboard"
+"missionsetting_difficulty_0","Custom","Opsboard"
+"missionsetting_difficulty_1","Untrained","Opsboard"
+"missionsetting_difficulty_2","Trained","Opsboard"
+"missionsetting_difficulty_3","Experienced","Opsboard"
+"missionsetting_difficulty_4","Veteran","Opsboard"
+"missionsetting_opforcount","Expected enemy resistance","Opsboard"
+"missionsetting_quickteamkits","Quick team kits","Opsboard"
+"missionsetting_quickteamkits_0","No restrictions","Opsboard"
+"missionsetting_quickteamkits_1","Tan v Black","Opsboard"
+"missionsetting_quickteamkits_2","Plain v Camo","Opsboard"
+"missionsetting_quickteamkits_3","Blue v Red","Opsboard"
+"missionsetting_maxhealings","Maximum healings per player","Opsboard"
+"missionsetting_healingmode","Healing Mode","Opsboard"
+"missionsetting_healingmode_0","In Place","Opsboard"
+"missionsetting_healingmode_1","MedEvac","Opsboard"
+"aisetting_maxturnrate","How quickly the AI can turn (degrees per second)",
+"aisetting_maxsprintturnrate","How quickly the AI can turn while sprinting (degrees per second)",
+"aisetting_maxheadlookrate","How quickly the AI can look around separately to aiming (degrees per second)",
+"aisetting_recoilcompensationskill","How much recoil the AI compensates for when aiming (0-1)",
+"aisetting_suppressionrecoveryrate","How quickly the suppression value is reduced (per second)",
+"aisetting_ontargetthreshold","Limit while aiming at a target to be considered 'on target' (+/- degrees)",
+"aisetting_centerofmassbone","Bone that AI considers a characters center of mass for aiming purposes",
+"aisetting_deliberatemisstime","How long the AI should deliberately miss for, when engaging new target (in seconds)",
+"aisetting_deliberatemissblendouttime","Time over which a deliberate miss is blended out (in seconds)",
+"aisetting_deliberatemissdistancethreshold","Distance at which a deliberate miss is blended away because too close (min 100 = 1m)",
+"aisetting_aimerrorupdateinterval","How often the aim error alphas should be changed",
+"aisetting_reactiontimebase","Time it takes to react to just sensed (+/- ReactionTimeRandom) in seconds",
+"aisetting_reactiontimerandom","How much to randomise ReactionTimeBase by in +/- seconds",
+"aisetting_idlehearingthreshold","Threshold (in dB SPL) for idle AI to react to suspicious sounds",
+"aisetting_alerthearingthreshold","Threshold (in dB SPL) for alert AI to react to suspicious sounds",
+"aisetting_idleaffiliationsightthreshold","Threshold for idle AI to determine that a sighted player is hostile",
+"aisetting_alertaffiliationsightthreshold","Threshold for alert AI to determine that a sighted player is hostile",
+"aisetting_idlesuspicionsightthreshold","Threshold for idle AI to become suspicious of a player in view",
+"aisetting_alertsuspicionsightthreshold","Threshold for alert AI to become suspicious of a player in view",
+"aisetting_maxsemiautoburst","Max amount of rounds an AI can fire off in rapid succession in semi-auto firing modes",
+"aisetting_minfullautoburst","Min amount of rounds an AI can fire off in rapid succession in full-auto firing modes",
+"aisetting_maxfullautoburst","Max amount of rounds an AI can fire off in rapid succession in full-auto firing modes",
+"aisetting_mindelaybetweenbursts","Min delay after last shot is fired in a burst before AI can start another burst",
+"aisetting_maxdelaybetweenbursts","Max delay after last shot is fired in a burst before AI can start another burst",
+"aisetting_leanchance","How likely AI is to lean when able (0.0 - 1.0)",
+"gamemessage_trainingresupplynow","Killhouse round reset\r\nRemember to resupply at the weapon table",""
+"MissionComplete","MISSION COMPLETE","AAR"
+"MissionFailed","MISSION FAILED","AAR"
+"MissionCompletePVP","VICTORY","AAR"
+"MissionFailedPVP","DEFEAT","AAR"
+"summary_TimeRanOut","Operation time limit reached.","AAR"
+"tag_coop","Co-Op",""
+"tag_pvp","PvP",""
+"tag_team","Team",""
+"tag_train","Training",""
+"gamemode_any","All",""
+"gamemode_assassination","Assassination",""
+"gamemode_deathmatch","Deathmatch",""
+"gamemode_defuse","Defuse",""
+"gamemode_intelretrieval","Intel Retrieval",""
+"gamemode_uplink","Uplink",""
+"gamemode_teamelimination","Team Elimination",""
+"gamemode_terroristhunt","Terrorist Hunt",""
+"gamemode_training","Training",""
+"gamemode_dtas","Dynamic Take and Secure",""
+"ingamemap_timeofday","Local time",
+"ingamemap_timeremaining","Time remaining",
+"element_alpha","Alpha",
+"element_bravo","Bravo",
+"element_charlie","Charlie",
+"element_delta","Delta",

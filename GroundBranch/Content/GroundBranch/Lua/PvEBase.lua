@@ -48,10 +48,16 @@ local Mode = {
 			Value = 1,
 			AdvancedSetting = false,
 		},
-		MaxMedEvac = {
+		MaxHealings = {
 			Min = 0,
 			Max = 2,
 			Value = 2,
+			AdvancedSetting = false,
+		},
+		HealingMode = {
+			Min = 0,
+			Max = 1,
+			Value = 0,
 			AdvancedSetting = false,
 		},
 	},
@@ -127,7 +133,8 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:PreRoundCleanUp()
 		self:PrepareObjectives()
 	elseif RoundStage == 'PreRoundWait' then
-		self.PlayerTeams.BluFor.Script:RoundStart(self.Settings.MaxMedEvac.Value)
+		AdminTools.DebugMessageLevel = self.Settings.DebugMessageLevel.Value
+		self.PlayerTeams.BluFor.Script:RoundStart(self.Settings.MaxHealings.Value, self.Settings.HealingMode.Value)
 		if self.Settings.TriggersEnabled.Value == 1 then
 			self.AmbushManager:Activate()
 		else
@@ -350,7 +357,6 @@ function Mode:OnPlayerDied(killData)
 end
 
 function Mode:OnMissionSettingChanged(Setting, NewValue)
-	AdminTools.DebugMessageLevel = self.Settings.DebugMessageLevel.Value
 	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 
