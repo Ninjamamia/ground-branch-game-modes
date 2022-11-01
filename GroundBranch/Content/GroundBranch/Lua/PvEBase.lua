@@ -36,9 +36,9 @@ local Mode = {
 			Value = 60,
 			AdvancedSetting = false,
 		},
-		DisplayDebugMessages = {
+		DebugMessageLevel = {
 			Min = 0,
-			Max = 1,
+			Max = 2,
 			Value = 0,
 			AdvancedSetting = true,
 		},
@@ -348,7 +348,7 @@ function Mode:OnPlayerDied(killData)
 end
 
 function Mode:OnMissionSettingChanged(Setting, NewValue)
-	AdminTools.ShowDebugGameMessages = self.Settings.DisplayDebugMessages.Value == 1
+	AdminTools.DebugMessageLevel = self.Settings.DebugMessageLevel.Value
 	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 
