@@ -256,7 +256,11 @@ function AmbushManager:Create(spawnQueue, teamTag)
         local NewMine = Mine:Create(self, Actor)
         self.Mines[NewMine.Name] = NewMine
         for _, Defuser in ipairs(NewMine.Defusers) do
-            self.Defusers[actor.GetName(Defuser)] = NewMine
+	    local defuserName = actor.GetName(Defuser)
+	    if self.Defusers[defuserName] == nil then
+	        self.Defusers[defuserName] = {}
+	    end
+            table.insert(self.Defusers[defuserName], NewMine)
         end
         count = count + 1
     end
@@ -281,9 +285,11 @@ function AmbushManager:Create(spawnQueue, teamTag)
 end
 
 function AmbushManager:OnDefuse(Defuser)
-    local Mine = self.Defusers[actor.GetName(Defuser)]
-    if Mine ~= nil then
-        Mine:Defuse()
+    local Mines = self.Defusers[actor.GetName(Defuser)]
+    if Mines ~= nil then
+	for _, Mine in ipairs(Mines) do
+            Mine:Defuse()
+	end
     end
 end
 
