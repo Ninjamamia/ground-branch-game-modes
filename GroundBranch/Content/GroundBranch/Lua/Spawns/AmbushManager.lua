@@ -206,6 +206,59 @@ function Trigger:OnCustomEvent(Player, postSpawnCallback, force)
     end
 end
 
+local BlastZone = {
+}
+
+BlastZone.__index = BlastZone
+
+function BlastZone:Create(Parent, Actor)
+    local self = setmetatable({}, BlastZone)
+    self.Parent = Parent
+    self.Name = actor.GetName(Actor)
+    self.Actor = Actor
+    print('BlastZone ' .. self.Name .. ' found.')
+    return self
+end
+
+function BlastZone:Activate()
+    print('Activating blast zone ' .. self.Name .. '...')
+    self.Players = {}
+    self.PlayersCount = 0
+    actor.SetActive(self.Actor, true)
+end
+
+function BlastZone:Deactivate()
+    print('Deactivating blast zone ' .. self.Name .. '...')
+    self.Players = {}
+    self.PlayersCount = 0
+    actor.SetActive(self.Actor, false)
+end
+
+function BlastZone:Trigger()
+    for _, Player in pairs(self.Players) do
+        gamemode.EnterReadyRoom(player.GetPlayerState(Player))
+        player.ShowGameMessage(Player, 'You just got killed by explosives!', 'Upper', 3.0)
+    end
+end
+
+function BlastZone:OnBeginOverlap(Player)
+    local PlayerName = player.GetName(Player)
+    if self.Players[PlayerName] == nil then
+        self.Players[PlayerName] = Player
+        self.PlayersCount = self.PlayersCount + 1
+        AdminTools:ShowDebug('Player ' .. PlayerName .. ' entered blast zone ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present')
+    end
+end
+
+function BlastZone:OnEndOverlap(Player)
+    local PlayerName = player.GetName(Player)
+    if self.Players[PlayerName] ~= nil then
+        self.Players[PlayerName] = nil
+        self.PlayersCount = self.PlayersCount - 1
+        AdminTools:ShowDebug('Player ' .. PlayerName .. ' left blast zone ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present')
+    end
+end
+
 local Mine = {
     Name = nil,
     Tag = nil,
@@ -224,6 +277,8 @@ function Mine:Create(Parent, Actor)
     self.State = 'Inactive'
     self.Props = {}
     self.Defusers = {}
+    self.BlastZones = {}
+    self.Hidden = actor.HasTag(Actor, 'Hidden')
     print('Mine ' .. self.Name .. ' found.')
     print('  Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -232,7 +287,16 @@ function Mine:Create(Parent, Actor)
         _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")
         if key ~= nil then
             print("    " .. Tag)
-            self[key] = tonumber(value)
+            if key == 'BlastZone' then
+                local BlastZone = self.Parent.BlastZones[value]
+                if BlastZone ~= nil then
+                    table.insert(self.BlastZones, BlastZone)
+                else
+                    print('    BlastZone ' .. value .. ' is unknown!')
+                end
+            else
+                self[key] = tonumber(value)
+            end
         end
     end
     print('  Gathering props...')
@@ -246,6 +310,7 @@ function Mine:Activate()
     print('Activating mine ' .. self.Name .. '...')
     self.State = 'Active'
     actor.SetActive(self.Actor, true)
+    actor.SetHidden(self.Actor, self.Hidden)
     for _, Prop in ipairs(self.Props) do
         actor.SetActive(Prop, true)
         actor.SetHidden(Prop, false)
@@ -254,6 +319,9 @@ function Mine:Activate()
     for _, Prop in ipairs(self.Defusers) do
         actor.SetHidden(Prop, true)
         actor.SetEnableCollision(Prop, true)
+    end
+    for _, CurrBlast in ipairs(self.BlastZones) do
+        CurrBlast:Activate()
     end
 end
 
@@ -265,6 +333,9 @@ function Mine:Deactivate()
         actor.SetActive(Prop, false)
         actor.SetHidden(Prop, true)
         actor.SetEnableCollision(Prop, false)
+    end
+    for _, CurrBlast in ipairs(self.BlastZones) do
+        CurrBlast:Deactivate()
     end
 end
 
@@ -278,6 +349,9 @@ function Mine:Defuse()
             actor.SetEnableCollision(Prop, false)
         end
     end
+    for _, CurrBlast in ipairs(self.BlastZones) do
+        CurrBlast:Deactivate()
+    end
 end
 
 function Mine:Trigger()
@@ -285,6 +359,9 @@ function Mine:Trigger()
         self.State = 'Triggered'
         AdminTools:ShowDebug(self.Name .. " triggered.")
         GetLuaComp(self.Actor).Explode()
+        for _, CurrBlast in ipairs(self.BlastZones) do
+            CurrBlast:Trigger()
+        end
         for _, Prop in ipairs(self.Props) do
             actor.SetActive(Prop, false)
             actor.SetHidden(Prop, true)
@@ -307,9 +384,19 @@ function AmbushManager:Create(spawnQueue, teamTag)
     self.Triggers = {}
     self.Mines = {}
     self.Defusers = {}
-    print('Gathering ambush triggers...')
-    Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
+    self.BlastZones = {}
+    print('Gathering blast zones...')
+    local BlastZones = gameplaystatics.GetAllActorsWithTag('BlastZone')
     local count = 0
+    for _, Actor in ipairs(BlastZones) do
+        local NewBlast = BlastZone:Create(self, Actor)
+        self.BlastZones[NewBlast.Name] = NewBlast
+        count = count + 1
+    end
+    print('Found a total of ' .. count .. ' blasts.')
+    print('Gathering ambush triggers...')
+    local Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
+    count = 0
     for _, Actor in ipairs(Triggers) do
         local NewTrigg = Trigger:Create(self, Actor)
         self.Triggers[NewTrigg.Name] = NewTrigg
@@ -317,7 +404,7 @@ function AmbushManager:Create(spawnQueue, teamTag)
     end
     print('Found a total of ' .. count .. ' ambush triggers.')
     print('Gathering mines...')
-    Mines = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/GameMode/BP_BigBomb.BP_BigBomb_C', 'Mine')
+    local Mines = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/GameMode/BP_BigBomb.BP_BigBomb_C', 'Mine')
     count = 0
     for _, Actor in ipairs(Mines) do
         local NewMine = Mine:Create(self, Actor)
@@ -428,6 +515,10 @@ function AmbushManager:Deactivate()
 end
 
 function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
+    local BlastZone = self.BlastZones[actor.GetName(GameTrigger)]
+    if BlastZone ~= nil then
+        BlastZone:OnBeginOverlap(Player)
+    end
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         Trigger:OnBeginOverlap(Player)
@@ -435,6 +526,10 @@ function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
 end
 
 function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
+    local BlastZone = self.BlastZones[actor.GetName(GameTrigger)]
+    if BlastZone ~= nil then
+        BlastZone:OnEndOverlap(Player)
+    end
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         Trigger:OnEndOverlap(Player)
