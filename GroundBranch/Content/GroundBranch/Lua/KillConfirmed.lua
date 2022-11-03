@@ -129,7 +129,7 @@ function Mode:PreInit()
 end
 
 function Mode:PostInit()
-	print('Post initialization')
+	super.PostInit(self)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)

@@ -123,6 +123,7 @@ function Mode:PreInit()
 end
 
 function Mode:PostInit()
+	print('Post initialization')
 end
 
 function Mode:OnRoundStageSet(RoundStage)
@@ -357,6 +358,7 @@ function Mode:OnPlayerDied(killData)
 end
 
 function Mode:OnMissionSettingChanged(Setting, NewValue)
+	print('OnMissionSettingChanged')
 	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 

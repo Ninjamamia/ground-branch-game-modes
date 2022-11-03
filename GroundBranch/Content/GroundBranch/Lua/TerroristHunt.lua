@@ -25,6 +25,7 @@ function Mode:PreInit()
 end
 
 function Mode:PostInit()
+	super.PostInit(self)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpFor", 1)
 end
 

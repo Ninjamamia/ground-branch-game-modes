@@ -176,6 +176,7 @@ function Teams:Create(
     playerScoreTypes,
     teamScoreTypes
 )
+    print('Initializing team ' .. teamId .. '...')
     local self = setmetatable({}, Teams)
     self.Id = teamId
     self.Score = 0
