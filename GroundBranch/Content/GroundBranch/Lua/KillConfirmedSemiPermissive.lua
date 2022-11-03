@@ -66,7 +66,13 @@ Mode.Settings.ChanceIncreasePerCollateral = {
 	Value = 20,
 	AdvancedSetting = false,
 }
-Mode.Settings.CIVUpriseSize = {
+Mode.Settings.GlobalCIVUpriseSize = {
+	Min = 0,
+	Max = 30,
+	Value = 10,
+	AdvancedSetting = false,
+}
+Mode.Settings.LocalCIVUpriseSize = {
 	Min = 0,
 	Max = 30,
 	Value = 10,
@@ -149,7 +155,7 @@ function Mode:Uprise()
 		local tiUprise = math.random(50, 150) * 0.1
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
-		local sizeUprise = self.Settings.CIVUpriseSize.Value
+		local sizeUprise = self.Settings.GlobalCIVUpriseSize.Value
 		if sizeUprise > 0 then
 			self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
 			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
@@ -163,7 +169,7 @@ end
 
 function Mode:LocalUprise(killedCivLocation)
 	local tiUprise = math.random(50, 150) * 0.1
-	local sizeUprise = math.random(0, 10)
+	local sizeUprise = math.random(0, self.Settings.LocalCIVUpriseSize.Value)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
