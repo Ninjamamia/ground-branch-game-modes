@@ -344,9 +344,10 @@ function Mine:Defuse()
     self.State = 'Inactive'
     actor.SetActive(self.Actor, false)
     for _, Prop in ipairs(self.Props) do
+        actor.SetActive(Prop, false)
+        actor.SetEnableCollision(Prop, false)
         if not actor.HasTag(Prop, 'Keep') then
             actor.SetHidden(Prop, true)
-            actor.SetEnableCollision(Prop, false)
         end
     end
     for _, CurrBlast in ipairs(self.BlastZones) do
@@ -412,10 +413,10 @@ function AmbushManager:Create(spawnQueue, teamTag)
         local NewMine = Mine:Create(self, Actor)
         self.Mines[NewMine.Name] = NewMine
         for _, Defuser in ipairs(NewMine.Defusers) do
-	    local defuserName = actor.GetName(Defuser)
-	    if self.Defusers[defuserName] == nil then
-	        self.Defusers[defuserName] = {}
-	    end
+            local defuserName = actor.GetName(Defuser)
+            if self.Defusers[defuserName] == nil then
+                self.Defusers[defuserName] = {}
+            end
             table.insert(self.Defusers[defuserName], NewMine)
         end
         count = count + 1
@@ -443,9 +444,9 @@ end
 function AmbushManager:OnDefuse(Defuser)
     local Mines = self.Defusers[actor.GetName(Defuser)]
     if Mines ~= nil then
-	for _, Mine in ipairs(Mines) do
+        for _, Mine in ipairs(Mines) do
             Mine:Defuse()
-	end
+        end
     end
 end
 
