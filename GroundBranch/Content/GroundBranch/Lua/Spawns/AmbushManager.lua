@@ -187,9 +187,11 @@ function Mine:Activate()
     for _, Prop in ipairs(self.Props) do
         actor.SetActive(Prop, true)
         actor.SetHidden(Prop, false)
+        actor.SetEnableCollision(Prop, false)
     end
     for _, Prop in ipairs(self.Defusers) do
         actor.SetHidden(Prop, true)
+        actor.SetEnableCollision(Prop, true)
     end
 end
 
@@ -200,6 +202,7 @@ function Mine:Deactivate()
     for _, Prop in ipairs(self.Props) do
         actor.SetActive(Prop, false)
         actor.SetHidden(Prop, true)
+        actor.SetEnableCollision(Prop, false)
     end
 end
 
@@ -210,6 +213,7 @@ function Mine:Defuse()
     for _, Prop in ipairs(self.Props) do
         if not actor.HasTag(Prop, 'Keep') then
             actor.SetHidden(Prop, true)
+            actor.SetEnableCollision(Prop, false)
         end
     end
 end
@@ -222,6 +226,7 @@ function Mine:Trigger()
         for _, Prop in ipairs(self.Props) do
             actor.SetActive(Prop, false)
             actor.SetHidden(Prop, true)
+            actor.SetEnableCollision(Prop, false)
         end
     end
 end
@@ -296,7 +301,6 @@ end
 function AmbushManager:Activate(GameTrigger)
     GameTrigger = GameTrigger or nil
     if GameTrigger == nil then
-        print('Activating ambush triggers based on their settings...')
         self.Chance = 80
         if self.GameMode.Settings.TriggerActivationChance ~= nil then
             self.Chance = self.GameMode.Settings.TriggerActivationChance.Value
@@ -325,6 +329,7 @@ function AmbushManager:Activate(GameTrigger)
         if self.GameMode.Settings.MaxPresenceTime ~= nil then
             self.tiPresenceMax = self.GameMode.Settings.MaxPresenceTime.Value
         end
+        print('Activating ambush triggers based on their chance...')
         for _, Trigger in pairs(self.Triggers) do
             if math.random(0, 99) < (Trigger.Chance or self.Chance) then
                 Trigger:Activate()
@@ -332,11 +337,14 @@ function AmbushManager:Activate(GameTrigger)
                 Trigger:Deactivate()
             end
         end
+        print('Deactivating all mines in advance...') -- this is required to ensure that defuser collisions will be activated additively
+        for _, Mine in pairs(self.Mines) do
+            Mine:Deactivate()
+        end
+        print('Activating mines based on their chance...')
         for _, Mine in pairs(self.Mines) do
             if math.random(0, 99) < (Mine.Chance or self.Chance) then
                 Mine:Activate()
-            else
-                Mine:Deactivate()
             end
         end
     else
