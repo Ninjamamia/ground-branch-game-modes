@@ -359,6 +359,7 @@ function Mine:Trigger()
         self.State = 'Triggered'
         AdminTools:ShowDebug(self.Name .. " triggered.")
         GetLuaComp(self.Actor).Explode()
+        actor.SetHidden(self.Actor, true)
         for _, CurrBlast in ipairs(self.BlastZones) do
             CurrBlast:Trigger()
         end
