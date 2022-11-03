@@ -360,6 +360,7 @@ function Mine:Trigger()
         AdminTools:ShowDebug(self.Name .. " triggered.")
         GetLuaComp(self.Actor).Explode()
         actor.SetHidden(self.Actor, true)
+        actor.SetEnableCollision(self.Actor, false)
         for _, CurrBlast in ipairs(self.BlastZones) do
             CurrBlast:Trigger()
         end
