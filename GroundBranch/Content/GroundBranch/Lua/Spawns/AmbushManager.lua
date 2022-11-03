@@ -144,6 +144,68 @@ function Trigger:Trigger()
     end
 end
 
+function Trigger:OnBeginOverlap(Player)
+    if self.State == 'Active' then
+        local PlayerName = player.GetName(Player)
+        if self.Players[PlayerName] == nil then
+            self.Players[PlayerName] = true
+            self.PlayersCount = self.PlayersCount + 1
+            local Message = 'Player ' .. PlayerName .. ' entered trigger ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present'
+            if self.PlayersCount == 1 then
+                if self.tiPresence < 0.2 then
+                    AdminTools:ShowDebug(Message)
+                    self:Trigger()
+                else
+                    Message = Message .. ', will trigger in ' .. self.tiPresence .. 's'
+                    AdminTools:ShowDebug(Message)
+                    timer.Set(
+                        "Trigger_" .. self.Name,
+                        self,
+                        self.Trigger,
+                        self.tiPresence,
+                        false
+                    )
+                end
+            end
+        end
+    end
+end
+
+function Trigger:OnEndOverlap(Player)
+    if self.State == 'Active' then
+        local PlayerName = player.GetName(Player)
+        if self.Players[PlayerName] ~= nil then
+            self.Players[PlayerName] = nil
+            self.PlayersCount = self.PlayersCount - 1
+            local Message = 'Player ' .. PlayerName .. ' left trigger ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present'
+            if self.PlayersCount == 0 then
+                timer.Clear("Trigger_" .. self.Name, self)
+                Message = Message .. ', timer aborted'
+            end
+            AdminTools:ShowDebug(Message)
+        end
+    end
+end
+
+function Trigger:OnLaptopSuccess()
+    if self.State == 'Active' then
+        AdminTools:ShowDebug('Laptop ' .. self.Name .. ' used successfully')
+        self:Trigger()
+    end
+end
+
+function Trigger:OnCustomEvent(Player, postSpawnCallback, force)
+    force = force or false
+    if force then
+        self:Activate()
+    end
+    if self.State == 'Active' then
+        self.postSpawnCallback = postSpawnCallback or nil
+        AdminTools:ShowDebug('Player ' .. player.GetName(Player) .. ' caused event trigger ' .. self.Name)
+        self:Trigger()
+    end
+end
+
 local Mine = {
     Name = nil,
     Tag = nil,
@@ -368,121 +430,34 @@ end
 function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        if Trigger.State == 'Active' then
-            local PlayerName = player.GetName(Player)
-            if Trigger.Players[PlayerName] == nil then
-                Trigger.Players[PlayerName] = true
-                Trigger.PlayersCount = Trigger.PlayersCount + 1
-                local Message = 'Player ' .. PlayerName .. ' entered trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present'
-                if Trigger.PlayersCount == 1 then
-                    if Trigger.tiPresence < 0.2 then
-                        AdminTools:ShowDebug(Message)
-                        Trigger:Trigger()
-                    else
-                        Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
-                        AdminTools:ShowDebug(Message)
-                        timer.Set(
-                            "Trigger_" .. Trigger.Name,
-                            Trigger,
-                            Trigger.Trigger,
-                            Trigger.tiPresence,
-                            false
-                        )
-                    end
-                end
-            end
-        end
+        Trigger:OnBeginOverlap(Player)
     end
 end
 
 function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        if Trigger.State == 'Active' then
-            local PlayerName = player.GetName(Player)
-            if Trigger.Players[PlayerName] ~= nil then
-                Trigger.Players[PlayerName] = nil
-                Trigger.PlayersCount = Trigger.PlayersCount - 1
-                local Message = 'Player ' .. PlayerName .. ' left trigger ' .. Trigger.Name .. ', ' .. Trigger.PlayersCount .. ' players present'
-                if Trigger.PlayersCount == 0 then
-                    timer.Clear("Trigger_" .. Trigger.Name, Trigger)
-                    Message = Message .. ', timer aborted'
-                end
-                AdminTools:ShowDebug(Message)
-            end
-        end
+        Trigger:OnEndOverlap(Player)
     end
 end
 
 function AmbushManager:OnLaptopSuccess(GameTrigger)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        if Trigger.State == 'Active' then
-            local Message = 'Laptop ' .. Trigger.Name .. ' used successfully'
-            if Trigger.tiPresence < 0.2 then
-                Trigger:Trigger()
-            else
-                timer.Set(
-                    "Trigger_" .. Trigger.Name,
-                    Trigger,
-                    Trigger.Trigger,
-                    Trigger.tiPresence,
-                    false
-                )
-                Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
-            end
-            AdminTools:ShowDebug(Message)
-        end
+        Trigger:OnLaptopSuccess()
     end
 end
 
 function AmbushManager:OnCustomEvent(GameTrigger, Player, postSpawnCallback, force)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        force = force or false
-        if force then
-            Trigger:Activate()
-        end
-        if Trigger.State == 'Active' then
-            Trigger.postSpawnCallback = postSpawnCallback or nil
-            local PlayerName = player.GetName(Player)
-            if Trigger.Players[PlayerName] == nil then
-                Trigger.Players[PlayerName] = true
-                Trigger.PlayersCount = Trigger.PlayersCount + 1
-                local Message = 'Player ' .. PlayerName .. ' caused event trigger ' .. Trigger.Name
-                if Trigger.tiPresence < 0.2 then
-                    Trigger:Trigger()
-                else
-                    timer.Set(
-                        "Trigger_" .. Trigger.Name,
-                        Trigger,
-                        Trigger.Trigger,
-                        Trigger.tiPresence,
-                        false
-                    )
-                    Message = Message .. ', will trigger in ' .. Trigger.tiPresence .. 's'
-                end
-                AdminTools:ShowDebug(Message)
-            end
-        end
+        Trigger:OnCustomEvent(Player, postSpawnCallback, force)
     end
 end
 
 function AmbushManager:OnCharacterDied(Character, CharacterController, KillerController)
-    local PlayerName = player.GetName(Character)
     for _, Trigger in pairs(self.Triggers) do
-        if Trigger.State == 'Active' then
-            if Trigger.Players[PlayerName] ~= nil then
-                Trigger.Players[PlayerName] = nil
-                Trigger.PlayersCount = Trigger.PlayersCount - 1
-                local Message = 'Player ' .. PlayerName .. ' left trigger ' .. Trigger.Name .. ' (died), ' .. Trigger.PlayersCount .. ' players present'
-                if Trigger.PlayersCount == 0 then
-                    timer.Clear("Trigger_" .. Trigger.Name, Trigger)
-                    Message = Message .. ', timer aborted'
-                end
-                AdminTools:ShowDebug(Message)
-            end
-        end
+        Trigger:OnEndOverlap(Character)
     end
 end
 
