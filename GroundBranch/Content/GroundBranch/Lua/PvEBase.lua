@@ -40,7 +40,7 @@ local Mode = {
 			Min = 0,
 			Max = 2,
 			Value = 0,
-			AdvancedSetting = true,
+			AdvancedSetting = false,
 		},
 		TriggersEnabled = {
 			Min = 0,
@@ -106,6 +106,7 @@ function Mode:PreInit()
 	self.OnCharacterDiedCallback = CallbackList:Create()
 	self.OnGameTriggerBeginOverlapCallback = CallbackList:Create()
 	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
+	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
 		false,
@@ -114,7 +115,6 @@ function Mode:PreInit()
 	)
 	-- Gathers all OpFor spawn points by priority
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
-	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
 	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
 
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AiTeams.OpFor.Spawns.Total)
@@ -245,19 +245,12 @@ end
 
 function Mode:GetSpawnInfo(PlayerState)
 	print('GetSpawnInfo')
-	local PlayerStart = nil
-	if gamemode.GetRoundStage() == 'InProgress' then
-		PlayerStart = self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
-	end
-	if PlayerStart == nil then
-		PlayerStart = self.PlayerTeams.BluFor.Script:GetPlayerStart(PlayerState)
-	end
-	return PlayerStart
+	return self.SpawnQueue:OnGetSpawnInfo(PlayerState)
 end
 
 function Mode:PlayerEnteredPlayArea(PlayerState)
 	print('PlayerEnteredPlayArea')
-	self.PlayerTeams.BluFor.Script:UpdatePlayers()
+	self.SpawnQueue:OnPlayerEnteredPlayArea(PlayerState)
 	player.SetInsertionPoint(PlayerState, nil)
 end
 
@@ -267,7 +260,7 @@ function Mode:LogOut(Exiting)
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		self.PlayerTeams.BluFor.Script:UpdatePlayers()
+		self.SpawnQueue:OnLogOut(Exiting)
 		timer.Set(
 			self.Timers.CheckBluForCount.Name,
 			self,
@@ -326,10 +319,6 @@ function Mode:UpdateCompletedObjectives()
 	end
 end
 
-function Mode:GetPlayerTeamScript()
-	return self.PlayerTeams.BluFor.Script
-end
-
 function Mode:PrepareObjectives()
 end
 
@@ -346,8 +335,6 @@ function Mode:OnOpForDied(killData)
 end
 
 function Mode:OnPlayerDied(killData)
-	AdminTools:NotifyKIA(killData.CharacterController)
-	self.PlayerTeams.BluFor.Script:PlayerDied(killData)
 	timer.Set(
 		self.Timers.CheckBluForCount.Name,
 		self,

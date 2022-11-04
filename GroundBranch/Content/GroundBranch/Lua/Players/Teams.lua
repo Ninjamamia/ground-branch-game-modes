@@ -1,101 +1,6 @@
 local AdminTools = require "AdminTools"
 local Tables = require('Common.Tables')
 
-local Respawn = {
-    tiIdle = 30,
-    tiHeal = 10,
-    tiWait = 10
-}
-
-Respawn.__index = Respawn
-
-function Respawn:Create(Team, killData)
-    local self = setmetatable({}, Respawn)
-    self.Team = Team
-	self.KillData = killData
-    self.PlayerName = player.GetName(killData.CharacterController)
-    self.OriginalInsertionPoint = self.Team.CurrentInsertionPoints[player.GetName(killData.CharacterController)]
-    self.State = 'Idle'
-    self.tiState = self.tiIdle
-    self.tiTimeout = self.tiIdle
-    self.Position = killData:GetPosition()
-    return self
-end
-
-function Respawn:OnCheckTick()
-    if self.State == 'Waiting' then
-        self.tiState = self.tiState - 1
-        if self.tiState <= 0 then
-            self.Team:SetCurrentPlayerStart(self.PlayerName, self.Team:GetClosestHospitalStart(self.Position, self.OriginalInsertionPoint))
-            gamemode.EnterPlayArea(self.KillData.CharacterController)
-            self.State = 'Done'
-            AdminTools:ShowDebug(self.PlayerName .. ' respawned')
-            return true
-        else
-            self:DisplayMessageToWounded('You will respawn in ' .. self.tiState .. 's!')
-        end
-    elseif self.State == 'Idle' then
-        self.tiState = self.tiState - 1
-        self.tiTimeout = self.tiTimeout - 1
-        local Healers = self:GetHealers()
-        if #Healers > 0 then
-            self.State = 'Healing'
-            self.tiState = self.tiHeal
-            self:DisplayMessageToHealers(Healers, 'Healing (' .. self.tiState .. 's remaining)...')
-            self:DisplayMessageToWounded('You are getting healed (' .. self.tiState .. 's remaining)...')
-        elseif self.tiState <= 0 then
-            self.State = 'Timeout'
-            AdminTools:ShowDebug('Healing of ' .. self.PlayerName .. ' timed out')
-            return true
-        else
-            self:DisplayMessageToWounded('Your time will run out in ' .. self.tiState .. 's!')
-        end
-    elseif self.State == 'Healing' then
-        self.tiState = self.tiState - 1
-        local Healers = self:GetHealers()
-        if #Healers > 0 then
-            if self.tiState <= 0 then
-                self:DisplayMessageToHealers(Healers, 'Healed.')
-                AdminTools:ShowDebug('Healing of ' .. self.PlayerName .. ' successful')
-                self.State = 'Waiting'
-                self.tiState = self.tiWait
-            else
-                self:DisplayMessageToHealers(Healers, 'Healing (' .. self.tiState .. 's remaining)...')
-                self:DisplayMessageToWounded('You are getting healed (' .. self.tiState .. 's remaining)...')
-            end
-        else
-            self.State = 'Idle'
-            self.tiState = self.tiTimeout
-        end
-    end
-    return false
-end
-
-function Respawn:DisplayMessageToHealers(healers, message)
-    for _, healer in ipairs(healers) do
-        self.Team:DisplayMessageToPlayer(healer, message, 'Upper', 0.9, 'Always')
-    end
-end
-
-function Respawn:DisplayMessageToWounded(message)
-    self.Team:DisplayMessageToPlayer(self.KillData.CharacterController, message, 'Upper', 0.9, 'Always')
-end
-
-function Respawn:GetHealers()
-    local killLocation = self.Position.Location
-    local healers = {}
-    for _, playerController in ipairs(self.Team:GetAlivePlayers()) do
-        local playerLocation = actor.GetLocation(
-            player.GetCharacter(playerController)
-        )
-        local Dist = vector.Size(playerLocation - killLocation)
-        if Dist <= 150 then
-            table.insert(healers, playerController)
-        end
-    end
-    return healers
-end
-
 local InsertionPoint = {
 }
 
@@ -163,7 +68,6 @@ local Teams = {
     TeamScoreTypes = {},
     PlayerStarts = {},
     HospitalStarts = {},
-    CurrentPlayerStart = {},
     maxHealings = 0,
     healingMode = 0  -- 0 = in place; 1 = MedEvac
 }
@@ -195,10 +99,10 @@ function Teams:Create(
     self.TeamScoreTypes = teamScoreTypes or {}
     self.InsertionPoints = {}
     self.HospitalStarts = {}
-    self.CurrentPlayerStart = {}
-    self.CurrentInsertionPoints = {}
     self.HospitalStartsCount = 0
     self.InsertionPointsCount = 0
+    self.HealableTeams = {}
+    self.HealableTeams[self.Id] = true
     for _, insertionPoint in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
         local newInsertionPoint = InsertionPoint:Create(self, insertionPoint)
         self.InsertionPoints[newInsertionPoint.Name] = newInsertionPoint
@@ -222,6 +126,7 @@ function Teams:Create(
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
     print('  Found ' .. self.InsertionPointsCount .. ' insertion points and ' .. self.HospitalStartsCount .. ' hospital starts')
     print('  Intialized Team ' .. tostring(self))
+    gamemode.script.SpawnQueue:AddTeam(self)
     return self
 end
 
@@ -258,33 +163,36 @@ function Teams:RoundStart(
     else
         self.Display.ObjectivePrompt = false
     end
-    self.HealingCounts = {}
-    self.CurrentPlayerStart = {}
-    self.PendingRespawns = {}
-    self.CurrentInsertionPoints = {}
+    self.Players.All = {}
     for _, insertionPoint in pairs(self.InsertionPoints) do
         insertionPoint:OnRoundStart()
     end
     gamemode.ResetTeamScores()
 	gamemode.ResetPlayerScores()
-    self:SetAllowedToRespawn(self:CanRespawn())
-    self:UpdatePlayers()
 end
 
 --#region Players
 
-function Teams:UpdatePlayers()
-    self.Players.All = gamemode.GetPlayerList(self.Id, self.IncludeBots)
+function Teams:AddPlayer(Player)
+    table.insert(self.Players.All, Player)
+    self:UpdatePlayerLists()
+end
+
+function Teams:AddHealableTeam(TeamId)
+    self.HealableTeams[TeamId] = true
+end
+
+function Teams:UpdatePlayerLists()
     self.Players.Alive = {}
     self.Players.Dead = {}
     print('Found ' .. #self.Players.All .. ' Players')
-    for i, playerState in ipairs(self.Players.All) do
-        if player.GetLives(playerState) == 1 then
-            print('Player ' .. i .. ' is alive')
-            table.insert(self.Players.Alive, playerState)
+    for i, Player in ipairs(self.Players.All) do
+        if Player.IsAlive then
+            print('Player ' .. Player.Name .. ' is alive')
+            table.insert(self.Players.Alive, Player)
         else
-            print('Player ' .. i .. ' is dead')
-            table.insert(self.Players.Dead, playerState)
+            print('Player ' .. Player.Name .. ' is dead')
+            table.insert(self.Players.Dead, Player)
         end
     end
 end
@@ -331,7 +239,6 @@ function Teams:AwardTeamScore(action)
     end
 
     self:DisplayMilestones()
-    self:SetAllowedToRespawn(self:CanRespawn())
     print('Changed team score to ' .. self.Score)
 end
 
@@ -341,7 +248,7 @@ function Teams:AwardPlayerScore(awardedPlayer, action)
     end
 
     local multiplier = 1
-    player.AwardPlayerScore(awardedPlayer, action, multiplier)
+    player.AwardPlayerScore(player.GetPlayerState(awardedPlayer), action, multiplier)
 
     local scoreChange = self.PlayerScoreTypes[action].Score * multiplier
     local message = nil
@@ -369,59 +276,6 @@ end
 --#endregion
 
 --#region Respawns
-
-function Teams:SetAllowedToRespawn(respawnAllowed)
-    print('Setting team allowed to respawn to ' .. tostring(respawnAllowed))
-    for _, playerController in ipairs(self.Players.All) do
-        player.SetAllowedToRestart(playerController, respawnAllowed)
-    end
-end
-
-function Teams:PlayerDied(killData)
-    print('Player died')
-    if gamemode.GetRoundStage() ~= 'InProgress' then
-        return
-    end
-    local PlayerName = player.GetName(killData.CharacterController)
-    if self.HealingCounts[PlayerName] == nil then
-        self.HealingCounts[PlayerName] = 0
-    end
-    if self.HealingCounts[PlayerName] < self.maxHealings then
-        self.HealingCounts[PlayerName] = self.HealingCounts[PlayerName] + 1
-        AdminTools:ShowDebug('Player ' .. PlayerName .. ' can be healed now (' .. self.HealingCounts[PlayerName] .. ' of ' .. self.maxHealings .. ')')
-        NewRespawn = Respawn:Create(self, killData)
-        table.insert(self.PendingRespawns, NewRespawn)
-        if #self.PendingRespawns == 1 then
-            timer.Set(
-                'RespawnChecker',
-                self,
-                self.OnRespawnCheckTick,
-                1.0,
-                true
-            )
-            print('RespawnChecker started')
-        end
-    end
-    player.SetLives(killData.CharacterController, 0)
-    self:UpdatePlayers()
-end
-
-function Teams:OnRespawnCheckTick()
-    for idx, CurrRespawn in ipairs(self.PendingRespawns) do
-        local isDone = CurrRespawn:OnCheckTick()
-        if isDone then
-            table.remove(self.PendingRespawns, idx)
-        end
-    end
-    if #self.PendingRespawns < 1 then
-        timer.Clear('RespawnChecker', self)
-        print('RespawnChecker stopped')
-    end
-end
-
-function Teams:SetCurrentPlayerStart(PlayerName, PlayerStart)
-    self.CurrentPlayerStart[PlayerName] = PlayerStart
-end
 
 function Teams:GetClosestHospitalStart(Position, originalInsertionPoint)
     if self.healingMode == 0 then
@@ -455,37 +309,6 @@ function Teams:GetClosestHospitalStart(Position, originalInsertionPoint)
     return ClosestHospital
 end
 
-function Teams:RespawnFromReadyRoom(playerController)
-    print('Player respawning from ready room')
-    if gamemode.GetRoundStage() ~= 'InProgress' then
-        player.ShowGameMessage(
-            playerController,
-            'RespawnNotInProgress',
-            'Lower',
-            2.5
-        )
-        return
-    end
-    if self:CanRespawn() then
-        gamemode.EnterPlayArea(playerController)
-    else
-        player.ShowGameMessage(
-            playerController,
-            'RespawnInsufficientScore',
-            'Lower',
-            2.5
-        )
-    end
-end
-
-function Teams:RespawnCleanUp(playerState)
-    print('Cleaning up after respawn')
-    player.SetLives(playerState, 1)
-    self:UpdatePlayers()
-    self:AwardTeamScore('Respawn')
-    return self.CurrentPlayerStart[player.GetName(playerState)]
-end
-
 function Teams:GetPlayerStart(playerState)
     local insertionPointName = gamemode.GetInsertionPointName(player.GetInsertionPoint(playerState))
     local playerStart = nil
@@ -497,7 +320,6 @@ function Teams:GetPlayerStart(playerState)
     else
         playerStart = self:GetClosestPlayerStart()
     end
-    self.CurrentInsertionPoints[player.GetName(playerState)] = gamemode.GetInsertionPointName(playerStart)
     return playerStart
 end
 
@@ -520,24 +342,15 @@ function Teams:GetClosestPlayerStart()
     return insertionPoint:GetPlayerStart(true)
 end
 
-function Teams:CanRespawn()
-    if self.RespawnCost == 0 then
-        return true
-    else
-        return self.Score >= self.RespawnCost
-    end
-end
-
 --#endregion
 
 --#region Messages
 
-function Teams:DisplayMessageToPlayer(playerController, message, position, duration, messageType)
+function Teams:DisplayMessageToPlayer(agent, message, position, duration, messageType)
     if not self.Display[messageType] then
         return
     end
-    player.ShowGameMessage(
-        playerController,
+    agent:DisplayMessage(
         message,
         position,
         duration
@@ -549,9 +362,8 @@ function Teams:DisplayMessageToAlivePlayers(message, position, duration, message
         return
     end
     if #self.Players.Alive > 0 then
-        for _, playerController in ipairs(self.Players.Alive) do
-            player.ShowGameMessage(
-                playerController,
+        for _, agent in ipairs(self.Players.Alive) do
+            agent:DisplayMessage(
                 message,
                 position,
                 duration
@@ -565,9 +377,8 @@ function Teams:DisplayMessageToAllPlayers(message, position, duration, messageTy
         return
     end
     if #self.Players.All > 0 then
-        for _, playerController in ipairs(self.Players.All) do
-            player.ShowGameMessage(
-                playerController,
+        for _, agent in ipairs(self.Players.All) do
+            agent:DisplayMessage(
                 message,
                 position,
                 duration
@@ -581,9 +392,8 @@ function Teams:DisplayPromptToAlivePlayers(location, label, duration, messageTyp
         return
     end
     if #self.Players.Alive > 0 then
-        for _, playerController in ipairs(self.Players.Alive) do
-            player.ShowWorldPrompt(
-                playerController,
+        for _, agent in ipairs(self.Players.Alive) do
+            agent:ShowWorldPrompt(
                 location,
                 label,
                 duration

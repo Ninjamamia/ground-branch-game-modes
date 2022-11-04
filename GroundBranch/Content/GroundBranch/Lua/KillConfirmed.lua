@@ -8,7 +8,7 @@ local AdminTools 			= require('AdminTools')
 local Callback 				= require('common.Callback')
 local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
-local Tables = require("Common.Tables")
+local Tables 				= require('Common.Tables')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("PvEBase"))
@@ -157,20 +157,18 @@ end
 function Mode:OnOpForDied(killData)
 	print('OpFor standard eliminated')
 	if killData.KillerTeam == self.PlayerTeams.BluFor.TeamId then
-		self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'KillStandard')
+		killData.KillerAgent:AwardPlayerScore('KillStandard')
 	end
 end
 
 function Mode:OnPlayerDied(killData)
 	if killData.KilledTeam == self.PlayerTeams.BluFor.TeamId then
 		print('BluFor eliminated')
-		AdminTools:NotifyKIA(killData.CharacterController)
-		if killData.CharacterController == killData.KillerController then
-			self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.CharacterController, 'Accident')
+		if killData.KilledAgent == killData.KillerAgent then
+			killData.KilledAgent:AwardPlayerScore('Accident')
 		elseif killData.KillerTeam == killData.KilledTeam then
-			self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'TeamKill')
+			killData.KillerAgent:AwardPlayerScore('TeamKill')
 		end
-		self.PlayerTeams.BluFor.Script:PlayerDied(killData)
 		timer.Set(
 			self.Timers.CheckBluForCount.Name,
 			self,
@@ -202,7 +200,7 @@ function Mode:OnExfiltrated()
 	-- Award surviving players
 	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
 	for _, alivePlayer in ipairs(alivePlayers) do
-		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
+		alivePlayer:AwardPlayerScore('Survived')
 	end
 	-- Prepare summary
 	self:UpdateCompletedObjectives()
@@ -217,7 +215,7 @@ end
 
 function Mode:OnConfirmedKill(hvt, confirmer)
 	if self.Settings.ReinforcementsTrigger.Value == 1 then
-		self.AmbushManager:OnCustomEvent(hvt.AI.SpawnPoint, confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
+		self.AmbushManager:OnCustomEvent(hvt.SpawnPoint, confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
 	end
 end
 

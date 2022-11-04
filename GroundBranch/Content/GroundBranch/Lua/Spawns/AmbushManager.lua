@@ -93,7 +93,7 @@ function Trigger:Activate(IsLinked)
     self.State = 'Active'
     IsLinked = IsLinked or false
     if IsLinked then
-        if self.PlayersCount > 0 then
+        if self.AgentsCount > 0 then
             if self.tiPresence < 5.0 then
                 AdminTools:ShowDebug('Trigger ' .. self.Name .. ' reactivated, tiPresence < 5.0s (' .. self.tiPresence .. 's), will only re-trigger if re-occupied.')
             else
@@ -104,12 +104,12 @@ function Trigger:Activate(IsLinked)
                     self.tiPresence,
                     false
                 )
-                AdminTools:ShowDebug('Trigger ' .. self.Name .. ' reactivated, ' .. self.PlayersCount .. ' players still present, will re-trigger in ' .. self.tiPresence .. 's')
+                AdminTools:ShowDebug('Trigger ' .. self.Name .. ' reactivated, ' .. self.AgentsCount .. ' players still present, will re-trigger in ' .. self.tiPresence .. 's')
             end
         end
     else
-        self.Players = {}
-        self.PlayersCount = 0
+        self.Agents = {}
+        self.AgentsCount = 0
         actor.SetActive(self.Actor, true)
     end
 end
@@ -117,8 +117,8 @@ end
 function Trigger:Deactivate()
     print('Deactivating ambush trigger ' .. self.Name .. '...')
     self.State = 'Inactive'
-    self.Players = {}
-    self.PlayersCount = 0
+    self.Agents = {}
+    self.AgentsCount = 0
     actor.SetActive(self.Actor, false)
 end
 
@@ -144,14 +144,13 @@ function Trigger:Trigger()
     end
 end
 
-function Trigger:OnBeginOverlap(Player)
+function Trigger:OnBeginOverlap(Agent)
     if self.State == 'Active' then
-        local PlayerName = player.GetName(Player)
-        if self.Players[PlayerName] == nil then
-            self.Players[PlayerName] = true
-            self.PlayersCount = self.PlayersCount + 1
-            local Message = 'Player ' .. PlayerName .. ' entered trigger ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present'
-            if self.PlayersCount == 1 then
+        if self.Agents[Agent.Name] == nil then
+            self.Agents[Agent.Name] = true
+            self.AgentsCount = self.AgentsCount + 1
+            local Message = 'Player ' .. Agent.Name .. ' entered trigger ' .. self.Name .. ', ' .. self.AgentsCount .. ' players present'
+            if self.AgentsCount == 1 then
                 if self.tiPresence < 0.2 then
                     AdminTools:ShowDebug(Message)
                     self:Trigger()
@@ -171,14 +170,13 @@ function Trigger:OnBeginOverlap(Player)
     end
 end
 
-function Trigger:OnEndOverlap(Player)
+function Trigger:OnEndOverlap(Agent)
     if self.State == 'Active' then
-        local PlayerName = player.GetName(Player)
-        if self.Players[PlayerName] ~= nil then
-            self.Players[PlayerName] = nil
-            self.PlayersCount = self.PlayersCount - 1
-            local Message = 'Player ' .. PlayerName .. ' left trigger ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present'
-            if self.PlayersCount == 0 then
+        if self.Agents[Agent.Name] ~= nil then
+            self.Agents[Agent.Name] = nil
+            self.AgentsCount = self.AgentsCount - 1
+            local Message = 'Player ' .. Agent.Name .. ' left trigger ' .. self.Name .. ', ' .. self.AgentsCount .. ' players present'
+            if self.AgentsCount == 0 then
                 timer.Clear("Trigger_" .. self.Name, self)
                 Message = Message .. ', timer aborted'
             end
@@ -194,14 +192,14 @@ function Trigger:OnLaptopSuccess()
     end
 end
 
-function Trigger:OnCustomEvent(Player, postSpawnCallback, force)
+function Trigger:OnCustomEvent(Agent, postSpawnCallback, force)
     force = force or false
     if force then
         self:Activate()
     end
     if self.State == 'Active' then
         self.postSpawnCallback = postSpawnCallback or nil
-        AdminTools:ShowDebug('Player ' .. player.GetName(Player) .. ' caused event trigger ' .. self.Name)
+        AdminTools:ShowDebug('Player ' .. Agent.Name .. ' caused event trigger ' .. self.Name)
         self:Trigger()
     end
 end
@@ -222,40 +220,37 @@ end
 
 function BlastZone:Activate()
     print('Activating blast zone ' .. self.Name .. '...')
-    self.Players = {}
-    self.PlayersCount = 0
+    self.Agents = {}
+    self.AgentsCount = 0
     actor.SetActive(self.Actor, true)
 end
 
 function BlastZone:Deactivate()
     print('Deactivating blast zone ' .. self.Name .. '...')
-    self.Players = {}
-    self.PlayersCount = 0
+    self.Agents = {}
+    self.AgentsCount = 0
     actor.SetActive(self.Actor, false)
 end
 
 function BlastZone:Trigger()
-    for _, Player in pairs(self.Players) do
-        gamemode.EnterReadyRoom(player.GetPlayerState(Player))
-        player.ShowGameMessage(Player, 'You just got killed by explosives!', 'Upper', 3.0)
+    for _, Agent in pairs(self.Agents) do
+        Agent:Kill('You just got killed by explosives!')
     end
 end
 
-function BlastZone:OnBeginOverlap(Player)
-    local PlayerName = player.GetName(Player)
-    if self.Players[PlayerName] == nil then
-        self.Players[PlayerName] = Player
-        self.PlayersCount = self.PlayersCount + 1
-        AdminTools:ShowDebug('Player ' .. PlayerName .. ' entered blast zone ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present')
+function BlastZone:OnBeginOverlap(Agent)
+    if self.Agents[Agent.Name] == nil then
+        self.Agents[Agent.Name] = Agent
+        self.AgentsCount = self.AgentsCount + 1
+        AdminTools:ShowDebug('Player ' .. Agent.Name .. ' entered blast zone ' .. self.Name .. ', ' .. self.AgentsCount .. ' players present')
     end
 end
 
-function BlastZone:OnEndOverlap(Player)
-    local PlayerName = player.GetName(Player)
-    if self.Players[PlayerName] ~= nil then
-        self.Players[PlayerName] = nil
-        self.PlayersCount = self.PlayersCount - 1
-        AdminTools:ShowDebug('Player ' .. PlayerName .. ' left blast zone ' .. self.Name .. ', ' .. self.PlayersCount .. ' players present')
+function BlastZone:OnEndOverlap(Agent)
+    if self.Agents[Agent.Name] ~= nil then
+        self.Agents[Agent.Name] = nil
+        self.AgentsCount = self.AgentsCount - 1
+        AdminTools:ShowDebug('Player ' .. Agent.Name .. ' left blast zone ' .. self.Name .. ', ' .. self.AgentsCount .. ' players present')
     end
 end
 
@@ -423,8 +418,8 @@ function AmbushManager:Create(spawnQueue, teamTag)
     end
     print('Found a total of ' .. count .. ' mines.')
 	print('Hooking to callbacks')
-	if gamemode.script.OnCharacterDiedCallback ~= nil then
-		gamemode.script.OnCharacterDiedCallback:Add(Callback:Create(self, self.OnCharacterDied))
+	if gamemode.script.SpawnQueue.OnAgentDiedCallback ~= nil then
+		gamemode.script.SpawnQueue.OnAgentDiedCallback:Add(Callback:Create(self, self.OnAgentDied))
 	else
 		AdminTools:ShowDebug("AmbushManager: gamemode doesn't define OnCharacterDiedCallback, cant't hook to it")
 	end
@@ -518,24 +513,26 @@ function AmbushManager:Deactivate()
 end
 
 function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
+    local Agent = gamemode.script.SpawnQueue:GetAgent(Player)
     local BlastZone = self.BlastZones[actor.GetName(GameTrigger)]
     if BlastZone ~= nil then
-        BlastZone:OnBeginOverlap(Player)
+        BlastZone:OnBeginOverlap(Agent)
     end
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        Trigger:OnBeginOverlap(Player)
+        Trigger:OnBeginOverlap(Agent)
     end
 end
 
 function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
+    local Agent = gamemode.script.SpawnQueue:GetAgent(Player)
     local BlastZone = self.BlastZones[actor.GetName(GameTrigger)]
     if BlastZone ~= nil then
-        BlastZone:OnEndOverlap(Player)
+        BlastZone:OnEndOverlap(Agent)
     end
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        Trigger:OnEndOverlap(Player)
+        Trigger:OnEndOverlap(Agent)
     end
 end
 
@@ -547,15 +544,19 @@ function AmbushManager:OnLaptopSuccess(GameTrigger)
 end
 
 function AmbushManager:OnCustomEvent(GameTrigger, Player, postSpawnCallback, force)
+    local Agent = gamemode.script.SpawnQueue:GetAgent(Player)
     local Trigger = self.Triggers[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        Trigger:OnCustomEvent(Player, postSpawnCallback, force)
+        Trigger:OnCustomEvent(Agent, postSpawnCallback, force)
     end
 end
 
-function AmbushManager:OnCharacterDied(Character, CharacterController, KillerController)
+function AmbushManager:OnAgentDied(KilledAgent, KillerAgent)
+    for _, BlastZone in pairs(self.BlastZones) do
+        BlastZone:OnEndOverlap(KilledAgent)
+    end
     for _, Trigger in pairs(self.Triggers) do
-        Trigger:OnEndOverlap(Character)
+        Trigger:OnEndOverlap(KilledAgent)
     end
 end
 

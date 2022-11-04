@@ -159,11 +159,11 @@ function ConfirmKill:Neutralized(killData)
         self.PromptTimer.DelayTime,
         true
     )
-    self.Team:AwardPlayerScore(killData.KillerController, 'KillHvt')
-    self.Team:AwardTeamScore('KillHvt')
+    killData.KillerAgent:AwardPlayerScore('KillHvt')
+    killData.KillerAgent:AwardTeamScore('KillHvt')
     table.insert(
         self.HVT.EliminatedNotConfirmed,
-        killData
+        killData.KilledAgent
     )
     self.HVT.EliminatedNotConfirmedCount =
         self.HVT.EliminatedNotConfirmedCount + 1
@@ -198,15 +198,13 @@ function ConfirmKill:ShouldConfirmKillTimer()
 	local LowestDist = self.ObjectiveTimer.TimeStep.Max * 1000.0
 	for leaderIndex, hvt in ipairs(self.HVT.EliminatedNotConfirmed) do
         local leaderLocation = hvt:GetLocation()
-		for _, playerController in ipairs(self.Team:GetAlivePlayers()) do
-			local playerLocation = actor.GetLocation(
-				player.GetCharacter(playerController)
-			)
+		for _, player in ipairs(self.Team:GetAlivePlayers()) do
+			local playerLocation = player:GetLocation()
 			local DistVector = playerLocation - leaderLocation
 			local Dist = vector.Size(DistVector)
 			LowestDist = math.min(LowestDist, Dist)
 			if Dist <= 250 and math.abs(DistVector.z) < 110 then
-                self:ConfirmKill(leaderIndex, playerController, hvt)
+                self:ConfirmKill(leaderIndex, player, hvt)
 			end
 		end
 	end
@@ -232,8 +230,8 @@ function ConfirmKill:ConfirmKill(leaderIndex, confirmer, hvt)
     table.remove(self.HVT.EliminatedNotConfirmed, leaderIndex)
     self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmed
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
-    self.Team:AwardPlayerScore(confirmer, 'ConfirmHvt')
-    self.Team:AwardTeamScore('ConfirmHvt')
+    confirmer:AwardPlayerScore('ConfirmHvt')
+    confirmer:AwardTeamScore('ConfirmHvt')
     if self.OnConfirmedKillCallback ~= nil then
         self.OnConfirmedKillCallback:Call(hvt, confirmer)
     end

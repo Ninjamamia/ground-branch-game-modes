@@ -1,100 +1,38 @@
 local AdminTools = require('AdminTools')
 local Callback   = require('common.Callback')
+local CallbackList			= require('common.CallbackList')
+local AI = require('Agents.AI')
+local Player = require('Agents.Player')
+local DummyAgent = require('Agents.Dummy')
 
-local AI = {
-}
-
-AI.__index = AI
-
----Creates a new AI object.
----@return table AI Newly created AI object.
-function AI:Create(Queue, uuid, aiObject, spawnPoint, BaseTag, eliminationCallback)
-    local self = setmetatable({}, AI)
-	self.Queue = Queue
-	self.UUID = uuid
-    self.Object = aiObject
-	self.TeamId = actor.GetTeamId(aiObject)
-	self.SpawnPoint = spawnPoint
-	self.BaseTag = BaseTag
-	self.eliminationCallback = eliminationCallback or Queue:GetDefaultEliminationCallback(self.TeamId)
-	self.Tags = {}
-	self.Position = nil
-	table.insert(self.Tags, BaseTag)
-    return self
-end
-
-function AI:HasTag(Tag)
-	for _, CurrTag in ipairs(self.Tags) do
-		if CurrTag == Tag then
-			return true
-		end
-	end
-	return false
-end
-
-function AI:GetTags()
-	return self.Tags
-end
-
-function AI:CleanUp()
-	ai.CleanUp(self.UUID)
-end
-
-function AI:OnCharacterDied(KillData)
-	KillData.AI = self
-	self.eliminationCallback:Call(KillData)
-end
 
 local KillData = {
 }
 
 KillData.__index = KillData
 
-function KillData:Create(Character, CharacterController, KillerController)
+function KillData:Create(KilledAgent, KillerAgent)
     local self = setmetatable({}, KillData)
-	self.Character = Character
-	self.CharacterController = CharacterController
-	self.KillerController = KillerController
-	self.AI = nil
-	self.KilledTeam = actor.GetTeamId(CharacterController)
+	self.KilledAgent = KilledAgent
+	self.KillerAgent = KillerAgent
+	self.KilledTeam = KilledAgent.TeamId
 	self.KillerTeam = nil
-	if KillerController ~= nil then
-		self.KillerTeam = actor.GetTeamId(KillerController)
+	if KillerAgent ~= nil then
+		self.KillerTeam = KilledAgent.TeamId
 	end
-    local location = actor.GetLocation(Character)
-    local rotation = actor.GetRotation(Character)
-    -- fix first letter case of rotation indices, no way around since
-    -- actor.GetLocation uses lowercase but we are supposed to return
-    -- PascalCase in the GetSpawnInfo() function
-    rotation = {
-        Pitch = rotation.pitch,
-        Yaw = rotation.yaw,
-        Roll = rotation.roll,
-    }
-    -- add the dead player's postion to the deadPlayerPositions the
-    -- PlayerState is used as an id to select the correct position in
-    -- the list later in the GetSpawnInfo() function
-    self.Position = {
-        Location = location,
-        Rotation = rotation,
-    }
 	return self
 end
 
 function KillData:GetPosition()
-	return self.Position
+	return self.KilledAgent:GetPosition()
 end
 
 function KillData:GetLocation()
-	return self.Position.Location
+	return self:GetPosition().Location
 end
 
 function KillData:HasTag(Tag)
-	if self.AI == nil then
-		return false
-	else
-		return self.AI:HasTag(Tag)
-	end
+	return self.KilledAgent:HasTag(Tag)
 end
 
 local Queue = {
@@ -122,13 +60,22 @@ function Queue:Create(maxConcurrentAI, fallbackEliminationCallback)
 	self.MaxConcurrentAICount = maxConcurrentAI or ai.GetMaxCount()
 	self.DefaultEliminationCallbacks = {}
 	self.FallbackEliminationCallback = fallbackEliminationCallback
-	self.SpawnedAI = {}
+	self.SpawnedAIByUUID = {}
+	self.SpawnedAIByCharacterName = {}
+	self.SpawnedAIByControllerName = {}
+	self.PlayersByName = {}
+	self.TeamsById = {}
+	self.OnAgentDiedCallback = CallbackList:Create()
 	if gamemode.script.OnCharacterDiedCallback ~= nil then
 		gamemode.script.OnCharacterDiedCallback:Add(Callback:Create(self, self.OnCharacterDied))
 	else
 		AdminTools:ShowDebug("SpawnQueue: gamemode doesn't define OnCharacterDiedCallback, cant't hook to it")
 	end
     return self
+end
+
+function Queue:AddTeam(Team)
+	self.TeamsById[Team.Id] = Team
 end
 
 function Queue:AddDefaultEliminationCallback(TeamId, Callback)
@@ -141,7 +88,7 @@ end
 
 ---Resets the queue, has to be called by pre round cleanup.
 function Queue:Reset(maxConcurrentAI)
-	for _, AI in pairs(self.SpawnedAI) do
+	for _, AI in pairs(self.SpawnedAIByUUID) do
 		AI:CleanUp()
 	end
 	if maxConcurrentAI ~= nil then
@@ -153,11 +100,16 @@ function Queue:Reset(maxConcurrentAI)
 	self.AliveAICount = 0
 	self.PendingAICount = 0
 	self.SpawnQueue = {}
-	self.SpawnedAI = {}
+	self.SpawnedAIByUUID = {}
+	self.SpawnedAIByControllerName = {}
+	self.SpawnedAIByCharacterName = {}
+	self.PlayersByName = {}
+	self.Agents = {}
+    self.PendingHealings = {}
 end
 
 function Queue:GetStateMessage()
-	return "Current AI count: " .. self.AliveAICount .. " (" .. self.KilledAICount .. " of " .. self.SpawnedAICount .. " killed), " .. self.PendingAICount .. ' AI pending'
+	return "Current AI count: " .. self.AliveAICount .. " (" .. self.KilledAICount .. " of " .. self.AliveAICount + self.KilledAICount .. " killed), " .. self.PendingAICount .. ' AI pending'
 end
 
 function Queue:SetMaxConcurrentAICount(value)
@@ -165,23 +117,21 @@ function Queue:SetMaxConcurrentAICount(value)
 end
 
 function Queue:OnCharacterDied(Character, CharacterController, KillerController)
-	local killData = KillData:Create(Character, CharacterController, KillerController)
-	local uuid = actor.GetTags(CharacterController)
-	if uuid ~= nil then
-		uuid = uuid[1]
-		if uuid ~= nil then
-			local CurrAI = self.SpawnedAI[uuid]
-			if CurrAI ~= nil then
-				print('SpawnQueue: ' .. uuid .. ' died')
-				self.KilledAICount = self.KilledAICount + 1
-				self.AliveAICount = math.max(self.AliveAICount - 1, 0)
-				CurrAI:OnCharacterDied(killData)
-				AdminTools:ShowDebug(self:GetStateMessage())
-				return
-			end
-		end
+	local KilledAgent = self:GetAgent(CharacterController)
+	local KillerAgent = self:GetAgent(KillerController)
+	self:OnAgentDied(KilledAgent, KillerAgent)
+end
+
+function Queue:OnAgentDied(KilledAgent, KillerAgent)
+	self.OnAgentDiedCallback:Call(KilledAgent, KillerAgent)
+	local killData = KillData:Create(KilledAgent, KillerAgent)
+	if KilledAgent.IsAI then
+		print('SpawnQueue: ' .. KilledAgent.UUID .. ' died')
+		self.KilledAICount = self.KilledAICount + 1
+		self.AliveAICount = math.max(self.AliveAICount - 1, 0)
+		AdminTools:ShowDebug(self:GetStateMessage())
 	end
-	gamemode.script:OnPlayerDied(killData)
+	KilledAgent:OnCharacterDied(killData)
 end
 
 function Queue:AbortPending()
@@ -245,6 +195,7 @@ function Queue:OnSpawnQueueTick()
 	local maxAICount = self.MaxConcurrentAICount
 	if self.tiSpawnQueue >= CurrSpawnItem.tiSpawn then
         local count = 0
+		local failCount = 0
 		if CurrSpawnItem.prio == 1 then
 			maxAICount = ai.GetMaxCount()
 		end
@@ -252,8 +203,13 @@ function Queue:OnSpawnQueueTick()
 			if i > CurrSpawnItem.spawnedCount then
 				if self.AliveAICount >= maxAICount then
 					if CurrSpawnItem.isBlocking then
-						if count > 0 then
-							AdminTools:ShowDebug('SpawnQueue: Spawned (P) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's, ' .. self.PendingAICount .. ' AI still pending' )
+						if count > 0 or failCount > 0 then
+							local message = 'SpawnQueue: Spawned (P) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's'
+							if failCount > 0 then
+								message = message .. ', failed to spawn ' .. failCount
+							end
+							message = message .. ', ' .. self.PendingAICount .. ' AI still pending'
+							AdminTools:ShowDebug(message)
 						end
 						return
 					else
@@ -266,18 +222,28 @@ function Queue:OnSpawnQueueTick()
 				end
 				local uuid = "AI_" .. self.SpawnedAICount
 				ai.Create(spawnPoint, uuid, CurrSpawnItem.freezeTime)
-				local spawnedAI = gameplaystatics.GetAllActorsWithTag(uuid)
-				if spawnedAI ~= nil then
-					spawnedAI = spawnedAI[1]
-					print('SpawnQueue: Spawned ' .. uuid)
-					local NewAI = AI:Create(self, uuid, spawnedAI, spawnPoint, CurrSpawnItem.spawnTag, CurrSpawnItem.eliminationCallback)
-					self.SpawnedAI[uuid] = NewAI
-					self.AliveAICount = self.AliveAICount + 1
+				local characterController = gameplaystatics.GetAllActorsWithTag(uuid)
+				if characterController ~= nil then
+					local message = 'SpawnQueue: Spawned ' .. uuid
+					characterController = characterController[1]
+					local NewAI = AI:Create(self, uuid, characterController, spawnPoint, CurrSpawnItem.spawnTag, CurrSpawnItem.eliminationCallback)
+					table.insert(self.Agents, NewAI)
+					self.SpawnedAIByUUID[uuid] = NewAI
+					self.SpawnedAIByControllerName[actor.GetName(NewAI.CharacterController)] = NewAI
 					self.SpawnedAICount = self.SpawnedAICount + 1
-					table.insert(CurrSpawnItem.spawnedAI, NewAI)
-					count = count + 1
+					if NewAI.Character ~= nil then
+						print(message .. ' (OK)')
+						self.SpawnedAIByCharacterName[actor.GetName(NewAI.Character)] = NewAI
+						self.AliveAICount = self.AliveAICount + 1
+						count = count + 1
+						table.insert(CurrSpawnItem.spawnedAI, NewAI)
+					else
+						print(message .. ' (DoA)')
+						NewAI.IsAlive = false
+						failCount = failCount + 1
+					end
 				else
-					print('SpawnQueue: Unable to spawn an AI')
+					AdminTools:ShowDebug('SpawnQueue: Unable to spawn an AI')
 				end
 				CurrSpawnItem.spawnedCount = CurrSpawnItem.spawnedCount + 1
 				self.PendingAICount = self.PendingAICount - 1
@@ -290,7 +256,11 @@ function Queue:OnSpawnQueueTick()
 			CurrSpawnItem.postSpawnCallback:Call(CurrSpawnItem.spawnedAI)
 		end
 		if count > 0 then
-			AdminTools:ShowDebug('SpawnQueue: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's')
+			local message = 'SpawnQueue: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's'
+			if failCount > 0 then
+				message = message .. ', failed to spawn ' .. failCount
+			end
+			AdminTools:ShowDebug(message)
 		end
 		table.remove(self.SpawnQueue, 1)
 	end
@@ -305,6 +275,88 @@ function Queue:Start()
 		self.Timer.TimeStep,
 		true
 	)
+end
+
+function Queue:OnGetSpawnInfo(PlayerState)
+	local Agent = self.PlayersByName[player.GetName(PlayerState)]
+	if Agent == nil then
+		print('SpawnQueue: New player ' .. player.GetName(PlayerState))
+		local Team = self.TeamsById[actor.GetTeamId(PlayerState)]
+		if Team == nil then
+			print('SpawnQueue: Player ' .. player.GetName(PlayerState) .. ' has team ID ' .. actor.GetTeamId(PlayerState) .. ' but a matching team was not found!')
+			return nil
+		end
+		Agent = Player:Create(self, Team, PlayerState, Callback:Create(gamemode.script, gamemode.script.OnPlayerDied))
+		table.insert(self.Agents, Agent)
+		self.PlayersByName[player.GetName(PlayerState)] = Agent
+	else
+		if gamemode.GetRoundStage() == 'InProgress' then
+			Agent:PrepareRespawn()
+		end
+	end
+	return Agent.CurrentPlayerStart
+end
+
+function Queue:OnLogOut(Exiting)
+	local Agent = self.PlayersByName[player.GetName(Exiting)]
+	if Agent ~= nil then
+		Agent:OnLogOut()
+	else
+		print('SpawnQueue: Player ' .. player.GetName(Exiting) .. ' logged out but no agent was found!')
+	end
+end
+
+function Queue:OnPlayerEnteredPlayArea(PlayerState)
+	local Agent = self.PlayersByName[player.GetName(PlayerState)]
+	if Agent ~= nil then
+		Agent:OnSpawned()
+	else
+		print('SpawnQueue: OnPlayerEnteredPlayArea: Unexpected new player ' .. player.GetName(PlayerState))
+	end
+end
+
+function Queue:GetAgent(Character)
+	if Character == nil then
+		return DummyAgent:Create(self)
+	end
+	local Agent = self.SpawnedAIByCharacterName[actor.GetName(Character)]
+	if Agent == nil then
+		Agent = self.SpawnedAIByControllerName[actor.GetName(Character)]
+	end
+	if Agent == nil then
+		Agent = self.PlayersByName[player.GetName(Character)]
+	end
+	if Agent == nil then
+		Agent = DummyAgent:Create(self)
+	end
+	return Agent
+end
+
+function Queue:EnqueueHealingChance(Agent)
+    table.insert(self.PendingHealings, Agent)
+    if #self.PendingHealings == 1 then
+        timer.Set(
+            'HealingChecker',
+            self,
+            self.OnHealingCheckTick,
+            1.0,
+            true
+        )
+        print('HealingChecker started')
+    end
+end
+
+function Queue:OnHealingCheckTick()
+    for idx, Agent in ipairs(self.PendingHealings) do
+        local isDone = Agent:OnHealingCheckTick()
+        if isDone then
+            table.remove(self.PendingHealings, idx)
+        end
+    end
+    if #self.PendingHealings < 1 then
+        timer.Clear('HealingChecker', self)
+        print('HealingChecker stopped')
+    end
 end
 
 return Queue

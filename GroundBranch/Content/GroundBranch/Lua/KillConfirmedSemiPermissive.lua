@@ -109,6 +109,7 @@ function Mode:PreInit()
 	super.PreInit(self)
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
+	self.PlayerTeams.BluFor.Script:AddHealableTeam(self.AiTeams.CIVUnarmed.TeamId)
 	self.SpawnQueue:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
 end
 
@@ -184,9 +185,9 @@ end
 function Mode:OnCivDied(killData)
 	if killData.KillerTeam == self.PlayerTeams.BluFor.TeamId then
 		self.Objectives.AvoidFatality:ReportFatality()
-		self.PlayerTeams.BluFor.Script:AwardPlayerScore(killData.KillerController, 'CollateralDamage')
-		self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
-		local message = 'Collateral damage by ' .. player.GetName(killData.KillerController)
+		killData.KillerAgent:AwardPlayerScore('CollateralDamage')
+		killData.KillerAgent:AwardTeamScore('CollateralDamage')
+		local message = 'Collateral damage by ' .. killData.KillerAgent.Name
 		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 		if self.IsUprise then
 			self.Objectives.NoSoftFail:Fail()
