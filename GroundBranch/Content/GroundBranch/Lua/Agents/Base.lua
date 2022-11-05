@@ -1,6 +1,7 @@
 local AdminTools = require('AdminTools')
 
 local Base = {
+    IsAgent = true
 }
 
 Base.tiIdle = 30
@@ -10,10 +11,10 @@ Base.tiWait = 10
 Base.__index = Base
 
 ---Creates a new base agent object.
-function Base:Create(Queue, characterController, eliminationCallback)
+function Base:Init(AgentsManager, characterController, eliminationCallback)
 	self.IsAI = false
 	self.IsAlive = true
-	self.Queue = Queue
+	self.AgentsManager = AgentsManager
     self.CharacterController = characterController
     self.Healings = 0
 	self.Tags = {}
@@ -22,7 +23,7 @@ function Base:Create(Queue, characterController, eliminationCallback)
         self.Name = player.GetName(characterController)
         self.Character = player.GetCharacter(characterController)
         self.TeamId = actor.GetTeamId(characterController)
-        self.eliminationCallback = eliminationCallback or Queue:GetDefaultEliminationCallback(self.TeamId)
+        self.eliminationCallback = eliminationCallback or AgentsManager:GetDefaultEliminationCallback(self.TeamId)
     else
         self.Name = "Unknonw"
         self.Character = nil
@@ -32,11 +33,11 @@ function Base:Create(Queue, characterController, eliminationCallback)
 end
 
 function Base:__tostring()
-    return self.Name
+    return self.Type .. ' ' .. self.Name
 end
 
 function Base:GetMaxHealings()
-    return 1
+    return 0
 end
 
 function Base:UpdateCharacter()
@@ -97,12 +98,17 @@ function Base:OnCharacterDied(KillData)
     if gamemode.GetRoundStage() == 'InProgress' then
         if self.Healings < self:GetMaxHealings() then
             self.Healings = self.Healings + 1
-            AdminTools:ShowDebug('Agent ' .. self.Name .. ' can be healed now (' .. self.Healings .. ' of ' .. self:GetMaxHealings() .. ')')
+            AdminTools:ShowDebug(tostring(self) .. ' is wounded and can be healed now (' .. self.Healings .. ' of ' .. self:GetMaxHealings() .. ')')
             self:PrepareHealing()
         else
-            self.eliminationCallback:Call(KillData)
+            print(tostring(self) .. ' died')
+            self:OnBleedout()
         end
     end
+end
+
+function Base:OnBleedout()
+    self.eliminationCallback:Call(self.KillData)
 end
 
 function Base:Kill(message)
@@ -113,7 +119,7 @@ function Base:PrepareHealing()
     self.State = 'Idle'
     self.tiState = self.tiIdle
     self.tiTimeout = self.tiIdle
-    self.Queue:EnqueueHealingChance(self)
+    self.AgentsManager:EnqueueHealingChance(self)
 end
 
 function Base:CanHeal(WoundedAgent)
@@ -141,11 +147,11 @@ function Base:OnHealingCheckTick()
             self:DisplayMessageToWounded('You are getting healed (' .. self.tiState .. 's remaining)...')
         elseif self.tiState <= 0 then
             self.State = 'Timeout'
-            AdminTools:ShowDebug('Healing of ' .. self.Name .. ' timed out')
-            self.eliminationCallback:Call(self.KillData)
+            AdminTools:ShowDebug(tostring(self) .. ' died (healing timed out)')
+            self:OnBleedout()
             return true
         else
-            self:DisplayMessageToWounded('Your time will run out in ' .. self.tiState .. 's!')
+            self:DisplayMessageToWounded('Your will bleed out in ' .. self.tiState .. 's!')
         end
     elseif self.State == 'Healing' then
         self.tiState = self.tiState - 1
@@ -153,7 +159,7 @@ function Base:OnHealingCheckTick()
         if #Healers > 0 then
             if self.tiState <= 0 then
                 self:DisplayMessageToHealers(Healers, 'Healed.')
-                AdminTools:ShowDebug('Healing of ' .. self.Name .. ' successful')
+                AdminTools:ShowDebug('Healing of ' .. tostring(self) .. ' successful')
                 self.State = 'Waiting'
                 self.tiState = self.tiWait
             else
@@ -188,7 +194,7 @@ function Base:GetHealers()
     local killLocation = self:GetLocation()
     local healers = {}
     local potentialHealersAlive = false
-    for _, Agent in ipairs(self.Queue.Agents) do
+    for _, Agent in ipairs(self.AgentsManager.Agents) do
         if Agent:CanHeal(self) then
             local Dist = vector.Size(Agent:GetLocation() - killLocation)
             if Dist <= 150 then

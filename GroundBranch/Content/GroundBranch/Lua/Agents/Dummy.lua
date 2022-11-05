@@ -7,13 +7,22 @@ local super = Tables.DeepCopy(require("Agents.Base"))
 local Dummy = setmetatable({}, { __index = super })
 
 Dummy.__index = Dummy
+Dummy.Type = "Dummy"
 
 ---Creates a new Player object.
 ---@return table Player Newly created Player object.
-function Dummy:Create(Queue)
+function Dummy:Create(AgentsManager)
     local self = setmetatable({}, Dummy)
-    super.Create(self, Queue, nil, nil)
+    self:Init(AgentsManager or gamemode.script.AgentsManager)
     return self
+end
+
+function Dummy:Init(AgentsManager)
+    super.Init(self, AgentsManager, nil, nil)
+end
+
+function Dummy:__tostring()
+    return self.Type .. ' ' .. self.Name
 end
 
 function Dummy:OnCharacterDied(KillData)

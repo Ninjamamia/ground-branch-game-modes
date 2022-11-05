@@ -15,6 +15,10 @@ function InsertionPoint:Create(Team, insertionPoint)
 	return self
 end
 
+function InsertionPoint:__tostring()
+    return self.Name
+end
+
 function InsertionPoint:AddPlayerStart(playerStart)
     table.insert(self.PlayerStarts, playerStart)
 end
@@ -34,14 +38,14 @@ function InsertionPoint:GetPlayerStart(force)
         self.UsedPlayerStartsCount = self.UsedPlayerStartsCount + 1
     end
     if playerStart ~= nil then
-        print('Found a free player start on insertion point ' .. self.Name .. ' (' .. actor.GetName(playerStart) .. '), ' .. #self.UnusedPlayerStarts .. ' left')
+        print('Found a free player start on insertion point ' .. tostring(self) .. ' (' .. actor.GetName(playerStart) .. '), ' .. #self.UnusedPlayerStarts .. ' left')
     elseif force then
         playerStart = self.PlayerStarts[self.EnforcedIndex]
         self.EnforcedIndex = self.EnforcedIndex + 1
         if self.EnforcedIndex > #self.PlayerStarts then
             self.EnforcedIndex = 1
         end
-        print('No free player start found on insertion point ' .. self.Name .. ', enforcing one (' .. actor.GetName(playerStart) .. ')')
+        print('No free player start found on insertion point ' .. tostring(self) .. ', enforcing one (' .. actor.GetName(playerStart) .. ')')
     end
     return playerStart
 end
@@ -126,7 +130,7 @@ function Teams:Create(
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
     print('  Found ' .. self.InsertionPointsCount .. ' insertion points and ' .. self.HospitalStartsCount .. ' hospital starts')
     print('  Intialized Team ' .. tostring(self))
-    gamemode.script.SpawnQueue:AddTeam(self)
+    gamemode.script.AgentsManager:AddTeam(self)
     return self
 end
 
@@ -188,10 +192,10 @@ function Teams:UpdatePlayerLists()
     print('Found ' .. #self.Players.All .. ' Players')
     for i, Player in ipairs(self.Players.All) do
         if Player.IsAlive then
-            print('Player ' .. Player.Name .. ' is alive')
+            print(tostring(Player) .. ' is alive')
             table.insert(self.Players.Alive, Player)
         else
-            print('Player ' .. Player.Name .. ' is dead')
+            print(tostring(Player) .. ' is dead')
             table.insert(self.Players.Dead, Player)
         end
     end

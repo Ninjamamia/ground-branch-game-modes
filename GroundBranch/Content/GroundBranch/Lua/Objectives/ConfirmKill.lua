@@ -116,24 +116,11 @@ function ConfirmKill:ShuffleSpawns()
 	end
 end
 
----Spawns the specified amount of HVTs at the shuffled spawn points.
----@param duration number time over whch the ai should be spawned.
-function ConfirmKill:Spawn(duration)
-    print('Spawning ' .. self.HVT.Tag)
-    ai.CreateOverDuration(
-		duration,
-		self.HVT.Count,
-		self:PopShuffledSpawnPoints(),
-		self.HVT.Tag
-	)
-    timer.Set('CheckSpawnsTimer', self, self.checkSpawnsTimer, duration + 0.1, false)
-end
-
 ---Schedule spawning the specified amount of HVTs at the shuffled spawn points immediately.
 ---@param freezeTime number time for which the ai should be frozen.
-function ConfirmKill:EnqueueSpawning(spawnQueue, freezeTime)
+function ConfirmKill:Spawn(freezeTime)
     print('Schedule spawning ' .. self.HVT.Tag)
-	spawnQueue:Enqueue(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, Callback:Create(self, self.Neutralized), nil, Callback:Create(self, self.checkSpawnsTimer))
+	gamemode.script.AgentsManager:SpawnAI(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, Callback:Create(self, self.Neutralized), nil, Callback:Create(self, self.checkSpawnsTimer))
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.

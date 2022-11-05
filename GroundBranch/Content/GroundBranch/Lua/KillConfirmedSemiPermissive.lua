@@ -110,7 +110,7 @@ function Mode:PreInit()
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	self.PlayerTeams.BluFor.Script:AddHealableTeam(self.AiTeams.CIVUnarmed.TeamId)
-	self.SpawnQueue:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
+	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -136,7 +136,7 @@ end
 
 function Mode:SpawnCIVs()
 	self.AiTeams.CIVUnarmed.Spawns:AddRandomSpawns()
-	self.AiTeams.CIVUnarmed.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
+	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
 end
 
 function Mode:PreRoundCleanUp()
@@ -159,7 +159,7 @@ function Mode:Uprise()
 		local sizeUprise = self.Settings.GlobalCIVUpriseSize.Value
 		if sizeUprise > 0 then
 			self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
-			self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
+			self.AiTeams.CIVArmed.Spawns:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
 		end
 	end
 end
@@ -174,7 +174,7 @@ function Mode:LocalUprise(killedCivLocation)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
 		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-		self.AiTeams.CIVArmed.Spawns:EnqueueSpawning(self.SpawnQueue, tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
+		self.AiTeams.CIVArmed.Spawns:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
 	end
 end
 
@@ -187,7 +187,7 @@ function Mode:OnCivDied(killData)
 		self.Objectives.AvoidFatality:ReportFatality()
 		killData.KillerAgent:AwardPlayerScore('CollateralDamage')
 		killData.KillerAgent:AwardTeamScore('CollateralDamage')
-		local message = 'Collateral damage by ' .. killData.KillerAgent.Name
+		local message = 'Collateral damage by ' .. killData.KillerAgent
 		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 		if self.IsUprise then
 			self.Objectives.NoSoftFail:Fail()

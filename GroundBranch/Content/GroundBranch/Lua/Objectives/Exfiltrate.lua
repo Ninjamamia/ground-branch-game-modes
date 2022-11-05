@@ -163,12 +163,11 @@ end
 ---Checks if the trigger is the selected extraction zone, and that the player
 ---is part of the team assigned to this extraction point.
 ---@param trigger userdata the game trigger that the player entered.
----@param playerIn userdata the player that entered the game trigger.
+---@param Player userdata the player that entered the game trigger.
 ---@return boolean enteredOwnZone true if player entered theirs extraction zone, false otherwise.
-function Exfiltrate:CheckTriggerAndPlayer(trigger, playerIn)
+function Exfiltrate:CheckTriggerAndPlayer(trigger, Player)
     if trigger == self.Points.Active then
-        local playerCharacter = player.GetCharacter(playerIn)
-        if playerCharacter ~= nil then
+        if Player.Team == self.Team then
             return true
         end
     end

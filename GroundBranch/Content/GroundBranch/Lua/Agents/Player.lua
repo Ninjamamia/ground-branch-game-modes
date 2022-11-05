@@ -8,12 +8,18 @@ local super = Tables.DeepCopy(require("Agents.Base"))
 local Player = setmetatable({}, { __index = super })
 
 Player.__index = Player
+Player.Type = "Player"
 
 ---Creates a new Player object.
 ---@return table Player Newly created Player object.
-function Player:Create(Queue, Team, characterController, eliminationCallback)
+function Player:Create(AgentsManager, Team, characterController, eliminationCallback)
     local self = setmetatable({}, Player)
-    super.Create(self, Queue, characterController, eliminationCallback)
+    self:Init(AgentsManager, Team, characterController, eliminationCallback)
+    return self
+end
+
+function Player:Init(AgentsManager, Team, characterController, eliminationCallback)
+    super.Init(self, AgentsManager, characterController, eliminationCallback)
     self.IsNew = true
     self.IsAlive = false
     self.Team = Team
@@ -22,11 +28,14 @@ function Player:Create(Queue, Team, characterController, eliminationCallback)
     self.OriginalInsertionPointName = gamemode.GetInsertionPointName(self.CurrentPlayerStart)
     self.Team:AddPlayer(self)
     self.HealableTeams = self.Team.HealableTeams
-    return self
+end
+
+function Player:__tostring()
+    return self.Type .. ' ' .. self.Name
 end
 
 function Player:AwardPlayerScore(action)
-    self.Team:AwardPlayerScore(self, action)
+    self.Team:AwardPlayerScore(self.CharacterController, action)
 end
 
 function Player:AwardTeamScore(action)
@@ -59,9 +68,9 @@ end
 function Player:OnSpawned()
     self:UpdateCharacter()
     if self.IsNew then
-        print("Player " .. self.Name .. ' spawned initially')
+        print(tostring(self) .. ' spawned initially')
     else
-        print("Player " .. self.Name .. ' respawned')
+        print(tostring(self) .. ' respawned')
     end
     self.IsNew = false
     if self.Character ~= nil then
@@ -70,7 +79,7 @@ function Player:OnSpawned()
         self.Team:UpdatePlayerLists()
     else
         self.DeathReason = 'Spawn failed'
-        AdminTools:ShowDebug('Failed to spawn player ' .. self.Name)
+        AdminTools:ShowDebug('Failed to spawn ' .. tostring(self))
     end
 end
 

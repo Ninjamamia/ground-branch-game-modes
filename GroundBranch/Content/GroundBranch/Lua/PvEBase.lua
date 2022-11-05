@@ -1,10 +1,11 @@
 local MTeams                = require('Players.Teams')
 local MSpawnsPriority       = require('Spawns.Priority')
-local MSpawnsQueue          = require('Spawns.Queue')
+local AgentsManager         = require('Agents.Manager')
 local AdminTools 			= require('AdminTools')
-local MSpawnsAmbushManager  = require('Spawns.AmbushManager')
+local AmbushManager         = require('Ambush.Manager')
 local Callback 				= require('common.Callback')
 local CallbackList			= require('common.CallbackList')
+local KillData              = require('Agents.KillData')
 
 local Mode = {
 	UseReadyRoom = true,
@@ -97,7 +98,7 @@ local Mode = {
 			TimeStep = 0.1,
 		},
 	},
-	SpawnQueue = nil,
+	AgentsManager = nil,
 	AmbushManager = nil,
 }
 
@@ -106,7 +107,7 @@ function Mode:PreInit()
 	self.OnCharacterDiedCallback = CallbackList:Create()
 	self.OnGameTriggerBeginOverlapCallback = CallbackList:Create()
 	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
-	self.SpawnQueue = MSpawnsQueue:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
+	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
 		false,
@@ -115,7 +116,7 @@ function Mode:PreInit()
 	)
 	-- Gathers all OpFor spawn points by priority
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
-	self.AmbushManager = MSpawnsAmbushManager:Create(self.SpawnQueue, self.AiTeams.OpFor.Tag)
+	self.AmbushManager = AmbushManager:Create(self.AiTeams.OpFor.Tag)
 
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AiTeams.OpFor.Spawns.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
@@ -129,7 +130,7 @@ end
 function Mode:OnRoundStageSet(RoundStage)
 	print('Started round stage ' .. RoundStage)
 	timer.ClearAll()
-	self.SpawnQueue:Start()
+	self.AgentsManager:Start()
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self:PrepareObjectives()
@@ -144,7 +145,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:SpawnOpFor()
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 	elseif RoundStage == 'InProgress' then
-		AdminTools:ShowDebug(self.SpawnQueue:GetStateMessage())
+		AdminTools:ShowDebug(self.AgentsManager:GetStateMessage())
 	end
 end
 
@@ -216,8 +217,8 @@ function Mode:CheckReadyDownTimer()
 end
 
 function Mode:PreRoundCleanUp()
-	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
-	self.SpawnQueue:Reset()
+	self.AgentsManager:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
+	self.AgentsManager:Reset()
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()
@@ -245,12 +246,12 @@ end
 
 function Mode:GetSpawnInfo(PlayerState)
 	print('GetSpawnInfo')
-	return self.SpawnQueue:OnGetSpawnInfo(PlayerState)
+	return self.AgentsManager:OnGetSpawnInfo(PlayerState)
 end
 
 function Mode:PlayerEnteredPlayArea(PlayerState)
 	print('PlayerEnteredPlayArea')
-	self.SpawnQueue:OnPlayerEnteredPlayArea(PlayerState)
+	self.AgentsManager:OnPlayerEnteredPlayArea(PlayerState)
 	player.SetInsertionPoint(PlayerState, nil)
 end
 
@@ -260,7 +261,7 @@ function Mode:LogOut(Exiting)
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		self.SpawnQueue:OnLogOut(Exiting)
+		self.AgentsManager:OnLogOut(Exiting)
 		timer.Set(
 			self.Timers.CheckBluForCount.Name,
 			self,
@@ -277,18 +278,24 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		self.OnCharacterDiedCallback:Call(Character, CharacterController, KillerController)
+		local KilledAgent = self.AgentsManager:GetAgent(CharacterController)
+		local KillerAgent = self.AgentsManager:GetAgent(KillerController)
+		local killData = KillData:Create(KilledAgent, KillerAgent)
+		KilledAgent:OnCharacterDied(killData)
+		self.OnCharacterDiedCallback:Call(killData)
 	end
 end
 
 function Mode:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
-	self.OnGameTriggerBeginOverlapCallback:Call(GameTrigger, Player)
+	local Agent = self.AgentsManager:GetAgent(Player)
+	self.OnGameTriggerBeginOverlapCallback:Call(GameTrigger, Agent)
 end
 
 function Mode:OnGameTriggerEndOverlap(GameTrigger, Player)
 	print('OnGameTriggerEndOverlap')
-	self.OnGameTriggerEndOverlapCallback:Call(GameTrigger, Player)
+	local Agent = self.AgentsManager:GetAgent(Player)
+	self.OnGameTriggerEndOverlapCallback:Call(GameTrigger, Agent)
 end
 
 function Mode:CheckBluForCountTimer()
@@ -328,7 +335,7 @@ end
 
 function Mode:SpawnOpFor()
 	self.AiTeams.OpFor.Spawns:SelectSpawnPoints()
-	self.AiTeams.OpFor.Spawns:EnqueueSpawning(self.SpawnQueue, 0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
+	self.AiTeams.OpFor.Spawns:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
 end
 
 function Mode:OnOpForDied(killData)
@@ -346,7 +353,7 @@ end
 
 function Mode:OnMissionSettingChanged(Setting, NewValue)
 	print('OnMissionSettingChanged')
-	self.SpawnQueue:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
+	self.AgentsManager:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 
 return Mode

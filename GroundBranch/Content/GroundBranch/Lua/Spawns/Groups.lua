@@ -264,24 +264,8 @@ function Groups:ResetSpawnTables()
     self.SelectedSpawnPoints = {}
 end
 
----Spawns AI in the selected spawn points.
----@param duration number The time over which the AI will be spawned.
----@param count integer The amount of the AI to spawn.
----@param spawnTag string The tag that will be assigned to spawned AI.
-function Groups:Spawn(duration, count, spawnTag)
-    if count > #self.SelectedSpawnPoints then
-        count = #self.SelectedSpawnPoints
-    end
-	ai.CreateOverDuration(
-		duration,
-		count,
-		self:PopSelectedSpawnPoints(),
-		spawnTag
-	)
-end
-
 ---Schedules AI spawning in the selected spawn points.
----@param spawnQueue table The queue object to use.
+---@param agentsManager table The queue object to use.
 ---@param delay number The time after which spawning shall start.
 ---@param freezeTime number the time for which the ai should be frozen.
 ---@param count integer The amount of the AI to spawn.
@@ -290,11 +274,11 @@ end
 ---@param postSpawnCallback table A callback object to call after spawning is complete (optional).
 ---@param isBlocking boolean If set to true, the next queue item will only be processed after all AI have been spawned (optional, default = false).
 ---@param prio number Higher prios will spawn before (optional, default = 255).
-function Groups:EnqueueSpawning(spawnQueue, delay, freezeTime, count, spawnTag, preSpawnCallback, postSpawnCallback, isBlocking, prio)
+function Groups:Spawn(delay, freezeTime, count, spawnTag, preSpawnCallback, postSpawnCallback, isBlocking, prio)
     if count > #self.SelectedSpawnPoints then
         count = #self.SelectedSpawnPoints
     end
-	spawnQueue:Enqueue(delay, freezeTime, count, self:PopSelectedSpawnPoints(), spawnTag, self.eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
+	gamemode.script.AgentsManager:SpawnAI(delay, freezeTime, count, self:PopSelectedSpawnPoints(), spawnTag, self.eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
 end
 
 --#endregion

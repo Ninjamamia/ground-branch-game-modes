@@ -9,6 +9,7 @@ local Callback 				= require('common.Callback')
 local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
 local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 local Tables 				= require('Common.Tables')
+local DummyAgent			= require('Agents.Dummy')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("PvEBase"))
@@ -151,7 +152,7 @@ end
 
 function Mode:SpawnOpFor()
 	super.SpawnOpFor(self)
-	self.Objectives.ConfirmKill:EnqueueSpawning(self.SpawnQueue, 0.4)
+	self.Objectives.ConfirmKill:Spawn(0.4)
 end
 
 function Mode:OnOpForDied(killData)
@@ -190,7 +191,7 @@ end
 
 function Mode:OnAllKillsConfirmed()
 	self.Objectives.Exfiltrate:EnableExfiltration()
-	self.AmbushManager:OnCustomEvent(self.Objectives.Exfiltrate:GetSelectedPoint(), nil, nil, true)
+	self.AmbushManager:OnCustomEvent(self.Objectives.Exfiltrate:GetSelectedPoint(), DummyAgent:Create(), nil, true)
 end
 
 function Mode:OnExfiltrated()
