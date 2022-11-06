@@ -12,22 +12,21 @@ Player.Type = "Player"
 
 ---Creates a new Player object.
 ---@return table Player Newly created Player object.
-function Player:Create(AgentsManager, Team, characterController, eliminationCallback)
+function Player:Create(AgentsManager, characterController, eliminationCallback)
     local self = setmetatable({}, Player)
-    self:Init(AgentsManager, Team, characterController, eliminationCallback)
+    self:Init(AgentsManager, characterController, eliminationCallback)
+    self:PostInit()
     return self
 end
 
-function Player:Init(AgentsManager, Team, characterController, eliminationCallback)
+function Player:Init(AgentsManager, characterController, eliminationCallback)
+    self.Name = player.GetName(characterController)
     super.Init(self, AgentsManager, characterController, eliminationCallback)
     self.IsNew = true
     self.IsAlive = false
-    self.Team = Team
     self.DeathReason = ''
     self.CurrentPlayerStart = self.Team:GetPlayerStart(characterController)
     self.OriginalInsertionPointName = gamemode.GetInsertionPointName(self.CurrentPlayerStart)
-    self.Team:AddPlayer(self)
-    self.HealableTeams = self.Team.HealableTeams
 end
 
 function Player:__tostring()
@@ -42,16 +41,11 @@ function Player:AwardTeamScore(action)
     self.Team:AwardTeamScore(action)
 end
 
-function Player:GetMaxHealings()
-    return self.Team.maxHealings
-end
-
 function Player:OnCharacterDied(KillData)
     super.OnCharacterDied(self, KillData)
     if gamemode.GetRoundStage() == 'InProgress' then
         AdminTools:NotifyKIA(self.CharacterController)
         player.SetLives(self.CharacterController, 0)
-        self.Team:UpdatePlayerLists()
     end
 end
 

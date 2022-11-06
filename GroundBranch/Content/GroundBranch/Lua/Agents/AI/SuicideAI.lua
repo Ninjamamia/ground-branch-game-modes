@@ -15,6 +15,7 @@ SuicideAI.Type = "Suicide AI"
 function SuicideAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
     local self = setmetatable({}, SuicideAI)
     self:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+    self:PostInit()
     return self
 end
 

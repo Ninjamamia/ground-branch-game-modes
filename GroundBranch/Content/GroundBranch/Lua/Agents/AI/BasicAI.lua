@@ -15,14 +15,14 @@ BasicAI.Type = "Basic AI"
 function BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
     local self = setmetatable({}, BasicAI)
     self:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+    self:PostInit()
     return self
 end
 
 function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+	self.Name = uuid .. ' @ ' .. actor.GetName(spawnPoint)
     super.Init(self, AgentsManager, characterController, eliminationCallback)
-	self.IsAI = true
 	self.UUID = uuid
-	self.Name = uuid
 	self.SpawnPoint = spawnPoint
 	self.BaseTag = BaseTag
     self:AddTag(BaseTag)
@@ -62,6 +62,7 @@ function BasicAI:Respawn()
         if self.Character ~= nil then
             self.IsAlive = true
             self.AgentsManager.SpawnedAIByCharacterName[actor.GetName(self.Character)] = self
+            self.Team:UpdatePlayerLists()
             AdminTools:ShowDebug(tostring(self) .. ' respawned as ' .. CurrUUID)
         else
             print('Failed to respawn ' .. tostring(self) .. ' as ' .. CurrUUID)

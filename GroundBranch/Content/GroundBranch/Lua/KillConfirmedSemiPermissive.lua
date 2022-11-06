@@ -25,6 +25,7 @@ local NoSoftFail = require("Objectives.NoSoftFail")
 local AdminTools = require('AdminTools')
 local MSpawnsGroups         = require('Spawns.Groups')
 local Callback 				= require('common.Callback')
+local MTeams                = require('Agents.Team')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))
@@ -87,12 +88,14 @@ Mode.Settings.CIVPopulation = {
 
 -- Add additional teams
 Mode.AiTeams.CIVUnarmed = {
+	Name = 'CIV_Unarmed',
 	Tag = 'CIV_Unarmed',
 	TeamId = 10,
 	CalculatedAiCount = 0,
 	Spawns = nil
 }
 Mode.AiTeams.CIVArmed = {
+	Name = 'CIV_Armed',
 	Tag = 'CIV_Armed',
 	TeamId = 20,
 	CalculatedAiCount = 0,
@@ -107,6 +110,8 @@ Mode.UpriseChance = 0
 
 function Mode:PreInit()
 	super.PreInit(self)
+	self.AiTeams.CIVUnarmed.Script = MTeams:Create(self.AiTeams.CIVUnarmed)
+	self.AiTeams.CIVArmed.Script = MTeams:Create(self.AiTeams.CIVArmed)
 	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	self.PlayerTeams.BluFor.Script:AddHealableTeam(self.AiTeams.CIVUnarmed.TeamId)
@@ -187,7 +192,7 @@ function Mode:OnCivDied(killData)
 		self.Objectives.AvoidFatality:ReportFatality()
 		killData.KillerAgent:AwardPlayerScore('CollateralDamage')
 		killData.KillerAgent:AwardTeamScore('CollateralDamage')
-		local message = 'Collateral damage by ' .. killData.KillerAgent
+		local message = 'Collateral damage by ' .. tostring(killData.KillerAgent)
 		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 		if self.IsUprise then
 			self.Objectives.NoSoftFail:Fail()

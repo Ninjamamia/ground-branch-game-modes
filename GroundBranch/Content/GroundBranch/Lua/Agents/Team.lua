@@ -50,57 +50,33 @@ function InsertionPoint:GetPlayerStart(force)
     return playerStart
 end
 
-local Teams = {
+local Team = {
     Id = 0,
-    Score = 0,
-    Milestones = 0,
-    Players = {
-        All = {},
-        Alive = {},
-        Dead = {},
-    },
-    IncludeBots = false,
-    RespawnCost = 1000000,
-    Display = {
-        ScoreMessage = false,
-        ScoreMilestone = true,
-        ObjectiveMessage = true,
-        ObjectivePrompt = true,
-        Always = true
-    },
-    PlayerScoreTypes = {},
-    TeamScoreTypes = {},
-    PlayerStarts = {},
-    HospitalStarts = {},
     maxHealings = 0,
     healingMode = 0  -- 0 = in place; 1 = MedEvac
 }
 
-Teams.__index = Teams
+Team.__index = Team
 
-function Teams:Create(
-    teamId,
-    includeBots,
-    playerScoreTypes,
-    teamScoreTypes
+function Team:Create(
+    teamTable
 )
-    print('Initializing team ' .. teamId .. '...')
-    local self = setmetatable({}, Teams)
-    self.Id = teamId
-    self.Score = 0
-    self.Milestones = 0
-    self.IncludeBots = includeBots
+    local self = setmetatable({}, Team)
+    self.Id = teamTable.TeamId
+    self.Name = teamTable.Name
+    print('Initializing ' .. tostring(self) .. '...')
+    self.Players = {}
     self.Players.All = {}
     self.Players.Alive = {}
     self.Players.Dead = {}
-    self.RespawnCost = 1000000
+    self.Display = {}
     self.Display.ScoreMessage = false
     self.Display.ScoreMilestone = true
     self.Display.ObjectiveMessage = true
     self.Display.ObjectivePrompt = true
     self.Display.Always = true
-    self.PlayerScoreTypes = playerScoreTypes or {}
-    self.TeamScoreTypes = teamScoreTypes or {}
+    self.PlayerScoreTypes = gamemode.script.PlayerScoreTypes
+    self.TeamScoreTypes = gamemode.script.TeamScoreTypes
     self.InsertionPoints = {}
     self.HospitalStarts = {}
     self.HospitalStartsCount = 0
@@ -108,45 +84,40 @@ function Teams:Create(
     self.HealableTeams = {}
     self.HealableTeams[self.Id] = true
     for _, insertionPoint in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
-        local newInsertionPoint = InsertionPoint:Create(self, insertionPoint)
-        self.InsertionPoints[newInsertionPoint.Name] = newInsertionPoint
-        self.InsertionPointsCount = self.InsertionPointsCount + 1
+        if actor.GetTeamId(insertionPoint) == self.Id then
+            local newInsertionPoint = InsertionPoint:Create(self, insertionPoint)
+            self.InsertionPoints[newInsertionPoint.Name] = newInsertionPoint
+            self.InsertionPointsCount = self.InsertionPointsCount + 1
+        end
     end
 	for _, playerStart in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')) do
-        local insertionPointName = gamemode.GetInsertionPointName(playerStart)
-		if actor.HasTag(playerStart, 'Hospital') then
-            self.HospitalStartsCount = self.HospitalStartsCount + 1
-            self.HospitalStarts[actor.GetLocation(playerStart)] = playerStart
-        else
-            local insertionPoint = self.InsertionPoints[insertionPointName]
-            if insertionPoint ~= nil then
-                insertionPoint:AddPlayerStart(playerStart)
+        if actor.GetTeamId(playerStart) == self.Id then
+                local insertionPointName = gamemode.GetInsertionPointName(playerStart)
+            if actor.HasTag(playerStart, 'Hospital') then
+                self.HospitalStartsCount = self.HospitalStartsCount + 1
+                self.HospitalStarts[actor.GetLocation(playerStart)] = playerStart
             else
-                print('  Player start ' .. actor.GetName(playerStart) .. ' is neither assigned to any insertion point nor tagged as "Hospital"!')
+                local insertionPoint = self.InsertionPoints[insertionPointName]
+                if insertionPoint ~= nil then
+                    insertionPoint:AddPlayerStart(playerStart)
+                end
             end
-		end
+        end
 	end
-	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
-	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
     print('  Found ' .. self.InsertionPointsCount .. ' insertion points and ' .. self.HospitalStartsCount .. ' hospital starts')
-    print('  Intialized Team ' .. tostring(self))
     gamemode.script.AgentsManager:AddTeam(self)
     return self
 end
 
-function Teams:GetId()
+function Team:__tostring()
+    return "Team " .. self.Name .. ' (ID=' .. self.Id .. ')'
+end
+
+function Team:GetId()
     return self.Id
 end
 
-function Teams:RoundStart(
-    maxHealings,
-    healingMode
-)
-    self.Score = 0
-    self.Milestones = 0
-    self.RespawnCost = 1000000
-    self.maxHealings = maxHealings or 0
-    self.healingMode = healingMode or 0
+function Team:Reset()
     if gamemode.script.Settings.DisplayScoreMessages ~= nil then
         self.Display.ScoreMessage = gamemode.script.Settings.DisplayScoreMessages.Value == 1
     else
@@ -171,37 +142,45 @@ function Teams:RoundStart(
     for _, insertionPoint in pairs(self.InsertionPoints) do
         insertionPoint:OnRoundStart()
     end
-    gamemode.ResetTeamScores()
-	gamemode.ResetPlayerScores()
+end
+
+function Team:SetMaxHealings(maxHealings)
+    self.maxHealings = maxHealings
+end
+
+function Team:SetHealingMode(healingMode)
+    self.healingMode = healingMode
 end
 
 --#region Players
 
-function Teams:AddPlayer(Player)
+function Team:AddPlayer(Player)
     table.insert(self.Players.All, Player)
     self:UpdatePlayerLists()
 end
 
-function Teams:AddHealableTeam(TeamId)
+function Team:AddHealableTeam(TeamId)
     self.HealableTeams[TeamId] = true
 end
 
-function Teams:UpdatePlayerLists()
+function Team:UpdatePlayerLists()
     self.Players.Alive = {}
     self.Players.Dead = {}
-    print('Found ' .. #self.Players.All .. ' Players')
+    print(tostring(self) .. ': found ' .. #self.Players.All .. ' players')
     for i, Player in ipairs(self.Players.All) do
         if Player.IsAlive then
-            print(tostring(Player) .. ' is alive')
+            print('  ' .. tostring(Player) .. ' is alive')
             table.insert(self.Players.Alive, Player)
         else
-            print(tostring(Player) .. ' is dead')
+            print('  ' .. tostring(Player) .. ' is dead')
             table.insert(self.Players.Dead, Player)
         end
     end
+    AdminTools:ShowDebug(tostring(self) .. ': ' .. #self.Players.Alive .. ' of ' .. #self.Players.All .. ' alive')
+
 end
 
-function Teams:GetAllPlayersCount()
+function Team:GetAllPlayersCount()
     return #self.Players.All
 end
 
@@ -209,79 +188,43 @@ end
 
 --#region Alive players
 
-function Teams:GetAlivePlayers()
+function Team:GetAlivePlayers()
     return self.Players.Alive
 end
 
-function Teams:GetAlivePlayersCount()
+function Team:GetAlivePlayersCount()
     return #self.Players.Alive
 end
 
-function Teams:IsWipedOut()
-    return #self.Players.Alive <= 0 and self.Score < self.RespawnCost
+function Team:IsWipedOut()
+    return #self.Players.Alive <= 0
 end
 
 --#endregion
 
 --#region Score
 
-function Teams:AwardTeamScore(action)
+function Team:AwardTeamScore(action)
     if self.TeamScoreTypes[action] == nil then
         return
     end
 
-    local multiplier = 1
-    if action == 'Respawn' then
-        multiplier = self.RespawnCost
-    end
-    gamemode.AwardTeamScore(self.Id, action, multiplier)
-
-    local scoreChange = self.TeamScoreTypes[action].Score * multiplier
-    self.Score = self.Score + scoreChange
-    if self.Score < 0 then
-        self.Score = 0
-    end
-
-    self:DisplayMilestones()
-    print('Changed team score to ' .. self.Score)
+    gamemode.AwardTeamScore(self.Id, action, 1)
 end
 
-function Teams:AwardPlayerScore(awardedPlayer, action)
+function Team:AwardPlayerScore(awardedPlayer, action)
     if self.PlayerScoreTypes[action] == nil then
         return
     end
 
-    local multiplier = 1
-    player.AwardPlayerScore(player.GetPlayerState(awardedPlayer), action, multiplier)
-
-    local scoreChange = self.PlayerScoreTypes[action].Score * multiplier
-    local message = nil
-    if scoreChange >= 0 then
-        message = action .. ' +' .. scoreChange
-    else
-        message = action .. ' -' .. -scoreChange
-    end
-    self:DisplayMessageToPlayer(awardedPlayer, message, 'Lower', 2.0, 'ScoreMessage')
-    print('Changed player score by ' .. scoreChange)
-end
-
-function Teams:DisplayMilestones()
-    if self.RespawnCost == 0 then
-        return
-    end
-    local newMilestone = math.floor(self.Score / self.RespawnCost)
-    if newMilestone ~= self.Milestones then
-        local message = 'Respawns available ' .. newMilestone
-        self.Milestones = newMilestone
-        self:DisplayMessageToAllPlayers(message, 'Lower', 2.0, 'ScoreMilestone')
-    end
+    player.AwardPlayerScore(player.GetPlayerState(awardedPlayer), action, 1)
 end
 
 --#endregion
 
 --#region Respawns
 
-function Teams:GetClosestHospitalStart(Position, originalInsertionPoint)
+function Team:GetClosestHospitalStart(Position, originalInsertionPoint)
     if self.healingMode == 0 then
         AdminTools:ShowDebug('Respawning in-place')
         return Position
@@ -313,7 +256,7 @@ function Teams:GetClosestHospitalStart(Position, originalInsertionPoint)
     return ClosestHospital
 end
 
-function Teams:GetPlayerStart(playerState)
+function Team:GetPlayerStart(playerState)
     local insertionPointName = gamemode.GetInsertionPointName(player.GetInsertionPoint(playerState))
     local playerStart = nil
     if insertionPointName ~= nil then
@@ -327,8 +270,8 @@ function Teams:GetPlayerStart(playerState)
     return playerStart
 end
 
-function Teams:GetClosestPlayerStart()
-    print('Teams:GetClosestPlayerStart')
+function Team:GetClosestPlayerStart()
+    print('Team:GetClosestPlayerStart')
     local insertionPoint = nil
     local maxPlayersCount = 0
     for _, currInsertionPoint in pairs(self.InsertionPoints) do
@@ -350,7 +293,7 @@ end
 
 --#region Messages
 
-function Teams:DisplayMessageToPlayer(agent, message, position, duration, messageType)
+function Team:DisplayMessageToPlayer(agent, message, position, duration, messageType)
     if not self.Display[messageType] then
         return
     end
@@ -361,7 +304,7 @@ function Teams:DisplayMessageToPlayer(agent, message, position, duration, messag
     )
 end
 
-function Teams:DisplayMessageToAlivePlayers(message, position, duration, messageType)
+function Team:DisplayMessageToAlivePlayers(message, position, duration, messageType)
     if not self.Display[messageType] then
         return
     end
@@ -376,7 +319,7 @@ function Teams:DisplayMessageToAlivePlayers(message, position, duration, message
     end
 end
 
-function Teams:DisplayMessageToAllPlayers(message, position, duration, messageType)
+function Team:DisplayMessageToAllPlayers(message, position, duration, messageType)
     if not self.Display[messageType] then
         return
     end
@@ -391,7 +334,7 @@ function Teams:DisplayMessageToAllPlayers(message, position, duration, messageTy
     end
 end
 
-function Teams:DisplayPromptToAlivePlayers(location, label, duration, messageType)
+function Team:DisplayPromptToAlivePlayers(location, label, duration, messageType)
     if not self.Display[messageType] then
         return
     end
@@ -408,4 +351,4 @@ end
 
 --#endregion
 
-return Teams
+return Team

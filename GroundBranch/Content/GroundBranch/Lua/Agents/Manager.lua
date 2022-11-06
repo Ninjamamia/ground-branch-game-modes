@@ -43,6 +43,10 @@ function Manager:AddTeam(Team)
 	self.TeamsById[Team.Id] = Team
 end
 
+function Manager:GetTeam(TeamId)
+	return self.TeamsById[TeamId]
+end
+
 function Manager:AddDefaultEliminationCallback(TeamId, Callback)
 	self.DefaultEliminationCallbacks[TeamId] = Callback
 end
@@ -71,6 +75,9 @@ function Manager:Reset(maxConcurrentAI)
 	self.PlayersByName = {}
 	self.Agents = {}
     self.PendingHealings = {}
+	for _, Team in pairs(self.TeamsById) do
+		Team:Reset()
+	end
 end
 
 function Manager:GetStateMessage()
@@ -238,7 +245,7 @@ function Manager:OnGetSpawnInfo(PlayerState)
 			print('AgentsManager: Player ' .. player.GetName(PlayerState) .. ' has team ID ' .. actor.GetTeamId(PlayerState) .. ' but a matching team was not found!')
 			return nil
 		end
-		Agent = Player:Create(self, Team, PlayerState, Callback:Create(gamemode.script, gamemode.script.OnPlayerDied))
+		Agent = Player:Create(self, PlayerState, Callback:Create(gamemode.script, gamemode.script.OnPlayerDied))
 		table.insert(self.Agents, Agent)
 		self.PlayersByName[player.GetName(PlayerState)] = Agent
 	else

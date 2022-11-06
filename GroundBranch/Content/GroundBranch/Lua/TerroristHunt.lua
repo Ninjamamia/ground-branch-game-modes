@@ -41,13 +41,14 @@ function Mode:OnOpForDied(killData)
 end
 
 function Mode:CheckOpForCountTimer()
-	if self.AgentsManager.AliveAICount == 0 then
+	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAlivePlayersCount()
+	if OpForAliveCount == 0 then
 		timer.Clear("ShowRemaining")
 		gamemode.AddGameStat("Result=Team1")
 		gamemode.AddGameStat("Summary=OpForEliminated")
 		gamemode.AddGameStat("CompleteObjectives=EliminateOpFor")
 		gamemode.SetRoundStage("PostRoundWait")
-	elseif self.Settings.ShowRemaining.Value > 0 and self.AgentsManager.AliveAICount <= self.Settings.ShowRemaining.Value then
+	elseif self.Settings.ShowRemaining.Value > 0 and OpForAliveCount <= self.Settings.ShowRemaining.Value then
 		self.RemainingMessage = "RemainingOpFor" .. tostring(self.AgentsManager.AliveAICount)
 		timer.Set("ShowRemaining", self, self.ShowRemainingTimer, 10, false)
 	end

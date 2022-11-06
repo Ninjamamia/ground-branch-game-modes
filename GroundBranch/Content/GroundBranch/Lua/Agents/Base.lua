@@ -12,7 +12,6 @@ Base.__index = Base
 
 ---Creates a new base agent object.
 function Base:Init(AgentsManager, characterController, eliminationCallback)
-	self.IsAI = false
 	self.IsAlive = true
 	self.AgentsManager = AgentsManager
     self.CharacterController = characterController
@@ -20,10 +19,11 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
 	self.Tags = {}
     self.HealableTeams = {}
     if characterController ~= nil then
-        self.Name = player.GetName(characterController)
         self.Character = player.GetCharacter(characterController)
         self.TeamId = actor.GetTeamId(characterController)
         self.eliminationCallback = eliminationCallback or AgentsManager:GetDefaultEliminationCallback(self.TeamId)
+        self.Team = self.AgentsManager:GetTeam(self.TeamId)
+        self.HealableTeams = self.Team.HealableTeams
     else
         self.Name = "Unknonw"
         self.Character = nil
@@ -32,12 +32,18 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
     end
 end
 
+function Base:PostInit()
+    if self.Team ~= nil then
+        self.Team:AddPlayer(self)
+    end
+end
+
 function Base:__tostring()
     return self.Type .. ' ' .. self.Name
 end
 
 function Base:GetMaxHealings()
-    return 0
+    return self.Team.maxHealings
 end
 
 function Base:UpdateCharacter()
@@ -104,6 +110,7 @@ function Base:OnCharacterDied(KillData)
             print(tostring(self) .. ' died')
             self:OnBleedout()
         end
+        self.Team:UpdatePlayerLists()
     end
 end
 

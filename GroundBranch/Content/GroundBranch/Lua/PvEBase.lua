@@ -1,4 +1,4 @@
-local MTeams                = require('Players.Teams')
+local MTeams                = require('Agents.Team')
 local MSpawnsPriority       = require('Spawns.Priority')
 local AgentsManager         = require('Agents.Manager')
 local AdminTools 			= require('AdminTools')
@@ -69,6 +69,7 @@ local Mode = {
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
+			Name = 'BluFor',
 			Loadout = 'NoTeam',
 			Script = nil
 		},
@@ -76,6 +77,7 @@ local Mode = {
 	AiTeams = {
 		OpFor = {
 			TeamId = 100,
+			Name = 'OpFor',
 			Tag = 'OpFor',
 			CalculatedAiCount = 0,
 			Spawns = nil
@@ -104,16 +106,14 @@ local Mode = {
 
 function Mode:PreInit()
 	print('Pre initialization')
+	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
+	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
+	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
 	self.OnCharacterDiedCallback = CallbackList:Create()
 	self.OnGameTriggerBeginOverlapCallback = CallbackList:Create()
 	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
-	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
-	self.PlayerTeams.BluFor.Script = MTeams:Create(
-		self.PlayerTeams.BluFor.TeamId,
-		false,
-		self.PlayerScoreTypes,
-		self.TeamScoreTypes
-	)
+	self.PlayerTeams.BluFor.Script = MTeams:Create(self.PlayerTeams.BluFor)
+	self.AiTeams.OpFor.Script = MTeams:Create(self.AiTeams.OpFor)
 	-- Gathers all OpFor spawn points by priority
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
 	self.AmbushManager = AmbushManager:Create(self.AiTeams.OpFor.Tag)
@@ -135,8 +135,11 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:PreRoundCleanUp()
 		self:PrepareObjectives()
 	elseif RoundStage == 'PreRoundWait' then
+		gamemode.ResetTeamScores()
+		gamemode.ResetPlayerScores()
 		AdminTools.DebugMessageLevel = self.Settings.DebugMessageLevel.Value
-		self.PlayerTeams.BluFor.Script:RoundStart(self.Settings.MaxHealings.Value, self.Settings.HealingMode.Value)
+		self.PlayerTeams.BluFor.Script:SetMaxHealings(self.Settings.MaxHealings.Value)
+		self.PlayerTeams.BluFor.Script:SetHealingMode(self.Settings.HealingMode.Value)
 		if self.Settings.TriggersEnabled.Value == 1 then
 			self.AmbushManager:Activate()
 		else
