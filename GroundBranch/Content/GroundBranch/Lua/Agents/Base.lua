@@ -187,6 +187,12 @@ end
 function Base:DisplayPrompt(location, label, duration)
 end
 
+function Base:AwardPlayerScore(action)
+end
+
+function Base:AwardTeamScore(action)
+end
+
 function Base:DisplayMessageToHealers(healers, message)
     for _, healer in ipairs(healers) do
         healer:DisplayMessage(message, 'Upper', 0.9)

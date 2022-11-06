@@ -129,8 +129,6 @@ end
 
 function Mode:OnRoundStageSet(RoundStage)
 	print('Started round stage ' .. RoundStage)
-	timer.ClearAll()
-	self.AgentsManager:Start()
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self:PrepareObjectives()
@@ -220,8 +218,10 @@ function Mode:CheckReadyDownTimer()
 end
 
 function Mode:PreRoundCleanUp()
+	timer.ClearAll()
 	self.AgentsManager:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 	self.AgentsManager:Reset()
+	self.AgentsManager:Start()
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()

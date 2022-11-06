@@ -76,6 +76,10 @@ function AmbushManager:Create(teamTag)
     return self
 end
 
+function AmbushManager:GetMine(Name)
+    return self.Mines[Name]
+end
+
 function AmbushManager:OnDefuse(Defuser)
     local Mines = self.Defusers[actor.GetName(Defuser)]
     if Mines ~= nil then

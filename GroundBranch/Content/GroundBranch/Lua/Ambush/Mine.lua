@@ -100,8 +100,8 @@ function Mine:Defuse()
     end
 end
 
-function Mine:Trigger()
-    if self.State == 'Active' then
+function Mine:Trigger(force)
+    if self.State == 'Active' or force == true then
         self.State = 'Triggered'
         AdminTools:ShowDebug(tostring(self) .. " triggered.")
         GetLuaComp(self.Actor).Explode()

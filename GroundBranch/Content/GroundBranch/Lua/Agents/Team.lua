@@ -91,16 +91,14 @@ function Team:Create(
         end
     end
 	for _, playerStart in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')) do
-        if actor.GetTeamId(playerStart) == self.Id then
-                local insertionPointName = gamemode.GetInsertionPointName(playerStart)
-            if actor.HasTag(playerStart, 'Hospital') then
-                self.HospitalStartsCount = self.HospitalStartsCount + 1
-                self.HospitalStarts[actor.GetLocation(playerStart)] = playerStart
-            else
-                local insertionPoint = self.InsertionPoints[insertionPointName]
-                if insertionPoint ~= nil then
-                    insertionPoint:AddPlayerStart(playerStart)
-                end
+        local insertionPointName = gamemode.GetInsertionPointName(playerStart)
+        if actor.HasTag(playerStart, 'Hospital') and actor.GetTeamId(playerStart) == self.Id then
+            self.HospitalStartsCount = self.HospitalStartsCount + 1
+            self.HospitalStarts[actor.GetLocation(playerStart)] = playerStart
+        else
+            local insertionPoint = self.InsertionPoints[insertionPointName]
+            if insertionPoint ~= nil then
+                insertionPoint:AddPlayerStart(playerStart)
             end
         end
 	end
@@ -271,7 +269,6 @@ function Team:GetPlayerStart(playerState)
 end
 
 function Team:GetClosestPlayerStart()
-    print('Team:GetClosestPlayerStart')
     local insertionPoint = nil
     local maxPlayersCount = 0
     for _, currInsertionPoint in pairs(self.InsertionPoints) do
