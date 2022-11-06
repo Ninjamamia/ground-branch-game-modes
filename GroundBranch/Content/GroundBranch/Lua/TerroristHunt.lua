@@ -41,7 +41,7 @@ function Mode:OnOpForDied(killData)
 end
 
 function Mode:CheckOpForCountTimer()
-	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAlivePlayersCount()
+	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAliveAgentsCount()
 	if OpForAliveCount == 0 then
 		timer.Clear("ShowRemaining")
 		gamemode.AddGameStat("Result=Team1")

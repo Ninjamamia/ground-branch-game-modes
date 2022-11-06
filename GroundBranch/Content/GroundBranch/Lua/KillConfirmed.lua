@@ -199,7 +199,7 @@ function Mode:OnExfiltrated()
 		return
 	end
 	-- Award surviving players
-	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
+	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAliveAgents()
 	for _, alivePlayer in ipairs(alivePlayers) do
 		alivePlayer:AwardPlayerScore('Survived')
 	end

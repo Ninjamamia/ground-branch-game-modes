@@ -62,7 +62,7 @@ function BasicAI:Respawn()
         if self.Character ~= nil then
             self.IsAlive = true
             self.AgentsManager.SpawnedAIByCharacterName[actor.GetName(self.Character)] = self
-            self.Team:UpdatePlayerLists()
+            self.Team:UpdateAgentsLists()
             AdminTools:ShowDebug(tostring(self) .. ' respawned as ' .. CurrUUID)
         else
             print('Failed to respawn ' .. tostring(self) .. ' as ' .. CurrUUID)

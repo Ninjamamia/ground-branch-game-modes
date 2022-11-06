@@ -34,7 +34,7 @@ end
 
 function Base:PostInit()
     if self.Team ~= nil then
-        self.Team:AddPlayer(self)
+        self.Team:AddAgent(self)
     end
 end
 
@@ -110,7 +110,7 @@ function Base:OnCharacterDied(KillData)
             print(tostring(self) .. ' died')
             self:OnBleedout()
         end
-        self.Team:UpdatePlayerLists()
+        self.Team:UpdateAgentsLists()
     end
 end
 

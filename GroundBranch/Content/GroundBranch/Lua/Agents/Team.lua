@@ -65,10 +65,10 @@ function Team:Create(
     self.Id = teamTable.TeamId
     self.Name = teamTable.Name
     print('Initializing ' .. tostring(self) .. '...')
-    self.Players = {}
-    self.Players.All = {}
-    self.Players.Alive = {}
-    self.Players.Dead = {}
+    self.Agents = {}
+    self.Agents.All = {}
+    self.Agents.Alive = {}
+    self.Agents.Dead = {}
     self.Display = {}
     self.Display.ScoreMessage = false
     self.Display.ScoreMilestone = true
@@ -138,7 +138,7 @@ function Team:Reset()
     else
         self.Display.ObjectivePrompt = false
     end
-    self.Players.All = {}
+    self.Agents.All = {}
     for _, insertionPoint in pairs(self.InsertionPoints) do
         insertionPoint:OnRoundStart()
     end
@@ -154,50 +154,50 @@ end
 
 --#region Players
 
-function Team:AddPlayer(Player)
-    table.insert(self.Players.All, Player)
-    self:UpdatePlayerLists()
+function Team:AddAgent(Agent)
+    table.insert(self.Agents.All, Agent)
+    self:UpdateAgentsLists()
 end
 
 function Team:AddHealableTeam(TeamId)
     self.HealableTeams[TeamId] = true
 end
 
-function Team:UpdatePlayerLists()
-    self.Players.Alive = {}
-    self.Players.Dead = {}
-    print(tostring(self) .. ': found ' .. #self.Players.All .. ' players')
-    for i, Player in ipairs(self.Players.All) do
-        if Player.IsAlive then
-            print('  ' .. tostring(Player) .. ' is alive')
-            table.insert(self.Players.Alive, Player)
+function Team:UpdateAgentsLists()
+    self.Agents.Alive = {}
+    self.Agents.Dead = {}
+    print(tostring(self) .. ': found ' .. #self.Agents.All .. ' agents')
+    for i, Agent in ipairs(self.Agents.All) do
+        if Agent.IsAlive then
+            print('  ' .. tostring(Agent) .. ' is alive')
+            table.insert(self.Agents.Alive, Agent)
         else
-            print('  ' .. tostring(Player) .. ' is dead')
-            table.insert(self.Players.Dead, Player)
+            print('  ' .. tostring(Agent) .. ' is dead')
+            table.insert(self.Agents.Dead, Agent)
         end
     end
-    AdminTools:ShowDebug(tostring(self) .. ': ' .. #self.Players.Alive .. ' of ' .. #self.Players.All .. ' alive')
+    AdminTools:ShowDebug(tostring(self) .. ': ' .. #self.Agents.Alive .. ' of ' .. #self.Agents.All .. ' alive')
 
 end
 
-function Team:GetAllPlayersCount()
-    return #self.Players.All
+function Team:GetAllAgentsCount()
+    return #self.Agents.All
 end
 
 --#endregion
 
 --#region Alive players
 
-function Team:GetAlivePlayers()
-    return self.Players.Alive
+function Team:GetAliveAgents()
+    return self.Agents.Alive
 end
 
-function Team:GetAlivePlayersCount()
-    return #self.Players.Alive
+function Team:GetAliveAgentsCount()
+    return #self.Agents.Alive
 end
 
 function Team:IsWipedOut()
-    return #self.Players.Alive <= 0
+    return #self.Agents.Alive <= 0
 end
 
 --#endregion
@@ -308,8 +308,8 @@ function Team:DisplayMessageToAlivePlayers(message, position, duration, messageT
     if not self.Display[messageType] then
         return
     end
-    if #self.Players.Alive > 0 then
-        for _, agent in ipairs(self.Players.Alive) do
+    if #self.Agents.Alive > 0 then
+        for _, agent in ipairs(self.Agents.Alive) do
             agent:DisplayMessage(
                 message,
                 position,
@@ -323,8 +323,8 @@ function Team:DisplayMessageToAllPlayers(message, position, duration, messageTyp
     if not self.Display[messageType] then
         return
     end
-    if #self.Players.All > 0 then
-        for _, agent in ipairs(self.Players.All) do
+    if #self.Agents.All > 0 then
+        for _, agent in ipairs(self.Agents.All) do
             agent:DisplayMessage(
                 message,
                 position,
@@ -338,8 +338,8 @@ function Team:DisplayPromptToAlivePlayers(location, label, duration, messageType
     if not self.Display[messageType] then
         return
     end
-    if #self.Players.Alive > 0 then
-        for _, agent in ipairs(self.Players.Alive) do
+    if #self.Agents.Alive > 0 then
+        for _, agent in ipairs(self.Agents.Alive) do
             agent:ShowWorldPrompt(
                 location,
                 label,

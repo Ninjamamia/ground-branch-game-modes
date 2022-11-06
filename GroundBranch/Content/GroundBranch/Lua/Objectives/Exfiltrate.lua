@@ -210,7 +210,7 @@ end
 ---cancels the exfiltration.
 function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
-		if self.Team:GetAlivePlayersCount() > 0 then
+		if self.Team:GetAliveAgentsCount() > 0 then
 			self.ExfilDone = true
 		end
 		self.OnObjectiveCompleteCallback:Call()
@@ -227,7 +227,7 @@ function Exfiltrate:CheckExfilTimer()
 		)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime
 		return
-	elseif self.PlayersIn < self.Team:GetAlivePlayersCount() then
+	elseif self.PlayersIn < self.Team:GetAliveAgentsCount() then
 		self.Team:DisplayMessageToAlivePlayers(
 			'ExfilPaused',
 			'Upper',

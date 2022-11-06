@@ -70,7 +70,7 @@ function Player:OnSpawned()
     if self.Character ~= nil then
         self.IsAlive = true
         self.DeathReason = ''
-        self.Team:UpdatePlayerLists()
+        self.Team:UpdateAgentsLists()
     else
         self.DeathReason = 'Spawn failed'
         AdminTools:ShowDebug('Failed to spawn ' .. tostring(self))
@@ -85,7 +85,7 @@ end
 function Player:OnLogOut()
     self.IsAlive = false
     self.DeathReason = 'LogOut'
-    self.Team:UpdatePlayerLists()
+    self.Team:UpdateAgentsLists()
 end
 
 function Player:DisplayMessage(message, position, duration)

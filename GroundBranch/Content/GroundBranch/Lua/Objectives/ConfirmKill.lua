@@ -185,7 +185,7 @@ function ConfirmKill:ShouldConfirmKillTimer()
 	local LowestDist = self.ObjectiveTimer.TimeStep.Max * 1000.0
 	for leaderIndex, hvt in ipairs(self.HVT.EliminatedNotConfirmed) do
         local leaderLocation = hvt:GetLocation()
-		for _, player in ipairs(self.Team:GetAlivePlayers()) do
+		for _, player in ipairs(self.Team:GetAliveAgents()) do
 			local playerLocation = player:GetLocation()
 			local DistVector = playerLocation - leaderLocation
 			local Dist = vector.Size(DistVector)

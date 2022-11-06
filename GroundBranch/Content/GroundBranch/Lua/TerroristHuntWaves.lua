@@ -35,7 +35,7 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:OnOpForDied(killData)
-	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAlivePlayersCount()
+	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAliveAgentsCount()
 	super.OnOpForDied(self, killData)
 	if self.WaveNumber < self.Settings.NumberOfWaves.Value then
 		local OpForAliveRatio = (OpForAliveCount * 100) / self.Settings.OpForCount.Value
