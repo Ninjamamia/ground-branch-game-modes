@@ -5,6 +5,10 @@ local AdminTools = {
 
 AdminTools.__index = AdminTools
 
+function AdminTools:SetDebugMessageLevel(level)
+	self.DebugMessageLevel = level
+end
+
 function AdminTools:NotifyKIA(KilledPlayer)
 	if self.DebugMessageLevel < 1 then
 		return

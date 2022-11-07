@@ -154,6 +154,10 @@ function Mode:PreRoundCleanUp()
 	gamemode.SetTeamAttitude(self.AiTeams.CIVArmed.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Friendly')
 	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.AiTeams.OpFor.TeamId, 'Friendly')
 	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Friendly')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVArmed.TeamId, self.AiTeams.SuicideSquad.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.SuicideSquad.TeamId, self.AiTeams.CIVArmed.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.CIVUnarmed.TeamId, self.AiTeams.SuicideSquad.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.SuicideSquad.TeamId, self.AiTeams.CIVUnarmed.TeamId, 'Neutral')
 end
 
 function Mode:Uprise()

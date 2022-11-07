@@ -82,6 +82,13 @@ local Mode = {
 			CalculatedAiCount = 0,
 			Spawns = nil
 		},
+		SuicideSquad = {
+			Name = 'SuicideSquad',
+			Tag = 'SuicideSquad',
+			TeamId = 30,
+			CalculatedAiCount = 0,
+			Spawns = nil
+		}
 	},
 	Objectives = {
 	},
@@ -114,6 +121,7 @@ function Mode:PreInit()
 	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
 	self.PlayerTeams.BluFor.Script = MTeams:Create(self.PlayerTeams.BluFor)
 	self.AiTeams.OpFor.Script = MTeams:Create(self.AiTeams.OpFor)
+	self.AiTeams.SuicideSquad.Script = MTeams:Create(self.AiTeams.SuicideSquad)
 	-- Gathers all OpFor spawn points by priority
 	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
 	self.AmbushManager = AmbushManager:Create(self.AiTeams.OpFor.Tag)
@@ -135,7 +143,7 @@ function Mode:OnRoundStageSet(RoundStage)
 	elseif RoundStage == 'PreRoundWait' then
 		gamemode.ResetTeamScores()
 		gamemode.ResetPlayerScores()
-		AdminTools.DebugMessageLevel = self.Settings.DebugMessageLevel.Value
+		AdminTools:SetDebugMessageLevel(self.Settings.DebugMessageLevel.Value)
 		self.PlayerTeams.BluFor.Script:SetMaxHealings(self.Settings.MaxHealings.Value)
 		self.PlayerTeams.BluFor.Script:SetHealingMode(self.Settings.HealingMode.Value)
 		if self.Settings.TriggersEnabled.Value == 1 then
@@ -226,6 +234,10 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
+	gamemode.SetTeamAttitude(self.PlayerTeams.BluFor.TeamId, self.AiTeams.SuicideSquad.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.SuicideSquad.TeamId, self.PlayerTeams.BluFor.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.SuicideSquad.TeamId, 'Neutral')
+	gamemode.SetTeamAttitude(self.AiTeams.SuicideSquad.TeamId, self.AiTeams.OpFor.TeamId, 'Neutral')
 end
 
 function Mode:ShouldCheckForTeamKills()
