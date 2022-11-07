@@ -78,8 +78,21 @@ function Player:OnSpawned()
 end
 
 function Player:Kill(message)
+    self.DeathMessage = message
+    player.FreezePlayer(player.GetPlayerState(self.Character), 2.0)
+	player.ShowGameMessage(self.Character, message, 'Upper', 2.0)
+    timer.Set(
+            'PreKill_' .. self.Name,
+            self,
+            self.PostFreeze,
+            2.0,
+            false
+        )
+end
+
+function Player:PostFreeze()
 	gamemode.EnterReadyRoom(player.GetPlayerState(self.Character))
-	player.ShowGameMessage(self.Character, message, 'Upper', 3.0)
+	player.ShowGameMessage(self.Character, self.DeathMessage, 'Upper', 3.0)
 end
 
 function Player:OnLogOut()
