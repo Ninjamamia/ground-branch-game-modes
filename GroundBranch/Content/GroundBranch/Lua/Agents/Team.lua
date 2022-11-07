@@ -171,7 +171,7 @@ function Team:UpdateAgentsLists()
             table.insert(self.Agents.Dead, Agent)
         end
     end
-    AdminTools:ShowDebug(tostring(self) .. ': ' .. #self.Agents.Alive .. ' of ' .. #self.Agents.All .. ' alive')
+    print(tostring(self) .. ': ' .. #self.Agents.Alive .. ' of ' .. #self.Agents.All .. ' alive')
 
 end
 
