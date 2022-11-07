@@ -193,6 +193,16 @@ end
 function Base:AwardTeamScore(action)
 end
 
+function Base:MoveTo(NewTeam)
+    self.TeamId = NewTeam.Id
+    self.eliminationCallback = self.AgentsManager:GetDefaultEliminationCallback(self.TeamId)
+    self.Team = self.AgentsManager:GetTeam(self.TeamId)
+    self.HealableTeams = self.Team.HealableTeams
+    if self.Team ~= nil then
+        self.Team:AddAgent(self)
+    end
+end
+
 function Base:DisplayMessageToHealers(healers, message)
     for _, healer in ipairs(healers) do
         healer:DisplayMessage(message, 'Upper', 0.9)

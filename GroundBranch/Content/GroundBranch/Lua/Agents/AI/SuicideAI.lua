@@ -66,6 +66,13 @@ function SuicideAI:PostInit()
     end
 end
 
+function SuicideAI:Respawn(Position)
+    super.Respawn(self, Position)
+    if self.IsAlive then
+        self:StartTimer(1.0)
+    end
+end
+
 function SuicideAI:StartTimer(interval)
     timer.Clear('Tick_' .. self.UUID, self)
     timer.Set(

@@ -51,6 +51,10 @@ function Manager:AddDefaultEliminationCallback(TeamId, Callback)
 	self.DefaultEliminationCallbacks[TeamId] = Callback
 end
 
+function Manager:RemoveDefaultEliminationCallback(TeamId)
+	self.DefaultEliminationCallbacks[TeamId] = nil
+end
+
 function Manager:GetDefaultEliminationCallback(TeamId)
 	return self.DefaultEliminationCallbacks[TeamId] or self.FallbackEliminationCallback
 end
@@ -234,6 +238,11 @@ function Manager:Start()
 		self.Timer.TimeStep,
 		true
 	)
+end
+
+function Manager:SetTeamAttitude(TeamA, TeamB, Attitude)
+	gamemode.SetTeamAttitude(TeamA.Id, TeamB.Id, Attitude)
+	gamemode.SetTeamAttitude(TeamB.Id, TeamA.Id, Attitude)
 end
 
 function Manager:OnGetSpawnInfo(PlayerState)

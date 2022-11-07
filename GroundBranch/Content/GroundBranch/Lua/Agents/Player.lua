@@ -119,4 +119,9 @@ function Player:ShowWorldPrompt(location, label, duration)
     )
 end
 
+function Player:MoveTo(NewTeam)
+    super.MoveTo(self, NewTeam)
+    AdminTools:ShowDebug(tostring(self) .. ': swapping teams on player agents is not fully supported!')
+end
+
 return Player

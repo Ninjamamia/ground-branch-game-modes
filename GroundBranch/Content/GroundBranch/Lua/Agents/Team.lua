@@ -161,6 +161,10 @@ function Team:AddHealableTeam(TeamId)
     self.HealableTeams[TeamId] = true
 end
 
+function Team:RemoveHealableTeam(TeamId)
+    self.HealableTeams[TeamId] = nil
+end
+
 function Team:UpdateAgentsLists()
     self.Agents.Alive = {}
     self.Agents.Dead = {}
@@ -193,6 +197,17 @@ end
 
 function Team:IsWipedOut()
     return #self.Agents.Alive <= 0
+end
+
+function Team:MoveTo(NewTeam)
+    local Agents = Tables.Copy(self.Agents.All)
+    self.Agents.All = {}
+    self:UpdateAgentsLists()
+    for _, Agent in ipairs(Agents) do -- use self.Agents.All here because self.Agents.Alive might not be up to date yet
+        if Agent.IsAlive then
+            Agent:MoveTo(NewTeam)
+        end
+    end
 end
 
 --#endregion

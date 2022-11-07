@@ -26,6 +26,7 @@ function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, Base
 	self.SpawnPoint = spawnPoint
 	self.BaseTag = BaseTag
     self:AddTag(BaseTag)
+    self.OriginalTeamId = self.TeamId
 end
 
 function BasicAI:__tostring()
@@ -33,6 +34,7 @@ function BasicAI:__tostring()
 end
 
 function BasicAI:CleanUp()
+    actor.SetTeamId(self.SpawnPoint, self.OriginalTeamId)
 	ai.CleanUp(self.UUID)
     for i = 0, self.Healings, 1 do
         local CurrUUID = self.UUID .. "_" .. self.Healings
@@ -51,9 +53,9 @@ function BasicAI:Kill(message)
 	gamemode.script:OnCharacterDied(self, self, nil)
 end
 
-function BasicAI:Respawn()
+function BasicAI:Respawn(Position)
     local CurrUUID = self.UUID .. "_" .. self.Healings
-    ai.CreateWithTransform(self.SpawnPoint, self:GetPosition(), CurrUUID, 0.1)
+    ai.CreateWithTransform(self.SpawnPoint, Position or self:GetPosition(), CurrUUID, 0.0)
     local characterController = gameplaystatics.GetAllActorsWithTag(CurrUUID)
     if characterController ~= nil then
         self.CharacterController = characterController[1]
@@ -68,6 +70,14 @@ function BasicAI:Respawn()
             print('Failed to respawn ' .. tostring(self) .. ' as ' .. CurrUUID)
         end
     end
+end
+
+function BasicAI:MoveTo(NewTeam)
+    super.MoveTo(self, NewTeam)
+    actor.SetTeamId(self.SpawnPoint, self.TeamId)
+    local Position = self:GetPosition()
+    self:Kill()
+    self:Respawn(Position)
 end
 
 return BasicAI

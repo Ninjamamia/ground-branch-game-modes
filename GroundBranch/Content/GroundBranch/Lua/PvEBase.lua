@@ -234,10 +234,8 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
-	gamemode.SetTeamAttitude(self.PlayerTeams.BluFor.TeamId, self.AiTeams.SuicideSquad.TeamId, 'Neutral')
-	gamemode.SetTeamAttitude(self.AiTeams.SuicideSquad.TeamId, self.PlayerTeams.BluFor.TeamId, 'Neutral')
-	gamemode.SetTeamAttitude(self.AiTeams.OpFor.TeamId, self.AiTeams.SuicideSquad.TeamId, 'Neutral')
-	gamemode.SetTeamAttitude(self.AiTeams.SuicideSquad.TeamId, self.AiTeams.OpFor.TeamId, 'Neutral')
+	self.AgentsManager:SetTeamAttitude(self.PlayerTeams.BluFor.Script, self.AiTeams.SuicideSquad.Script, 'Neutral')
+	self.AgentsManager:SetTeamAttitude(self.AiTeams.OpFor.Script, self.AiTeams.SuicideSquad.Script, 'Neutral')
 end
 
 function Mode:ShouldCheckForTeamKills()
