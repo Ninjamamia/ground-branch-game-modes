@@ -107,7 +107,7 @@ function Base:OnCharacterDied(KillData)
             AdminTools:ShowDebug(tostring(self) .. ' is wounded and can be healed now (' .. self.Healings .. ' of ' .. self:GetMaxHealings() .. ')')
             self:PrepareHealing()
         else
-            print(tostring(self) .. ' died')
+            AdminTools:ShowDebug(tostring(self) .. ' died')
             self:OnBleedout()
         end
         self.Team:UpdateAgentsLists()
