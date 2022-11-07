@@ -67,6 +67,7 @@ function Mine:Activate()
         actor.SetEnableCollision(Prop, true)
     end
     for _, CurrBlast in ipairs(self.BlastZones) do
+        CurrBlast:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
         CurrBlast:Activate()
     end
 end

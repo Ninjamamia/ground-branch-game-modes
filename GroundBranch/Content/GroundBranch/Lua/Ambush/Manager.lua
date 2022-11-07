@@ -120,10 +120,15 @@ function AmbushManager:Activate(GameTrigger)
         if gamemode.script.Settings.MaxPresenceTime ~= nil then
             self.tiPresenceMax = gamemode.script.Settings.MaxPresenceTime.Value
         end
+        for _, BlastZone in pairs(self.BlastZones) do
+            BlastZone:SetDebugVisibility(false)
+        end
         print('Activating ambush triggers based on their chance...')
         for _, Trigger in pairs(self.Triggers) do
+            BlastZone:SetDebugVisibility(false)
             if math.random(0, 99) < (Trigger.Chance or self.Chance) then
                 Trigger:Activate()
+                Trigger:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
             else
                 Trigger:Deactivate()
             end
@@ -142,6 +147,7 @@ function AmbushManager:Activate(GameTrigger)
         local Trigger = self.Triggers[actor.GetName(GameTrigger)]
         if Trigger ~= nil then
             Trigger:Activate()
+            Trigger:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
         end
     end
 end

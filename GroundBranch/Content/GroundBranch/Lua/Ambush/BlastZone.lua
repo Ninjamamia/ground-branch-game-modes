@@ -18,6 +18,10 @@ function BlastZone:__tostring()
     return 'BlastZone ' .. self.Name
 end
 
+function BlastZone:SetDebugVisibility(visible)
+    actor.SetHidden(self.Actor, not visible)
+end
+
 function BlastZone:Activate()
     print('Activating ' .. tostring(self) .. '...')
     self.Agents = {}

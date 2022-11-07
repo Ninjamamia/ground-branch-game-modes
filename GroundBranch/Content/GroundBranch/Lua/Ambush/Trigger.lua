@@ -57,6 +57,10 @@ function Trigger:__tostring()
     return 'Ambush Trigger ' .. self.Name
 end
 
+function Trigger:SetDebugVisibility(visible)
+    actor.SetHidden(self.Actor, not visible)
+end
+
 function Trigger:Activate(IsLinked)
     print('Activating ' .. tostring(self) .. '...')
     self.postSpawnCallback = nil
