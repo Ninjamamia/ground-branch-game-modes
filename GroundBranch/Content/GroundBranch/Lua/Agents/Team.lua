@@ -164,13 +164,10 @@ end
 function Team:UpdateAgentsLists()
     self.Agents.Alive = {}
     self.Agents.Dead = {}
-    print(tostring(self) .. ': found ' .. #self.Agents.All .. ' agents')
     for i, Agent in ipairs(self.Agents.All) do
         if Agent.IsAlive then
-            print('  ' .. tostring(Agent) .. ' is alive')
             table.insert(self.Agents.Alive, Agent)
         else
-            print('  ' .. tostring(Agent) .. ' is dead')
             table.insert(self.Agents.Dead, Agent)
         end
     end
