@@ -62,6 +62,7 @@ function Mine:Activate()
         actor.SetEnableCollision(Prop, false)
     end
     for _, Prop in ipairs(self.Defusers) do
+        actor.SetActive(Prop, true)
         actor.SetHidden(Prop, true)
         actor.SetEnableCollision(Prop, true)
     end
@@ -101,9 +102,14 @@ function Mine:Defuse()
 end
 
 function Mine:Trigger(force)
-    if self.State == 'Active' or force == true then
+    force = force or false
+    if force then
+        self:Activate()
+    end
+    if self.State == 'Active' then
         self.State = 'Triggered'
         AdminTools:ShowDebug(tostring(self) .. " triggered.")
+        actor.SetActive(self.Actor, true)
         GetLuaComp(self.Actor).Explode()
         actor.SetHidden(self.Actor, true)
         actor.SetEnableCollision(self.Actor, false)
