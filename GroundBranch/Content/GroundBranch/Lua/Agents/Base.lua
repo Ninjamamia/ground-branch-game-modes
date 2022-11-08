@@ -18,10 +18,16 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
     self.Healings = 0
 	self.Tags = {}
     self.HealableTeams = {}
+    self.IsCustomEliminationCallback = false
+    if eliminationCallback ~= nil then
+        self.IsCustomEliminationCallback = true
+        self.eliminationCallback = eliminationCallback
+    else
+        self.eliminationCallback = AgentsManager:GetDefaultEliminationCallback(self.TeamId)
+    end
     if characterController ~= nil then
         self.Character = player.GetCharacter(characterController)
         self.TeamId = actor.GetTeamId(characterController)
-        self.eliminationCallback = eliminationCallback or AgentsManager:GetDefaultEliminationCallback(self.TeamId)
         self.Team = self.AgentsManager:GetTeam(self.TeamId)
         self.HealableTeams = self.Team.HealableTeams
     else
@@ -195,11 +201,17 @@ end
 
 function Base:MoveTo(NewTeam)
     self.TeamId = NewTeam.Id
-    self.eliminationCallback = self.AgentsManager:GetDefaultEliminationCallback(self.TeamId)
     self.Team = self.AgentsManager:GetTeam(self.TeamId)
     self.HealableTeams = self.Team.HealableTeams
     if self.Team ~= nil then
         self.Team:AddAgent(self)
+    end
+    self.OnTeamAttitudeChange()
+end
+
+function Base:OnTeamAttitudeChange()
+    if self.IsCustomEliminationCallback == false then
+        self.eliminationCallback = self.AgentsManager:GetDefaultEliminationCallback(self.TeamId)
     end
 end
 

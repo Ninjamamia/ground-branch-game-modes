@@ -240,11 +240,6 @@ function Manager:Start()
 	)
 end
 
-function Manager:SetTeamAttitude(TeamA, TeamB, Attitude)
-	gamemode.SetTeamAttitude(TeamA.Id, TeamB.Id, Attitude)
-	gamemode.SetTeamAttitude(TeamB.Id, TeamA.Id, Attitude)
-end
-
 function Manager:OnGetSpawnInfo(PlayerState)
 	local Agent = self.PlayersByName[player.GetName(PlayerState)]
 	if Agent == nil then

@@ -72,12 +72,14 @@ function BasicAI:Respawn(Position)
     end
 end
 
-function BasicAI:MoveTo(NewTeam)
-    super.MoveTo(self, NewTeam)
+function BasicAI:OnTeamAttitudeChange()
+    super.OnTeamAttitudeChange(self)
     actor.SetTeamId(self.SpawnPoint, self.TeamId)
-    local Position = self:GetPosition()
-    self:Kill()
-    self:Respawn(Position)
+    if self.IsAlive then
+        local Position = self:GetPosition()
+        self:Kill()
+        self:Respawn(Position)
+    end
 end
 
 return BasicAI

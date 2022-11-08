@@ -234,8 +234,8 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
-	self.AgentsManager:SetTeamAttitude(self.PlayerTeams.BluFor.Script, self.AiTeams.SuicideSquad.Script, 'Neutral')
-	self.AgentsManager:SetTeamAttitude(self.AiTeams.OpFor.Script, self.AiTeams.SuicideSquad.Script, 'Neutral')
+	self.AiTeams.SuicideSquad.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Neutral', true)
+	self.AiTeams.SuicideSquad.Script:SetAttitude(self.AiTeams.OpFor.Script, 'Neutral', true)
 end
 
 function Mode:ShouldCheckForTeamKills()

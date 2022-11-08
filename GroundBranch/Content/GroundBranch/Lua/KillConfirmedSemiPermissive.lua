@@ -146,16 +146,22 @@ end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
-	self.AgentsManager:SetTeamAttitude(self.PlayerTeams.BluFor.Script, self.AiTeams.CIVUnarmed.Script, 'Neutral')
-	self.AgentsManager:SetTeamAttitude(self.AiTeams.CIVArmed.Script, self.AiTeams.OpFor.Script, 'Friendly')
-	self.AgentsManager:SetTeamAttitude(self.AiTeams.CIVArmed.Script, self.AiTeams.SuicideSquad.Script, 'Neutral')
-	self.AgentsManager:SetTeamAttitude(self.AiTeams.CIVUnarmed.Script, self.AiTeams.OpFor.Script, 'Friendly')
-	self.AgentsManager:SetTeamAttitude(self.AiTeams.CIVUnarmed.Script, self.AiTeams.SuicideSquad.Script, 'Neutral')
-	self.AgentsManager:SetTeamAttitude(self.AiTeams.CIVUnarmed.Script, self.AiTeams.CIVArmed.Script, 'Friendly')
+	self.AiTeams.CIVUnarmed.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Neutral')
+	self.AiTeams.CIVUnarmed.Script:SetAttitude(self.AiTeams.OpFor.Script, 'Friendly', true)
+	self.AiTeams.CIVUnarmed.Script:SetAttitude(self.AiTeams.SuicideSquad.Script, 'Neutral', true)
+	self.AiTeams.CIVArmed.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Neutral')
+	self.AiTeams.CIVArmed.Script:SetAttitude(self.AiTeams.OpFor.Script, 'Friendly', true)
+	self.AiTeams.CIVArmed.Script:SetAttitude(self.AiTeams.SuicideSquad.Script, 'Neutral', true)
+	self.AiTeams.CIVArmed.Script:SetAttitude(self.AiTeams.CIVUnarmed.Script, 'Friendly', true)
+	self.PlayerTeams.BluFor.Script:AddHealableTeam(self.AiTeams.CIVArmed.TeamId)
+	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVArmed.TeamId, Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:Uprise()
 	if not self.IsUprise then
+		self.AgentsManager:RemoveDefaultEliminationCallback(self.AiTeams.CIVArmed.TeamId)
+		self.PlayerTeams.BluFor.Script:RemoveHealableTeam(self.AiTeams.CIVArmed.TeamId)
+		self.AiTeams.CIVArmed.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Hostile')
 		local tiUprise = math.random(50, 150) * 0.1
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true

@@ -210,6 +210,17 @@ function Team:MoveTo(NewTeam)
     end
 end
 
+function Team:SetAttitude(OtherTeam, Attitude, mutual)
+    mutual = mutual or false
+	gamemode.SetTeamAttitude(self.Id, OtherTeam.Id, Attitude)
+    for _, Agent in ipairs(self.Agents.All) do
+        Agent:OnTeamAttitudeChange()
+    end
+    if mutual then
+        OtherTeam:SetAttitude(self, Attitude)
+    end
+end
+
 --#endregion
 
 --#region Score
