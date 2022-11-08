@@ -29,7 +29,6 @@ function Manager:Create(maxConcurrentAI, fallbackEliminationCallback)
     self.SpawnQueue = {}
 	self.tiSpawnQueue = 0
 	self.MaxConcurrentAICount = maxConcurrentAI or ai.GetMaxCount()
-	self.DefaultEliminationCallbacks = {}
 	self.FallbackEliminationCallback = fallbackEliminationCallback
 	self.SpawnedAIByUUID = {}
 	self.SpawnedAIByCharacterName = {}
@@ -45,18 +44,6 @@ end
 
 function Manager:GetTeamByID(TeamId)
 	return self.TeamsById[TeamId]
-end
-
-function Manager:AddDefaultEliminationCallback(Team, Callback)
-	self.DefaultEliminationCallbacks[Team.Id] = Callback
-end
-
-function Manager:RemoveDefaultEliminationCallback(Team)
-	self.DefaultEliminationCallbacks[Team.Id] = nil
-end
-
-function Manager:GetDefaultEliminationCallback(Team)
-	return self.DefaultEliminationCallbacks[Team.Id] or self.FallbackEliminationCallback
 end
 
 ---Resets the queue, has to be called by pre round cleanup.

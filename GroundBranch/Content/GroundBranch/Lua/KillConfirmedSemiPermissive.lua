@@ -113,7 +113,7 @@ function Mode:PreInit()
 	self.AISpawns.CIVUnarmed = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AISpawns.CIVArmed = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
 	self.Teams.BluFor:AddHealableTeam(self.AiTeams.CIVUnarmed)
-	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed, Callback:Create(self, self.OnCivDied))
+	self.AiTeams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -152,12 +152,12 @@ function Mode:PreRoundCleanUp()
 	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
 	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
 	self.Teams.BluFor:AddHealableTeam(self.AiTeams.CIVArmed)
-	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVArmed, Callback:Create(self, self.OnCivDied))
+	self.AiTeams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:Uprise()
 	if not self.IsUprise then
-		self.AgentsManager:RemoveDefaultEliminationCallback(self.AiTeams.CIVArmed)
+		self.AiTeams.CIVArmed):RemoveDefaultEliminationCallback()
 		self.Teams.BluFor:RemoveHealableTeam(self.AiTeams.CIVArmed)
 		self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
 		local tiUprise = math.random(50, 150) * 0.1

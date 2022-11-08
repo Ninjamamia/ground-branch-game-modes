@@ -28,7 +28,7 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
             self.IsCustomEliminationCallback = true
             self.eliminationCallback = eliminationCallback
         else
-            self.eliminationCallback = AgentsManager:GetDefaultEliminationCallback(self.Team)
+            self.eliminationCallback = self.Team:GetDefaultEliminationCallback()
         end
     else
         self.Name = "Unknonw"
@@ -211,7 +211,7 @@ end
 
 function Base:OnTeamAttitudeChange()
     if self.IsCustomEliminationCallback == false then
-        self.eliminationCallback = self.AgentsManager:GetDefaultEliminationCallback(self.Team)
+        self.eliminationCallback = self.Team:GetDefaultEliminationCallback()
     end
 end
 

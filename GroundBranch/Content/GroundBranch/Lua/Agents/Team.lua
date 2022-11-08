@@ -81,6 +81,7 @@ function Team:Create(
     self.HospitalStarts = {}
     self.HospitalStartsCount = 0
     self.InsertionPointsCount = 0
+    self.DefaultEliminationCallback = nil
     self.HealableTeams = {}
     self.HealableTeams[self.Id] = true
     for _, insertionPoint in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
@@ -155,6 +156,18 @@ end
 
 function Team:SetHealingMode(healingMode)
     self.healingMode = healingMode
+end
+
+function Team:SetDefaultEliminationCallback(Callback)
+	self.DefaultEliminationCallback = Callback
+end
+
+function Team:RemoveDefaultEliminationCallback()
+	self.DefaultEliminationCallback = nil
+end
+
+function Team:GetDefaultEliminationCallback(Team)
+	return self.DefaultEliminationCallback or gamemode.script.AgentsManager.FallbackEliminationCallback
 end
 
 --#region Players
