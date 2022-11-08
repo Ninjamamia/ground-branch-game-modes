@@ -35,7 +35,7 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:OnOpForDied(killData)
-	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAliveAgentsCount()
+	local OpForAliveCount = self.Teams.OpFor:GetAliveAgentsCount()
 	super.OnOpForDied(self, killData)
 	if self.WaveNumber < self.Settings.NumberOfWaves.Value then
 		local OpForAliveRatio = (OpForAliveCount * 100) / self.Settings.OpForCount.Value
@@ -44,8 +44,8 @@ function Mode:OnOpForDied(killData)
 			self.WaveNumber = self.WaveNumber + 1
 			local WaveSize = math.floor((self.Settings.OpForCount.Value * self.Settings.WaveSizePercent.Value) / 100)
 			AdminTools:ShowDebug("Spawning reinforcement wave " .. self.WaveNumber .. " (" .. WaveSize .. " OpFor)")
-			self.AiTeams.OpFor.Spawns:SelectSpawnPoints()
-			self.AiTeams.OpFor.Spawns:Spawn(0.0, 0.4, WaveSize, self.AiTeams.OpFor.Tag)
+			self.AISpawns.OpFor:SelectSpawnPoints()
+			self.AISpawns.OpFor:Spawn(0.0, 0.4, WaveSize, self.AiTeams.OpFor.Tag)
 		end
 	end
 end

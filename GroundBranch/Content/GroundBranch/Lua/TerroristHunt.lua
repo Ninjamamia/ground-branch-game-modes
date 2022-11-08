@@ -26,7 +26,7 @@ end
 
 function Mode:PostInit()
 	super.PostInit(self)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpFor", 1)
+	self.Teams.BluFor:AddGameObjective("EliminateOpFor", 1)
 end
 
 
@@ -41,7 +41,7 @@ function Mode:OnOpForDied(killData)
 end
 
 function Mode:CheckOpForCountTimer()
-	local OpForAliveCount = self.AiTeams.OpFor.Script:GetAliveAgentsCount()
+	local OpForAliveCount = self.Teams.OpFor:GetAliveAgentsCount()
 	if OpForAliveCount == 0 then
 		timer.Clear("ShowRemaining")
 		gamemode.AddGameStat("Result=Team1")

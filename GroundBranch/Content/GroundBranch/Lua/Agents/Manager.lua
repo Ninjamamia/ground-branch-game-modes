@@ -43,20 +43,20 @@ function Manager:AddTeam(Team)
 	self.TeamsById[Team.Id] = Team
 end
 
-function Manager:GetTeam(TeamId)
+function Manager:GetTeamByID(TeamId)
 	return self.TeamsById[TeamId]
 end
 
-function Manager:AddDefaultEliminationCallback(TeamId, Callback)
-	self.DefaultEliminationCallbacks[TeamId] = Callback
+function Manager:AddDefaultEliminationCallback(Team, Callback)
+	self.DefaultEliminationCallbacks[Team.Id] = Callback
 end
 
-function Manager:RemoveDefaultEliminationCallback(TeamId)
-	self.DefaultEliminationCallbacks[TeamId] = nil
+function Manager:RemoveDefaultEliminationCallback(Team)
+	self.DefaultEliminationCallbacks[Team.Id] = nil
 end
 
-function Manager:GetDefaultEliminationCallback(TeamId)
-	return self.DefaultEliminationCallbacks[TeamId] or self.FallbackEliminationCallback
+function Manager:GetDefaultEliminationCallback(Team)
+	return self.DefaultEliminationCallbacks[Team.Id] or self.FallbackEliminationCallback
 end
 
 ---Resets the queue, has to be called by pre round cleanup.

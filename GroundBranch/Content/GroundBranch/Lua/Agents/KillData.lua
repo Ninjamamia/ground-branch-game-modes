@@ -7,10 +7,10 @@ function KillData:Create(KilledAgent, KillerAgent)
     local self = setmetatable({}, KillData)
 	self.KilledAgent = KilledAgent
 	self.KillerAgent = KillerAgent
-	self.KilledTeam = KilledAgent.TeamId
+	self.KilledTeam = KilledAgent.Team
 	self.KillerTeam = nil
 	if KillerAgent ~= nil then
-		self.KillerTeam = KillerAgent.TeamId
+		self.KillerTeam = KillerAgent.Team
 	end
 	return self
 end

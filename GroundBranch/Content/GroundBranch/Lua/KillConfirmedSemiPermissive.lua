@@ -110,12 +110,10 @@ Mode.UpriseChance = 0
 
 function Mode:PreInit()
 	super.PreInit(self)
-	self.AiTeams.CIVUnarmed.Script = MTeams:Create(self.AiTeams.CIVUnarmed)
-	self.AiTeams.CIVArmed.Script = MTeams:Create(self.AiTeams.CIVArmed)
-	self.AiTeams.CIVUnarmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
-	self.AiTeams.CIVArmed.Spawns = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
-	self.PlayerTeams.BluFor.Script:AddHealableTeam(self.AiTeams.CIVUnarmed.TeamId)
-	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed.TeamId, Callback:Create(self, self.OnCivDied))
+	self.AISpawns.CIVUnarmed = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
+	self.AISpawns.CIVArmed = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
+	self.Teams.BluFor:AddHealableTeam(self.AiTeams.CIVUnarmed)
+	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVUnarmed, Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -124,7 +122,7 @@ end
 
 function Mode:PostInit()
 	super.PostInit(self)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NoCollateralDamage', 1)
+	self.Teams.BluFor:AddGameObjective('NoCollateralDamage', 1)
 end
 
 function Mode:OnRoundStageSet(RoundStage)
@@ -140,41 +138,41 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:SpawnCIVs()
-	self.AiTeams.CIVUnarmed.Spawns:AddRandomSpawns()
-	self.AiTeams.CIVUnarmed.Spawns:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
+	self.AISpawns.CIVUnarmed:AddRandomSpawns()
+	self.AISpawns.CIVUnarmed:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
 end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
-	self.AiTeams.CIVUnarmed.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Neutral')
-	self.AiTeams.CIVUnarmed.Script:SetAttitude(self.AiTeams.OpFor.Script, 'Friendly', true)
-	self.AiTeams.CIVUnarmed.Script:SetAttitude(self.AiTeams.SuicideSquad.Script, 'Neutral', true)
-	self.AiTeams.CIVArmed.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Neutral')
-	self.AiTeams.CIVArmed.Script:SetAttitude(self.AiTeams.OpFor.Script, 'Friendly', true)
-	self.AiTeams.CIVArmed.Script:SetAttitude(self.AiTeams.SuicideSquad.Script, 'Neutral', true)
-	self.AiTeams.CIVArmed.Script:SetAttitude(self.AiTeams.CIVUnarmed.Script, 'Friendly', true)
-	self.PlayerTeams.BluFor.Script:AddHealableTeam(self.AiTeams.CIVArmed.TeamId)
-	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVArmed.TeamId, Callback:Create(self, self.OnCivDied))
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.CIVArmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
+	self.Teams.BluFor:AddHealableTeam(self.AiTeams.CIVArmed)
+	self.AgentsManager:AddDefaultEliminationCallback(self.AiTeams.CIVArmed, Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:Uprise()
 	if not self.IsUprise then
-		self.AgentsManager:RemoveDefaultEliminationCallback(self.AiTeams.CIVArmed.TeamId)
-		self.PlayerTeams.BluFor.Script:RemoveHealableTeam(self.AiTeams.CIVArmed.TeamId)
-		self.AiTeams.CIVArmed.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Hostile')
+		self.AgentsManager:RemoveDefaultEliminationCallback(self.AiTeams.CIVArmed)
+		self.Teams.BluFor:RemoveHealableTeam(self.AiTeams.CIVArmed)
+		self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
 		local tiUprise = math.random(50, 150) * 0.1
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
 		local sizeUprise = self.Settings.GlobalCIVUpriseSize.Value
 		if sizeUprise > 0 then
-			self.AiTeams.CIVArmed.Spawns:AddRandomSpawns()
-			self.AiTeams.CIVArmed.Spawns:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
+			self.AISpawns.CIVArmed:AddRandomSpawns()
+			self.AISpawns.CIVArmed:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
 		end
 	end
 end
 
 function Mode:OnUpriseSpawned()
-	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: Civilians are uprising, no more "mistakes" are permitted...', 'Upper', 5.0, 'Always')
+	self.Teams.BluFor:DisplayMessageToAlivePlayers('INTEL: Civilians are uprising, no more "mistakes" are permitted...', 'Upper', 5.0, 'Always')
 end
 
 function Mode:LocalUprise(killedCivLocation)
@@ -182,25 +180,25 @@ function Mode:LocalUprise(killedCivLocation)
 	local sizeUprise = math.random(0, self.Settings.LocalCIVUpriseSize.Value)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
-		self.AiTeams.CIVArmed.Spawns:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-		self.AiTeams.CIVArmed.Spawns:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
+		self.AISpawns.CIVArmed:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
+		self.AISpawns.CIVArmed:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
 	end
 end
 
 function Mode:OnLocalUpriseSpawned()
-	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: Armed civilians spotted nearby!', 'Upper', 5.0, 'Always')
+	self.Teams.BluFor:DisplayMessageToAlivePlayers('INTEL: Armed civilians spotted nearby!', 'Upper', 5.0, 'Always')
 end
 
 function Mode:OnCivDied(killData)
-	if killData.KillerTeam == self.PlayerTeams.BluFor.TeamId then
+	if killData.KillerTeam == self.Teams.BluFor then
 		self.Objectives.AvoidFatality:ReportFatality()
 		killData.KillerAgent:AwardPlayerScore('CollateralDamage')
 		killData.KillerAgent:AwardTeamScore('CollateralDamage')
 		local message = 'Collateral damage by ' .. tostring(killData.KillerAgent)
-		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
+		self.Teams.BluFor:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 		if self.IsUprise then
 			self.Objectives.NoSoftFail:Fail()
-			self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+			self.Teams.BluFor:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
 			gamemode.SetRoundStage('PostRoundWait')
 		end
 		self:LocalUprise(killData:GetLocation())

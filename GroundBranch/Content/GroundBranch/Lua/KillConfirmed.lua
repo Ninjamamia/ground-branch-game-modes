@@ -105,7 +105,7 @@ function Mode:PreInit()
 	-- Gathers all HVT spawn points
 	self.Objectives.ConfirmKill = MObjectiveConfirmKill:Create(
 		Callback:Create(self, self.OnAllKillsConfirmed),
-		self.PlayerTeams.BluFor.Script,
+		self.Teams.BluFor,
 		self.HVT.Tag,
 		self.Settings.HVTCount.Value,
 		Callback:Create(self, self.OnConfirmedKill),
@@ -114,7 +114,7 @@ function Mode:PreInit()
 	-- Gathers all extraction points placed in the mission
 	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
 		Callback:Create(self, self.OnExfiltrated),
-		self.PlayerTeams.BluFor.Script,
+		self.Teams.BluFor,
 		5.0,
 		1.0
 	)
@@ -131,9 +131,9 @@ end
 
 function Mode:PostInit()
 	super.PostInit(self)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
+	self.Teams.BluFor:AddGameObjective('NeutralizeHVTs', 1)
+	self.Teams.BluFor:AddGameObjective('ConfirmEliminatedHVTs', 1)
+	self.Teams.BluFor:AddGameObjective('ExfiltrateBluFor', 1)
 end
 
 function Mode:PrepareObjectives()
@@ -157,13 +157,13 @@ end
 
 function Mode:OnOpForDied(killData)
 	print('OpFor standard eliminated')
-	if killData.KillerTeam == self.PlayerTeams.BluFor.TeamId then
+	if killData.KillerTeam == self.Teams.BluFor then
 		killData.KillerAgent:AwardPlayerScore('KillStandard')
 	end
 end
 
 function Mode:OnPlayerDied(killData)
-	if killData.KilledTeam == self.PlayerTeams.BluFor.TeamId then
+	if killData.KilledTeam == self.Teams.BluFor then
 		print('BluFor eliminated')
 		if killData.KilledAgent == killData.KillerAgent then
 			killData.KilledAgent:AwardPlayerScore('Accident')
@@ -199,7 +199,7 @@ function Mode:OnExfiltrated()
 		return
 	end
 	-- Award surviving players
-	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAliveAgents()
+	local alivePlayers = self.Teams.BluFor:GetAliveAgents()
 	for _, alivePlayer in ipairs(alivePlayers) do
 		alivePlayer:AwardPlayerScore('Survived')
 	end
@@ -229,7 +229,7 @@ function Mode:OnHVTDied(killData)
 end
 
 function Mode:OnReinforcementsSpawned()
-	self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('INTEL: HVT reinforcements spotted!', 'Upper', 5.0, 'Always')
+	self.Teams.BluFor:DisplayMessageToAlivePlayers('INTEL: HVT reinforcements spotted!', 'Upper', 5.0, 'Always')
 end
 
 return Mode

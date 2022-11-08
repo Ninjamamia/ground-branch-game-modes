@@ -70,25 +70,24 @@ local Mode = {
 		BluFor = {
 			TeamId = 1,
 			Name = 'BluFor',
-			Loadout = 'NoTeam',
-			Script = nil
+			Loadout = 'NoTeam'
 		},
 	},
 	AiTeams = {
 		OpFor = {
 			TeamId = 100,
 			Name = 'OpFor',
-			Tag = 'OpFor',
-			CalculatedAiCount = 0,
-			Spawns = nil
+			Tag = 'OpFor'
 		},
 		SuicideSquad = {
-			Name = 'SuicideSquad',
-			Tag = 'SuicideSquad',
 			TeamId = 30,
-			CalculatedAiCount = 0,
-			Spawns = nil
+			Name = 'SuicideSquad',
+			Tag = 'SuicideSquad'
 		}
+	},
+	Teams = {
+	},
+	AISpawns = {
 	},
 	Objectives = {
 	},
@@ -111,6 +110,19 @@ local Mode = {
 	AmbushManager = nil,
 }
 
+function Mode:CreateTeams()
+	print('Creating player teams...')
+	for _, teamTable in pairs(self.PlayerTeams) do
+		NewTeam = MTeams:Create(teamTable)
+		self.Teams[NewTeam.Name] = NewItem
+	end
+	print('Creating AI teams...')
+	for _, teamTable in pairs(self.AiTeams) do
+		NewTeam = MTeams:Create(teamTable)
+		self.Teams[NewTeam.Name] = NewItem
+	end
+end
+
 function Mode:PreInit()
 	print('Pre initialization')
 	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
@@ -119,14 +131,12 @@ function Mode:PreInit()
 	self.OnCharacterDiedCallback = CallbackList:Create()
 	self.OnGameTriggerBeginOverlapCallback = CallbackList:Create()
 	self.OnGameTriggerEndOverlapCallback = CallbackList:Create()
-	self.PlayerTeams.BluFor.Script = MTeams:Create(self.PlayerTeams.BluFor)
-	self.AiTeams.OpFor.Script = MTeams:Create(self.AiTeams.OpFor)
-	self.AiTeams.SuicideSquad.Script = MTeams:Create(self.AiTeams.SuicideSquad)
+	self:CreateTeams()
 	-- Gathers all OpFor spawn points by priority
-	self.AiTeams.OpFor.Spawns = MSpawnsPriority:Create()
+	self.AISpawns.OpFor = MSpawnsPriority:Create()
 	self.AmbushManager = AmbushManager:Create(self.AiTeams.OpFor.Tag)
 
-	TotalSpawns = math.min(ai.GetMaxCount(), self.AiTeams.OpFor.Spawns.Total)
+	TotalSpawns = math.min(ai.GetMaxCount(), self.AISpawns.OpFor.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
 	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
 end
@@ -144,8 +154,8 @@ function Mode:OnRoundStageSet(RoundStage)
 		gamemode.ResetTeamScores()
 		gamemode.ResetPlayerScores()
 		AdminTools:SetDebugMessageLevel(self.Settings.DebugMessageLevel.Value)
-		self.PlayerTeams.BluFor.Script:SetMaxHealings(self.Settings.MaxHealings.Value)
-		self.PlayerTeams.BluFor.Script:SetHealingMode(self.Settings.HealingMode.Value)
+		self.Teams.BluFor:SetMaxHealings(self.Settings.MaxHealings.Value)
+		self.Teams.BluFor:SetHealingMode(self.Settings.HealingMode.Value)
 		if self.Settings.TriggersEnabled.Value == 1 then
 			self.AmbushManager:Activate()
 		else
@@ -234,8 +244,8 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
-	self.AiTeams.SuicideSquad.Script:SetAttitude(self.PlayerTeams.BluFor.Script, 'Neutral', true)
-	self.AiTeams.SuicideSquad.Script:SetAttitude(self.AiTeams.OpFor.Script, 'Neutral', true)
+	self.Teams.SuicideSquad:SetAttitude(self.Teams.BluFor, 'Neutral', true)
+	self.Teams.SuicideSquad:SetAttitude(self.Teams.OpFor, 'Neutral', true)
 end
 
 function Mode:ShouldCheckForTeamKills()
@@ -315,7 +325,7 @@ function Mode:CheckBluForCountTimer()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
-	if self.PlayerTeams.BluFor.Script:IsWipedOut() then
+	if self.Teams.BluFor:IsWipedOut() then
 		gamemode.AddGameStat('Result=None')
 		self:UpdateCompletedObjectives()
 		self:UpdateSummaryOnFail()
@@ -347,8 +357,8 @@ function Mode:UpdateSummaryOnFail()
 end
 
 function Mode:SpawnOpFor()
-	self.AiTeams.OpFor.Spawns:SelectSpawnPoints()
-	self.AiTeams.OpFor.Spawns:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
+	self.AISpawns.OpFor:SelectSpawnPoints()
+	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
 end
 
 function Mode:OnOpForDied(killData)

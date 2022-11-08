@@ -107,6 +107,13 @@ function Team:Create(
     return self
 end
 
+function Team.__eq(a, b)
+    if a == nil or b == nil then
+        return false
+    end
+    return a.Id == b.Id
+end
+
 function Team:__tostring()
     return "Team " .. self.Name .. ' (ID=' .. self.Id .. ')'
 end
@@ -157,12 +164,12 @@ function Team:AddAgent(Agent)
     self:UpdateAgentsLists()
 end
 
-function Team:AddHealableTeam(TeamId)
-    self.HealableTeams[TeamId] = true
+function Team:AddHealableTeam(Team)
+    self.HealableTeams[Team.Id] = true
 end
 
-function Team:RemoveHealableTeam(TeamId)
-    self.HealableTeams[TeamId] = nil
+function Team:RemoveHealableTeam(Team)
+    self.HealableTeams[Team.Id] = nil
 end
 
 function Team:UpdateAgentsLists()
@@ -219,6 +226,10 @@ function Team:SetAttitude(OtherTeam, Attitude, mutual)
     if mutual then
         OtherTeam:SetAttitude(self, Attitude)
     end
+end
+
+function Team:AddGameObjective(ObjectiveName, Weight)
+    gamemode.AddGameObjective(self.Id, ObjectiveName, Weight)
 end
 
 --#endregion
