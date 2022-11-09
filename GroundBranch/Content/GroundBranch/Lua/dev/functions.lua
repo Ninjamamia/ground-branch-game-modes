@@ -25,3 +25,8 @@ function debugTable(tbl, label)
 		print(Tables.debug(tbl))
 	end
 end
+
+function default(value, defaultValue)
+	if value == nil then return defaultValue end
+	return value
+end
