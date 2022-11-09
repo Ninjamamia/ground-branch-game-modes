@@ -21,8 +21,12 @@ local function setActorState(target, object)
 		actor.SetEnableCollision(target, object.collide)
 		table.insert(out, sprintf("collide=%s", object.collide))
 	end
-	
-	printf("  Set actor '%s' state: %s", actor.GetName(target), out)
+	local actorStateStr
+	if Tables.notEmpty(out) then
+		actorStateStr = table.concat(out, ', ') else
+		actorStateStr = '(no action taken)' end
+
+	printf("  Set actor '%s' state: %s", actor.GetName(target), actorStateStr)
 end
 
 -- Set visibility and collision of a target actor based on the shouldEnable arg
@@ -57,16 +61,20 @@ end
 
 -- Enable a random number of target actors in the group constrained by a max and min
 local function _enableRndNum(targets, enableMin, enableMax)
-	if enableMin == nil then
-		enableMin = 0 else
-		enableMin = math.min(math.max(enableMin, 0), enableMax) end
+	local targetCount = #targets
 
-	if enableMax == nil then
-		enableMax = #targets else
-		enableMax = math.min(enableMax, enableMax) end
+	enableMin = default(enableMin, 0)
+	enableMax = default(enableMax, targetCount)
+
+	-- force enableMin between 0 and targetCount
+	enableMin = math.max(0, math.min(enableMin, targetCount))
+	-- force enableMax between enableMin and targetCount
+	enableMax = math.max(enableMin, math.min(enableMax, targetCount))
 	
+	-- pick a random number of targets to enable
 	local enableNum = math.random(enableMin, enableMax)
 	
+	-- debug
 	printf("  Adjusted params: EnableMin=%s, EnableMax=%s", enableMin, enableMax)
 	printf("  Random EnableNum value: %s", enableNum)
 
@@ -74,22 +82,20 @@ local function _enableRndNum(targets, enableMin, enableMax)
 end
 
 -- Enable the target actors by copying state of another actor, possibly inverted
-local function _copyStateFrom(target, linkedActorName, inverse)
+local function _copyStateFrom(targets, stateByActorName, linkedActorName, inverse)
 	local result = {}
 	
-	-- special case to when the EnableWith param ends with _, we do some
-	-- use the actor's name suffix to build the linked actor name
-	local suffix = nil
-	if linkedActorName:sub(-1) == '_' then
-		suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
-	end
-
-	for _, target in pairs(targets) do
+	-- special case to when the linkedActorName ends with _, we  use the actor's
+	-- name suffix to complete linkedActorName
+	local shouldCompleteLinkedActorName = linkedActorName:sub(-1) == '_'
 		
-		local actorName = actor.GetName(target)
-		if suffix ~= nil then
-			linkedActorName = table.concat({ linkedActorName, suffix })
-			printf("  Computed EnableWith value: '%s'", linkedActorName)
+	for _, target in pairs(targets) do
+	 	
+	 	if shouldCompleteLinkedActorName then
+			local actorName = actor.GetName(target)
+			local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
+			linkedActorName = linkedActorName .. suffix
+			printf("  Computed linkedActorName value: '%s'", linkedActorName)
 		end
 
 		local linkedActorEnabled = toboolean(stateByActorName[linkedActorName])
@@ -102,13 +108,13 @@ local function _copyStateFrom(target, linkedActorName, inverse)
 end
 
 -- Enable the target actors when another actor is enabled
-local function _enableWith(targets, linkedActorName)
-	return _copyStateFrom(targets, linkedActorName, false)
+local function _enableWith(targets, stateByActorName, linkedActorName)
+	return _copyStateFrom(targets, stateByActorName, linkedActorName, false)
 end
 
 -- Disable the target actors when another actor is enabled
-local function _disableWith(targets, linkedActorName)
-	return _copyStateFrom(targets, linkedActorName, true)
+local function _disableWith(targets, stateByActorName, linkedActorName)
+	return _copyStateFrom(targets, stateByActorName, linkedActorName, true)
 end
 
 --- Instantiate an ActorStateAction statically
@@ -203,17 +209,17 @@ function ActorStateAction:exec(stateByActorName)
 	out = out:sub(1, -3) -- remove trailing coma and space
 	print(out)
 
-	-- call the correct specialized functions based on the parameters
+	-- call the correct specialized function based on the parameters
 	if self.params.EnableProb then
-		return _enableProb(targets, self.params.EnableProb)
+		return _enableProb(self.targets, self.params.EnableProb)
 	elseif self.params.EnableNum then
-		return _enableNum(targets, self.params.EnableNum)
+		return _enableNum(self.targets, self.params.EnableNum)
 	elseif self.params.EnableMin or self.params.EnableMax then
 		return _enableRndNum(self.targets, self.params.EnableMin, self.params.EnableMax)
 	elseif self.params.EnableWith then
-		return _enableWith(targets, self.params.EnableWith)
+		return _enableWith(self.targets, stateByActorName, self.params.EnableWith)
 	elseif self.params.DisableWith then
-		return _disableWith(targets, self.params.DisableWith)
+		return _disableWith(self.targets, stateByActorName, self.params.DisableWith)
 	end
 
 	-- omitted else case since all previous cases return
