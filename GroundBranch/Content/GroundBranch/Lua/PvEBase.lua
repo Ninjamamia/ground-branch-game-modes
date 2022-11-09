@@ -77,12 +77,15 @@ local Mode = {
 		OpFor = {
 			TeamId = 100,
 			Name = 'OpFor',
-			Tag = 'OpFor'
 		},
 		SuicideSquad = {
 			TeamId = 30,
 			Name = 'SuicideSquad',
-			Tag = 'SuicideSquad'
+		}
+	},
+	AISpawnDefs = {
+		OpFor = {
+			Tag = 'OpFor'
 		}
 	},
 	Teams = {
@@ -134,7 +137,7 @@ function Mode:PreInit()
 	self:CreateTeams()
 	-- Gathers all OpFor spawn points by priority
 	self.AISpawns.OpFor = MSpawnsPriority:Create()
-	self.AmbushManager = AmbushManager:Create(self.AiTeams.OpFor.Tag)
+	self.AmbushManager = AmbushManager:Create(self.AISpawnDefs.OpFor.Tag)
 
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AISpawns.OpFor.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
@@ -358,7 +361,7 @@ end
 
 function Mode:SpawnOpFor()
 	self.AISpawns.OpFor:SelectSpawnPoints()
-	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
+	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AISpawnDefs.OpFor.Tag)
 end
 
 function Mode:OnOpForDied(killData)
