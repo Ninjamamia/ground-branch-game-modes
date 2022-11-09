@@ -27,6 +27,7 @@ function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, Base
 	self.BaseTag = BaseTag
     self:AddTag(BaseTag)
     self.OriginalTeamId = self.TeamId
+    self.RespawnCount = 0
 end
 
 function BasicAI:__tostring()
@@ -36,8 +37,8 @@ end
 function BasicAI:CleanUp()
     actor.SetTeamId(self.SpawnPoint, self.OriginalTeamId)
 	ai.CleanUp(self.UUID)
-    for i = 0, self.Healings, 1 do
-        local CurrUUID = self.UUID .. "_" .. self.Healings
+    for i = 0, self.RespawnCount, 1 do
+        local CurrUUID = self.UUID .. "_" .. i
         ai.CleanUp(CurrUUID)
     end
 end
@@ -54,7 +55,8 @@ function BasicAI:Kill(message)
 end
 
 function BasicAI:Respawn(Position)
-    local CurrUUID = self.UUID .. "_" .. self.Healings
+    local CurrUUID = self.UUID .. "_" .. self.RespawnCount
+    self.RespawnCount = self.RespawnCount + 1
     ai.CreateWithTransform(self.SpawnPoint, Position or self:GetPosition(), CurrUUID, 0.0)
     local characterController = gameplaystatics.GetAllActorsWithTag(CurrUUID)
     if characterController ~= nil then

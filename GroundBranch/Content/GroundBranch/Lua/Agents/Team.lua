@@ -108,11 +108,11 @@ function Team:Create(
     return self
 end
 
-function Team.__eq(a, b)
-    if a == nil or b == nil then
+function Team:__eq(Other)
+    if self == nil or Other == nil then
         return false
     end
-    return a.Id == b.Id
+    return self.Id == Other.Id
 end
 
 function Team:__tostring()
@@ -166,7 +166,7 @@ function Team:RemoveDefaultEliminationCallback()
 	self.DefaultEliminationCallback = nil
 end
 
-function Team:GetDefaultEliminationCallback(Team)
+function Team:GetDefaultEliminationCallback()
 	return self.DefaultEliminationCallback or gamemode.script.AgentsManager.FallbackEliminationCallback
 end
 
@@ -177,12 +177,12 @@ function Team:AddAgent(Agent)
     self:UpdateAgentsLists()
 end
 
-function Team:AddHealableTeam(Team)
-    self.HealableTeams[Team.Id] = true
+function Team:AddHealableTeam(OtherTeam)
+    self.HealableTeams[OtherTeam.Id] = true
 end
 
-function Team:RemoveHealableTeam(Team)
-    self.HealableTeams[Team.Id] = nil
+function Team:RemoveHealableTeam(OtherTeam)
+    self.HealableTeams[OtherTeam.Id] = nil
 end
 
 function Team:UpdateAgentsLists()

@@ -206,7 +206,7 @@ function Base:MoveTo(NewTeam)
     if self.Team ~= nil then
         self.Team:AddAgent(self)
     end
-    self.OnTeamAttitudeChange()
+    self:OnTeamAttitudeChange()
 end
 
 function Base:OnTeamAttitudeChange()

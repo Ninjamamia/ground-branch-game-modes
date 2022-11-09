@@ -88,14 +88,14 @@ Mode.Settings.CIVPopulation = {
 
 -- Add additional teams
 Mode.AiTeams.CIVUnarmed = {
-	Name = 'CIV_Unarmed',
+	Name = 'CIVUnarmed',
 	Tag = 'CIV_Unarmed',
 	TeamId = 10,
 	CalculatedAiCount = 0,
 	Spawns = nil
 }
 Mode.AiTeams.CIVArmed = {
-	Name = 'CIV_Armed',
+	Name = 'CIVArmed',
 	Tag = 'CIV_Armed',
 	TeamId = 20,
 	CalculatedAiCount = 0,
@@ -112,8 +112,8 @@ function Mode:PreInit()
 	super.PreInit(self)
 	self.AISpawns.CIVUnarmed = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
 	self.AISpawns.CIVArmed = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
-	self.Teams.BluFor:AddHealableTeam(self.AiTeams.CIVUnarmed)
-	self.AiTeams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
+	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVUnarmed)
+	self.Teams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -151,14 +151,14 @@ function Mode:PreRoundCleanUp()
 	self.Teams.CIVArmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
 	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
 	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
-	self.Teams.BluFor:AddHealableTeam(self.AiTeams.CIVArmed)
-	self.AiTeams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
+	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
+	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:Uprise()
 	if not self.IsUprise then
-		self.AiTeams.CIVArmed):RemoveDefaultEliminationCallback()
-		self.Teams.BluFor:RemoveHealableTeam(self.AiTeams.CIVArmed)
+		self.Teams.CIVArmed:RemoveDefaultEliminationCallback()
+		self.Teams.BluFor:RemoveHealableTeam(self.Teams.CIVArmed)
 		self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
 		local tiUprise = math.random(50, 150) * 0.1
 		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")

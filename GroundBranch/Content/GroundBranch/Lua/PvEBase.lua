@@ -114,12 +114,12 @@ function Mode:CreateTeams()
 	print('Creating player teams...')
 	for _, teamTable in pairs(self.PlayerTeams) do
 		NewTeam = MTeams:Create(teamTable)
-		self.Teams[NewTeam.Name] = NewItem
+		self.Teams[NewTeam.Name] = NewTeam
 	end
 	print('Creating AI teams...')
 	for _, teamTable in pairs(self.AiTeams) do
 		NewTeam = MTeams:Create(teamTable)
-		self.Teams[NewTeam.Name] = NewItem
+		self.Teams[NewTeam.Name] = NewTeam
 	end
 end
 
