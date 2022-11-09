@@ -216,7 +216,7 @@ end
 
 function Mode:OnConfirmedKill(hvt, confirmer)
 	if self.Settings.ReinforcementsTrigger.Value == 1 then
-		self.AmbushManager:OnCustomEvent(hvt.SpawnPoint, confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
+		self.AmbushManager:OnCustomEvent(hvt.SpawnPoint:GetActor(), confirmer, Callback:Create(self, self.OnReinforcementsSpawned))
 	end
 end
 

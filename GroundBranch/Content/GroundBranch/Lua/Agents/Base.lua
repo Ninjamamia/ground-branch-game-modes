@@ -1,4 +1,5 @@
 local AdminTools = require('AdminTools')
+local ActorTools = require('common.Actors')
 
 local Base = {
     IsAgent = true
@@ -80,28 +81,7 @@ function Base:GetLocation()
 end
 
 function Base:GetPosition()
-    if self.Character == nil then
-        return nil
-    end
-    local location = actor.GetLocation(self.Character)
-    local rotation = actor.GetRotation(self.Character)
-    -- fix first letter case of rotation indices, no way around since
-    -- actor.GetLocation uses lowercase but we are supposed to return
-    -- PascalCase in the GetSpawnInfo() function
-	if rotation ~= nil then
-		rotation = {
-			Pitch = rotation.pitch,
-			Yaw = rotation.yaw,
-			Roll = rotation.roll,
-		}
-	end
-    -- add the dead player's postion to the deadPlayerPositions the
-    -- PlayerState is used as an id to select the correct position in
-    -- the list later in the GetSpawnInfo() function
-    return {
-        Location = location,
-        Rotation = rotation,
-    }
+    return ActorTools.GetPosition(self.Character)
 end
 
 function Base:OnCharacterDied(KillData)

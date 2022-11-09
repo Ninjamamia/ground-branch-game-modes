@@ -1,10 +1,8 @@
 local AdminTools = require('AdminTools')
 local Callback   = require('common.Callback')
-local CallbackList			= require('common.CallbackList')
 local AI = require('Agents.AI')
 local Player = require('Agents.Player')
 local DummyAgent = require('Agents.Dummy')
-local KillData = require('Agents.KillData')
 
 local Manager = {
     SpawnQueue = {},
@@ -172,7 +170,7 @@ function Manager:OnSpawnQueueTick()
 					CurrSpawnItem.preSpawnCallback:Call(CurrSpawnItem.spawnTag)
 				end
 				local uuid = "AI_" .. self.SpawnedAICount
-				ai.Create(spawnPoint, uuid, CurrSpawnItem.freezeTime)
+				spawnPoint:SpawnAI(uuid, CurrSpawnItem.freezeTime)
 				local characterController = gameplaystatics.GetAllActorsWithTag(uuid)
 				if characterController ~= nil then
 					print('AgentsManager: Spawned ' .. uuid)

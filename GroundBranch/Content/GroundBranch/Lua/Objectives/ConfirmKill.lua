@@ -1,6 +1,7 @@
 local Actors   = require('Common.Actors')
 local Tables   = require('Common.Tables')
 local Callback = require('common.Callback')
+local SpawnPoint = require('Spawns.Point')
 
 local ConfirmKill = {
     Team = {},
@@ -60,17 +61,17 @@ function ConfirmKill:Create(
     self.Team = team
     self.HVT.Count = hvtCount or 1
     self.HVT.Tag = hvtTag or 'HVT'
-    self.HVT.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
+    self.HVT.Spawns = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClassWithTag(
 		'GroundBranch.GBAISpawnPoint',
 		self.HVT.Tag
-	)
+	))
 	print('Found ' .. #self.HVT.Spawns .. ' ' .. self.HVT.Tag .. ' spawns')
     print('Adding inactive objective markers for ' .. self.HVT.Tag)
     for _, Spawn in ipairs(self.HVT.Spawns) do
 		local description = self.HVT.Tag
 		description = Actors.GetSuffixFromActorTag(Spawn, 'ObjectiveMarker')
 		self.HVT.Markers[description] = gamemode.AddObjectiveMarker(
-			actor.GetLocation(Spawn),
+			Spawn:GetLocation(),
 			self.Team:GetId(),
 			description,
             'MissionLocation',

@@ -29,7 +29,7 @@ function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, Ba
     self.BlastHeight = 1000000
     self.Mine = nil
     print('  This is a Suicide AI, Parameters:')
-    for _, Tag in ipairs(actor.GetTags(spawnPoint)) do
+    for _, Tag in ipairs(spawnPoint:GetTags()) do
         local key
         local value
         _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")

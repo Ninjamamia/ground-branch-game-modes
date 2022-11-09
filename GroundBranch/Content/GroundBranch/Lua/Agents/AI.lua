@@ -9,7 +9,7 @@ AI.__index = AI
 ---Creates a new AI object.
 ---@return table AI Newly created AI object.
 function AI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
-    if actor.HasTag(spawnPoint, 'SuicideBomber') then
+    if spawnPoint:HasTag('SuicideBomber') then
         return SuicideAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
     end
     return BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)

@@ -20,7 +20,7 @@ function BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, Ba
 end
 
 function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
-	self.Name = uuid .. ' @ ' .. actor.GetName(spawnPoint)
+	self.Name = uuid .. ' @ ' .. spawnPoint:GetName()
     super.Init(self, AgentsManager, characterController, eliminationCallback)
 	self.UUID = uuid
 	self.SpawnPoint = spawnPoint
@@ -35,7 +35,7 @@ function BasicAI:__tostring()
 end
 
 function BasicAI:CleanUp()
-    actor.SetTeamId(self.SpawnPoint, self.OriginalTeamId)
+    self.SpawnPoint:SetTeamId(self.OriginalTeamId)
 	ai.CleanUp(self.UUID)
     for i = 0, self.RespawnCount, 1 do
         local CurrUUID = self.UUID .. "_" .. i
@@ -57,7 +57,7 @@ end
 function BasicAI:Respawn(Position)
     local CurrUUID = self.UUID .. "_" .. self.RespawnCount
     self.RespawnCount = self.RespawnCount + 1
-    ai.CreateWithTransform(self.SpawnPoint, Position or self:GetPosition(), CurrUUID, 0.0)
+    self.SpawnPoint:SpawnAI(CurrUUID, 0.0, Position or self:GetPosition())
     local characterController = gameplaystatics.GetAllActorsWithTag(CurrUUID)
     if characterController ~= nil then
         self.CharacterController = characterController[1]
@@ -76,7 +76,7 @@ end
 
 function BasicAI:OnTeamAttitudeChange()
     super.OnTeamAttitudeChange(self)
-    actor.SetTeamId(self.SpawnPoint, self.TeamId)
+    self.SpawnPoint:SetTeamId(self.TeamId)
     if self.IsAlive then
         local Position = self:GetPosition()
         self:Kill()

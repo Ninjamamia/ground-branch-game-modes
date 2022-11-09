@@ -1,4 +1,5 @@
 local Tables = require('Common.Tables')
+local SpawnPoint = require('Spawns.Point')
 
 local Random = {
     Spawns = {},
@@ -13,7 +14,7 @@ function Random:Create()
     setmetatable(random, self)
     self.__index = self
     self.Spawns = {}
-    self.Spawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
+    self.Spawns = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint'))
     self.Total = #self.Spawns
     print('Found ' .. self.Total .. ' spawns')
     print('Initialized RandomSpawns ' .. tostring(random))
@@ -24,7 +25,7 @@ end
 ---@param tagToExclude string spawn points with this tag will be excluded from the spawn points list.
 function Random:ExcludeSpawnsWithTag(tagToExclude)
     for i = #self.Spawns, 1, -1 do
-        local tags = actor.GetTags(self.Spawns[i])
+        local tags = self.Spawns[i]:GetTags()
         for _, tag in ipairs(tags) do
             if tag == tagToExclude then
                 table.remove(self.Spawns, i)

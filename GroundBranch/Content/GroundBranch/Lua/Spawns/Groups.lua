@@ -1,5 +1,6 @@
 local Tables = require('Common.Tables')
 local Actors = require('Common.Actors')
+local SpawnPoint = require('Spawns.Point')
 
 local Groups = {
     Spawns = {},
@@ -29,10 +30,10 @@ function Groups:Create(groupTagPrefix, eliminationCallback)
 	local groupIndex = 1
 	for i = 1, 32, 1 do
 		local groupTag = self.GroupTagPrefix .. tostring(i)
-		local spawnsWithGroupTag = gameplaystatics.GetAllActorsOfClassWithTag(
+		local spawnsWithGroupTag = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClassWithTag(
 			'GroundBranch.GBAISpawnPoint',
 			groupTag
-		)
+		))
 		if #spawnsWithGroupTag > 0 then
 			self.Spawns[groupIndex] = spawnsWithGroupTag
 			self.Total = self.Total + #spawnsWithGroupTag

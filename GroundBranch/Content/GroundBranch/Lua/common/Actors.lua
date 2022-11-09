@@ -12,7 +12,7 @@ Actors.__index = Actors
 ---@param tagPrefix string prefix of the tag to find.
 ---@return string suffix suffix of the found tag.
 function Actors.HasTagStartingWith(actorWithTag, tagPrefix)
-	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+	for _, actorTag in ipairs(actorWithTag:GetTags()) do
 		if Strings.StartsWith(actorTag, tagPrefix) then
 			return true
 		end
@@ -21,7 +21,7 @@ function Actors.HasTagStartingWith(actorWithTag, tagPrefix)
 end
 
 function Actors.GetTagStartingWith(actorWithTag, tagPrefix)
-	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+	for _, actorTag in ipairs(actorWithTag:GetTags()) do
 		if Strings.StartsWith(actorTag, tagPrefix) then
 			return actorTag
 		end
@@ -37,7 +37,7 @@ end
 ---@param tagPrefix string prefix of the tag to find.
 ---@return string suffix suffix of the found tag.
 function Actors.GetSuffixFromActorTag(actorWithTag, tagPrefix)
-	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+	for _, actorTag in ipairs(actorWithTag:GetTags()) do
 		if Strings.StartsWith(actorTag, tagPrefix) then
 			return Strings.GetSuffix(actorTag, tagPrefix)
 		end
@@ -55,7 +55,7 @@ function Actors.GetGroupAverageLocation(group)
         z = 0
     }
     for _, member in ipairs(group) do
-        averageLocation = averageLocation + actor.GetLocation(member)
+        averageLocation = averageLocation + member:GetLocation()
     end
     averageLocation.x = averageLocation.x / #group
     averageLocation.y = averageLocation.y / #group
@@ -72,11 +72,11 @@ end
 ---@param group table a table containing a group of actors.
 ---@return number distanceSquared the shortest squared distance.
 function Actors.GetShortestDistanceSqWithinGroup(location, group)
-    local firstMemberLocation = actor.GetLocation(group[1])
+    local firstMemberLocation = group[1]:GetLocation()
     local shortestDistanceSq = vector.SizeSq(firstMemberLocation - location)
     local closestMember = group[1]
     for i = 2, #group do
-        local memberLocation = actor.GetLocation(group[i])
+        local memberLocation = group[i]:GetLocation()
         local distanceSq = vector.SizeSq(memberLocation - location)
         if distanceSq < shortestDistanceSq then
             shortestDistanceSq = distanceSq
@@ -95,6 +95,31 @@ function Actors.GetShortestDistanceWithinGroup(location, group)
     return math.sqrt(
         Actors.GetShortestDistanceSqWithinGroup(location, group)
     )
+end
+
+function Actors.GetPosition(Actor)
+    if Actor == nil then
+        return nil
+    end
+    local location = actor.GetLocation(Actor)
+    local rotation = actor.GetRotation(Actor)
+    -- fix first letter case of rotation indices, no way around since
+    -- actor.GetLocation uses lowercase but we are supposed to return
+    -- PascalCase in the GetSpawnInfo() function
+	if rotation ~= nil then
+		rotation = {
+			Pitch = rotation.pitch,
+			Yaw = rotation.yaw,
+			Roll = rotation.roll,
+		}
+	end
+    -- add the dead player's postion to the deadPlayerPositions the
+    -- PlayerState is used as an id to select the correct position in
+    -- the list later in the GetSpawnInfo() function
+    return {
+        Location = location,
+        Rotation = rotation,
+    }
 end
 
 return Actors

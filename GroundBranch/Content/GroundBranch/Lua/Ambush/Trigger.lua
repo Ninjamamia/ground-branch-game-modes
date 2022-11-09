@@ -1,5 +1,6 @@
 local AdminTools = require('AdminTools')
 local Tables = require('Common.Tables')
+local SpawnPoint = require('Spawns.Point')
 
 local Trigger = {
     Name = nil,
@@ -33,10 +34,10 @@ function Trigger:Create(Parent, Actor)
             print("    " .. Tag)
             if key == "Group" then
                 self.Tag = value
-                self.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
+                self.Spawns = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClassWithTag(
                     'GroundBranch.GBAISpawnPoint',
                     value
-                )
+                ))
             elseif key == "Activate" then
                 table.insert(self.Activates, value)
             elseif key == "Mine" then

@@ -1,4 +1,5 @@
 local Tables = require('Common.Tables')
+local SpawnPoint = require('Spawns.Point')
 
 local Priority = {
     Spawns = {},
@@ -25,10 +26,10 @@ function Priority:Create(eliminationCallback)
 	self.Selected = {}
 	local priorityIndex = 1
 	for _, priorityTag in ipairs(self.Tags) do
-		local spawnsWithTag = gameplaystatics.GetAllActorsOfClassWithTag(
+		local spawnsWithTag = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClassWithTag(
 			'GroundBranch.GBAISpawnPoint',
 			priorityTag
-		)
+		))
 		if #spawnsWithTag > 0 then
 			self.Spawns[priorityIndex] = spawnsWithTag
 			self.Total = self.Total + #spawnsWithTag
