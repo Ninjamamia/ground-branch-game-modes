@@ -233,6 +233,7 @@ end
 
 function Team:SetAttitude(OtherTeam, Attitude, mutual)
     mutual = mutual or false
+    AdminTools:ShowDebug(tostring(self) .. ': setting attitude towards ' .. tostring(OtherTeam) .. ' to ' .. Attitude)
 	gamemode.SetTeamAttitude(self.Id, OtherTeam.Id, Attitude)
     self.Attitudes[OtherTeam.Id] = Attitude
     for _, Agent in ipairs(self.Agents.All) do
