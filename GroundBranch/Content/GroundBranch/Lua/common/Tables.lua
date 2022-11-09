@@ -2,6 +2,90 @@ local Tables = {}
 
 Tables.__index = Tables
 
+local NEWLINE = string.char(10)
+
+
+-- Bunch of new functions
+function Tables.debug(tbl, level)
+    if not level then level = 0 end
+    local Prefix = function() return string.rep("  ", level) end
+
+    local output = ""
+    output = output.."{"..NEWLINE
+
+    level = level + 1
+    for k, v in pairs(tbl) do
+        if type(v) == "table" then
+            output = output..Prefix(level)..k..": "..Tables.debug(v, level)
+        else
+            output = output..Prefix(level)..k..": "..tostring(v)..NEWLINE
+        end
+    end
+    level = level - 1
+
+    output = output..Prefix(level).."}"..NEWLINE
+
+    return output
+end
+
+function Tables.notEmpty(tbl)
+    return toboolean(next(tbl))
+end
+
+function Tables.isEmpty(tbl)
+    return not Tables.notEmpty(tbl)
+end
+
+function Tables.reduce(tbl, reducerFn, defaultResult)
+    local result = defaultResult
+    for _, value in pairs(tbl) do
+        result = reducerFn(value, result)
+    end
+    return result
+end
+
+function Tables.map(tbl, mapperFn)
+    return Tables.reduce(tbl, function(value, result)
+        local valueResult = mapperFn(value)
+        table.insert(result, valueResult)
+        return result
+    end, {})
+end
+
+function Tables.filterIf(tbl, filterFn, keepCond)
+    return Tables.reduce(tbl, function(value, result)
+        if keepCond == toboolean(filterFn(value)) then
+            table.insert(result, value)
+        end
+        return result
+    end, {})
+end
+
+function Tables.filter(tbl, filterFn)
+    return Tables.filterIf(tbl, filterFn, true)
+end
+
+function Tables.filterNot(tbl, filterFn)
+    return Tables.filterIf(tbl, filterFn, false)
+end
+
+function Tables.count(tbl)
+    return Tables.reduce(tbl, function(value, result)
+        return result + 1
+    end, 0)
+end
+
+function Tables.naiveMergeAssocTables(tbl1, ...)
+    -- return a new table instead of mutating tbl1
+    result = Tables.Copy(tbl1)
+    for _, tbl in ipairs({...}) do
+        for k,v in pairs(tbl) do
+            result[k] = v
+        end
+    end
+    return result
+end
+
 ---Returns a copy of the provided table with shuffled entries.
 ---@param orderedTable table an ordered table that we want to shuffle.
 ---@return table shuffledTable a copy of the provdide table with shuffled entries.
