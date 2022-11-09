@@ -149,11 +149,10 @@ end
  --
 function ActorStateAction:new(object)
 	self.__index = self
-	object = object or {}
-	local self = setmetatable(object, self)	
+	local self = setmetatable(object or {}, self)	
 
-	self.targets = self.targets or {}
-	self.params = self.params or {}
+	self.targets = default(self.targets, {})
+	self.params = default(self.params, {})
 
 	-- if a single target is provided, move it to the target list
 	if self.target then
@@ -197,7 +196,7 @@ end
  --		are the actors names, values are the corresponding states.
  --
 function ActorStateAction:exec(stateByActorName)
-	stateByActorName = stateByActorName or {}
+	stateByActorName = default(stateByActorName, {})
 
 	-- debug action processing
 	if #self.targets > 1 then
