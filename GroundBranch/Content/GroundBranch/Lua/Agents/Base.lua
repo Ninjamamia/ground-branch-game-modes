@@ -24,18 +24,13 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
         self.TeamId = actor.GetTeamId(characterController)
         self.Team = self.AgentsManager:GetTeamByID(self.TeamId)
         self.HealableTeams = self.Team.HealableTeams
-        self.IsCustomEliminationCallback = false
-        if eliminationCallback ~= nil then
-            self.IsCustomEliminationCallback = true
-            self.eliminationCallback = eliminationCallback
-        else
-            self.eliminationCallback = self.Team:GetDefaultEliminationCallback()
-        end
+        self.EliminationCallback = eliminationCallback
+        self.ActiveEliminationCallback = nil
     else
         self.Name = "Unknonw"
         self.Character = nil
         self.TeamId = 255
-        self.eliminationCallback = nil
+        self.EliminationCallback = nil
     end
 end
 
@@ -88,6 +83,7 @@ function Base:OnCharacterDied(KillData)
     self.KillData = KillData
 	self.IsAlive = false
     if gamemode.GetRoundStage() == 'InProgress' then
+        self.ActiveEliminationCallback = self.EliminationCallback or self.Team:GetDefaultEliminationCallback()
         if self.Healings < self:GetMaxHealings() then
             self.Healings = self.Healings + 1
             AdminTools:ShowDebug(tostring(self) .. ' is wounded and can be healed now (' .. self.Healings .. ' of ' .. self:GetMaxHealings() .. ')')
@@ -101,7 +97,11 @@ function Base:OnCharacterDied(KillData)
 end
 
 function Base:OnBleedout()
-    self.eliminationCallback:Call(self.KillData)
+    if self.ActiveEliminationCallback ~= nil then
+        self.ActiveEliminationCallback:Call(self.KillData)
+    else
+        print(tostring(self) .. ": unable to determine active elimination callback!")
+    end
 end
 
 function Base:Kill(message)
@@ -190,9 +190,6 @@ function Base:MoveTo(NewTeam)
 end
 
 function Base:OnTeamAttitudeChange()
-    if self.IsCustomEliminationCallback == false then
-        self.eliminationCallback = self.Team:GetDefaultEliminationCallback()
-    end
 end
 
 function Base:DisplayMessageToHealers(healers, message)
