@@ -29,7 +29,7 @@ function Tables.debug(tbl, level)
 end
 
 function Tables.notEmpty(tbl)
-    return toboolean(next(tbl))
+    return not not next(tbl)
 end
 
 function Tables.isEmpty(tbl)
@@ -54,7 +54,7 @@ end
 
 function Tables.filterIf(tbl, filterFn, keepCond)
     return Tables.reduce(tbl, function(value, result)
-        if keepCond == toboolean(filterFn(value)) then
+        if keepCond == not not filterFn(value) then
             table.insert(result, value)
         end
         return result

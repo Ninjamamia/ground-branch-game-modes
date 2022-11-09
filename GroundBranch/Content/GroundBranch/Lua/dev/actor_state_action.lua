@@ -7,7 +7,10 @@
 
 local Tables = require('Common.Tables')
 local log = require('dev.actor_state_logger')
-require("dev.functions")
+
+local toboolean = require("dev.functions").toboolean
+local sprintf   = require("dev.functions").sprintf
+local default   = require("dev.functions").default
 
 local ActorStateAction = {}
 
