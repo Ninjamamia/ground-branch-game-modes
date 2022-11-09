@@ -6,7 +6,7 @@ local AmbushManager         = require('Ambush.Manager')
 local Callback 				= require('common.Callback')
 local CallbackList			= require('common.CallbackList')
 local KillData              = require('Agents.KillData')
-local actorStateManager 	= require("dev.actor_state_manager")
+local actorStateManager 	= require("actor_state.actor_state_manager")
 
 local Mode = {
 	UseReadyRoom = true,
