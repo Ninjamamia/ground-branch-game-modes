@@ -1,6 +1,9 @@
 --
 -- ActorStateAction "class"
 --
+-- @todo implement complementary local functions _disableProb(), _disableNum()
+-- and _disableRndNum(), link them with correct params in ActorStateAction:exec()
+--
 
 local Tables = require('Common.Tables')
 require("dev.functions")
@@ -8,7 +11,7 @@ require("dev.functions")
 local ActorStateAction = {}
 
 -- Set visibility and or collision of a target actor from the object arg
-function setActorState(target, object)
+local function setActorState(target, object)
 	local out = {}
 	if object.visible ~= nil then
 		actor.SetHidden(target, not object.visible)
@@ -23,7 +26,7 @@ function setActorState(target, object)
 end
 
 -- Set visibility and collision of a target actor based on the shouldEnable arg
-function setActorEnabled(target, shouldEnable)
+local function setActorEnabled(target, shouldEnable)
 	setActorState(target, {
 		visible = shouldEnable,
 		collide = shouldEnable,
@@ -31,7 +34,7 @@ function setActorEnabled(target, shouldEnable)
 end
 
 -- Enable the target actors based on a given probability in percent
-function _enableProb(targets, enableProb)
+local function _enableProb(targets, enableProb)
 	local shouldEnable = math.random(100) <= enableProb
 	local result = {}
 	for _, target in pairs(targets) do			
@@ -42,7 +45,7 @@ function _enableProb(targets, enableProb)
 end
 
 -- Enable a specified number of target actors in the group
-function _enableNum(targets, enableNum)
+local function _enableNum(targets, enableNum)
 	local result = {}
 	for index, target in ipairs(Tables.ShuffleTable(targets)) do
 		local shouldEnable = index <= enableNum
@@ -53,7 +56,7 @@ function _enableNum(targets, enableNum)
 end
 
 -- Enable a random number of target actors in the group constrained by a max and min
-function _enableRndNum(targets, enableMin, enableMax)
+local function _enableRndNum(targets, enableMin, enableMax)
 	if enableMin == nil then
 		enableMin = 0 else
 		enableMin = math.min(math.max(enableMin, 0), enableMax) end
@@ -71,7 +74,7 @@ function _enableRndNum(targets, enableMin, enableMax)
 end
 
 -- Enable the target actors by copying state of another actor, possibly inverted
-function _copyStateFrom(target, linkedActorName, inverse)
+local function _copyStateFrom(target, linkedActorName, inverse)
 	local result = {}
 	
 	-- special case to when the EnableWith param ends with _, we do some
@@ -99,12 +102,12 @@ function _copyStateFrom(target, linkedActorName, inverse)
 end
 
 -- Enable the target actors when another actor is enabled
-function _enableWith(targets, linkedActorName)
+local function _enableWith(targets, linkedActorName)
 	return _copyStateFrom(targets, linkedActorName, false)
 end
 
 -- Disable the target actors when another actor is enabled
-function _disableWith(targets, linkedActorName)
+local function _disableWith(targets, linkedActorName)
 	return _copyStateFrom(targets, linkedActorName, true)
 end
 
@@ -188,10 +191,10 @@ function ActorStateAction:exec(stateByActorName)
 
 	-- debug action processing
 	if #self.targets > 1 then
-		printf("Processing state for actor group '%s'...", self.params.Group)
+		printf("Processing actor group '%s'...", self.params.Group)
 	else
 		local target = self.targets[1]
-		printf("Processing state for single actor '%s'...", actor.GetName(target))
+		printf("Processing single actor '%s'...", actor.GetName(target))
 	end
 
 	-- debug params
@@ -200,6 +203,7 @@ function ActorStateAction:exec(stateByActorName)
 	out = out:sub(1, -3) -- remove trailing coma and space
 	print(out)
 
+	-- call the correct specialized functions based on the parameters
 	if self.params.EnableProb then
 		return _enableProb(targets, self.params.EnableProb)
 	elseif self.params.EnableNum then
@@ -210,14 +214,15 @@ function ActorStateAction:exec(stateByActorName)
 		return _enableWith(targets, self.params.EnableWith)
 	elseif self.params.DisableWith then
 		return _disableWith(targets, self.params.DisableWith)
-
-	-- no param to trigger an action
-	else 
-		for _, target in pairs(self.targets) do
-			printf("  Actor '%s': no action taken", actor.GetName(target))
-		end
-		return {}
 	end
+
+	-- omitted else case since all previous cases return
+
+	-- no parameter matches our selection, do nothing
+	for _, target in pairs(self.targets) do printf(
+		"  Actor '%s': no action taken", actor.GetName(target)) end
+	
+	return {}
 end
 
 return ActorStateAction
