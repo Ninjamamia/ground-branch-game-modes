@@ -29,7 +29,7 @@
 local Tables = require('Common.Tables')
 local ActorStateAction = require("dev.actor_state_action")
 local log = require('dev.actor_state_logger')
-local sprintf  = require("dev.functions").sprintf
+local sprintf  = require("common.functions").sprintf
 
 local function validateInt(value, min, max)
 	intValue = tonumber(value)

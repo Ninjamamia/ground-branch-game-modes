@@ -8,9 +8,9 @@
 local Tables = require('Common.Tables')
 local log = require('dev.actor_state_logger')
 
-local toboolean = require("dev.functions").toboolean
-local sprintf   = require("dev.functions").sprintf
-local default   = require("dev.functions").default
+local toboolean = require("common.functions").toboolean
+local sprintf   = require("common.functions").sprintf
+local default   = require("common.functions").default
 
 local ActorStateAction = {}
 
