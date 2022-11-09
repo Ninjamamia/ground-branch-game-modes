@@ -1,5 +1,4 @@
-local logger = require('common.logger')
-local log = logger.new('ActorState')
+local log = require('common.logger').new('ActorState')
 
 -- If commented, will use the default level INFO
 -- log:SetLogLevel('DEBUG')

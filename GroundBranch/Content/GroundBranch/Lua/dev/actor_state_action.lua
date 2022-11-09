@@ -5,12 +5,12 @@
 -- and _disableRndNum(), link them with correct params in ActorStateAction:exec()
 --
 
-local Tables = require('Common.Tables')
-local log = require('dev.actor_state_logger')
-
-local toboolean = require("common.functions").toboolean
-local sprintf   = require("common.functions").sprintf
-local default   = require("common.functions").default
+local toboolean     = require('common.functions').toboolean
+local sprintf       = require('common.functions').sprintf
+local default       = require('common.functions').default
+local shuffleTable  = require('common.tables').ShuffleTable
+local tableNotEmpty = require('common.tables').notEmpty
+local log           = require('dev.actor_state_logger')
 
 local ActorStateAction = {}
 
@@ -26,7 +26,7 @@ local function setActorState(target, object)
 		table.insert(out, sprintf("collide=%s", object.collide))
 	end
 	local actorStateStr
-	if Tables.notEmpty(out) then
+	if tableNotEmpty(out) then
 		actorStateStr = table.concat(out, ', ') else
 		actorStateStr = '(no change)' end
 
@@ -56,7 +56,7 @@ end
 -- Enable a specified number of target actors in the group
 local function _enableNum(targets, enableNum)
 	local result = {}
-	for index, target in ipairs(Tables.ShuffleTable(targets)) do
+	for index, target in ipairs(shuffleTable(targets)) do
 		local shouldEnable = index <= enableNum
 		setActorEnabled(target, shouldEnable)
 		result[actor.GetName(target)] = shouldEnable

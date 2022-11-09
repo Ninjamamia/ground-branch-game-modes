@@ -26,10 +26,17 @@
 --		enable actor(s) based on the state of another actor.
 --
 
-local Tables = require('Common.Tables')
+local sprintf          = require("common.functions").sprintf
+local reduce           = require('common.tables').reduce
+local filter           = require('common.tables').filter
+local filterNot        = require('common.tables').filterNot
+local map              = require('common.tables').map
+local count            = require('common.tables').count
+local notEmpty         = require('common.tables').notEmpty
+local mergeAssoc       = require('common.tables').naiveMergeAssocTables
+local concatTables     = require('common.tables').ConcatenateTables
 local ActorStateAction = require("dev.actor_state_action")
-local log = require('dev.actor_state_logger')
-local sprintf  = require("common.functions").sprintf
+local log              = require('dev.actor_state_logger')
 
 local function validateInt(value, min, max)
 	intValue = tonumber(value)
@@ -143,7 +150,7 @@ local function extractParams(anActor)
 	local params = result
 	
 	log:Debug(sprintf("  Found %s parameter(s): %s",
-		Tables.count(params), debugParams(params)))
+		count(params), debugParams(params)))
 	return params
 end
 
@@ -161,7 +168,7 @@ function ActorStateManager:Create()
 
 	-- extract params and store them along their corresponding actor
 	-- to create a table accepted by ActorStateAction:new()
-	local actionArgsList = Tables.map(actors, function(anActor)
+	local actionArgsList = map(actors, function(anActor)
 		return {
 			target = anActor,
 			params = extractParams(anActor)
@@ -171,8 +178,8 @@ function ActorStateManager:Create()
 	log:Info("Creating action list...")
 
 	-- filter out items with empty params
-	actionArgsList = Tables.filter(actionArgsList, function(tbl)
-		return Tables.notEmpty(tbl.params)
+	actionArgsList = filter(actionArgsList, function(tbl)
+		return notEmpty(tbl.params)
 	end)
 	
 	-- functions used below
@@ -189,34 +196,34 @@ function ActorStateManager:Create()
 	end
 	local mergeGroupedActionArgsList = function(actionArgsList)
 		-- make a list of targets
-		local targets = Tables.map(actionArgsList, function(actionArgs)
+		local targets = map(actionArgsList, function(actionArgs)
 			return actionArgs.target
 		end)
 		-- make a list of params and merge them all
-		local params = Tables.map(actionArgsList, function(actionArgs)
+		local params = map(actionArgsList, function(actionArgs)
 			return actionArgs.params
 		end)
-		params = Tables.naiveMergeAssocTables(table.unpack(params))
+		params = mergeAssoc(table.unpack(params))
 
 		return { targets = targets, params = params }
 	end
 
 	-- extract actions on single actor (no group)
-	local loneActionArgsList = Tables.filterNot(actionArgsList, hasGroupParam)
+	local loneActionArgsList = filterNot(actionArgsList, hasGroupParam)
 
 	-- extract actions with a group parameter, group and merge them
-	local actionArgsToGroup = Tables.filter(actionArgsList, hasGroupParam)
-	local groupedActionArgs = Tables.reduce(actionArgsToGroup, groupActionArgs, {})
-	local groupActionArgsList = Tables.map(groupedActionArgs, mergeGroupedActionArgsList)
+	local actionArgsToGroup = filter(actionArgsList, hasGroupParam)
+	local groupedActionArgs = reduce(actionArgsToGroup, groupActionArgs, {})
+	local groupActionArgsList = map(groupedActionArgs, mergeGroupedActionArgsList)
 
 	-- concat both ActionArgsList
-	local actorStateActionArgList = Tables.ConcatenateTables(
+	local actorStateActionArgList = concatTables(
 		loneActionArgsList,
 		groupActionArgsList
 	)
 
 	-- create list of ActorStateAction
-	self.actions = Tables.map(actorStateActionArgList, ActorStateAction.create)
+	self.actions = map(actorStateActionArgList, ActorStateAction.create)
 	
 	log:Info(sprintf("Created %s action(s)",  #self.actions))
 
@@ -238,7 +245,7 @@ function ActorStateManager:SetState()
 		else
 			-- state is true for enabled (visible and collide)
 			local actionResult = action:exec(previousActionsResults)
-			previousActionsResults = Tables.naiveMergeAssocTables(
+			previousActionsResults = mergeAssoc(
 				previousActionsResults,
 				actionResult
 			)
