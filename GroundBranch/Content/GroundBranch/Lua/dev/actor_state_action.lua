@@ -7,32 +7,133 @@ require("dev.functions")
 
 local ActorStateAction = {}
 
---[[ Instantiate an ActorStateAction statically
+-- Set visibility and or collision of a target actor from the object arg
+function setActorState(target, object)
+	local out = {}
+	if object.visible ~= nil then
+		actor.SetHidden(target, not object.visible)
+		table.insert(out, sprintf("visible=%s", object.visible))
+	end
+	if object.collide ~= nil then
+		actor.SetEnableCollision(target, object.collide)
+		table.insert(out, sprintf("collide=%s", object.collide))
+	end
 	
-	@param	object	Table
-		Will be passed "as is" to the ActorStateAction:new() method.
+	printf("  Set actor '%s' state: %s", actor.GetName(target), out)
+end
+
+-- Set visibility and collision of a target actor based on the shouldEnable arg
+function setActorEnabled(target, shouldEnable)
+	setActorState(target, {
+		visible = shouldEnable,
+		collide = shouldEnable,
+	})
+end
+
+-- Enable the target actors based on a given probability in percent
+function _enableProb(targets, enableProb)
+	local shouldEnable = math.random(100) <= enableProb
+	local result = {}
+	for _, target in pairs(targets) do			
+		setActorEnabled(target, shouldEnable)
+		result[actor.GetName(target)] = shouldEnable
+	end
+	return result
+end
+
+-- Enable a specified number of target actors in the group
+function _enableNum(targets, enableNum)
+	local result = {}
+	for index, target in ipairs(Tables.ShuffleTable(targets)) do
+		local shouldEnable = index <= enableNum
+		setActorEnabled(target, shouldEnable)
+		result[actor.GetName(target)] = shouldEnable
+	end
+	return result
+end
+
+-- Enable a random number of target actors in the group constrained by a max and min
+function _enableRndNum(targets, enableMin, enableMax)
+	if enableMin == nil then
+		enableMin = 0 else
+		enableMin = math.min(math.max(enableMin, 0), enableMax) end
+
+	if enableMax == nil then
+		enableMax = #targets else
+		enableMax = math.min(enableMax, enableMax) end
 	
-	@return	Table
-		An ActorStateAction	instance
-	--]]
+	local enableNum = math.random(enableMin, enableMax)
+	
+	printf("  Adjusted params: EnableMin=%s, EnableMax=%s", enableMin, enableMax)
+	printf("  Random EnableNum value: %s", enableNum)
+
+	return _enableNum(targets, enableNum)
+end
+
+-- Enable the target actors by copying state of another actor, possibly inverted
+function _copyStateFrom(target, linkedActorName, inverse)
+	local result = {}
+	
+	-- special case to when the EnableWith param ends with _, we do some
+	-- use the actor's name suffix to build the linked actor name
+	local suffix = nil
+	if linkedActorName:sub(-1) == '_' then
+		suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
+	end
+
+	for _, target in pairs(targets) do
+		
+		local actorName = actor.GetName(target)
+		if suffix ~= nil then
+			linkedActorName = table.concat({ linkedActorName, suffix })
+			printf("  Computed EnableWith value: '%s'", linkedActorName)
+		end
+
+		local linkedActorEnabled = toboolean(stateByActorName[linkedActorName])
+		local shouldEnable = inverse ~= linkedActorEnabled
+
+		setActorEnabled(target, shouldEnable)
+		result[actor.GetName(target)] = shouldEnable
+	end
+	return result
+end
+
+-- Enable the target actors when another actor is enabled
+function _enableWith(targets, linkedActorName)
+	return _copyStateFrom(targets, linkedActorName, false)
+end
+
+-- Disable the target actors when another actor is enabled
+function _disableWith(targets, linkedActorName)
+	return _copyStateFrom(targets, linkedActorName, true)
+end
+
+--- Instantiate an ActorStateAction statically
+ --
+ --	@param	object	Table
+ --		Will be passed "as is" to the ActorStateAction:new() method.
+ --
+ --	@return	Table
+ --		An ActorStateAction	instance
+ --
 function ActorStateAction.create(object)
 	return ActorStateAction:new(object)
 end
 
---[[ Instantiate an ActorStateAction
-	
-	@param	object	Table
-		Will be used as a metatable for the returned instance.
-		If object contains a 'targets' (plural) property, the corresponding
-		values will be used as the target list.
-		If object contains a 'params' property, the corresponding value will be
-		used as the parameter list.
-		If object contains a 'target' (singular) property, the corresponding
-		value will be added to the instance targets.
-
-	@return	Table
-		An ActorStateAction	instance
-	--]]
+--- Instantiate an ActorStateAction
+ --	
+ --	@param	object	Table
+ --		Will be used as a metatable for the returned instance.
+ --		If object contains a 'targets' (plural) property, the corresponding
+ --		values will be used as the target list.
+ --		If object contains a 'params' property, the corresponding value will be
+ --		used as the parameter list.
+ --		If object contains a 'target' (singular) property, the corresponding
+ --		value will be added to the instance targets.
+ --
+ --	@return	Table
+ --		An ActorStateAction	instance
+ --
 function ActorStateAction:new(object)
 	self.__index = self
 	object = object or {}
@@ -49,49 +150,48 @@ function ActorStateAction:new(object)
 	return self
 end
 
---[[ Add a target to an ActorStateAction instance
-	
-	@param	anActor	UserData
-		An Actor as returned by the GB API
-	--]]
+--- Add a target to an ActorStateAction instance
+ --	
+ --	@param	anActor	UserData
+ --		An Actor as returned by the GB API
+ --
 function ActorStateAction:addTarget(anActor)
 	table.insert(self.targets, anActor)
 end
 
---[[ Add parameters to an ActorStateAction instance
-	
-	@param	params	Table
-		Associative array of parameters for the ActorStateAction, keys are the
-		parameters names, values are the corresponding values.
-	--]]
+--- Add parameters to an ActorStateAction instance
+ --	
+ --	@param	params	Table
+ --		Associative array of parameters for the ActorStateAction, keys are the
+ --		parameters names, values are the corresponding values.
+ --
 function ActorStateAction:addParams(params)
 	-- merge tables, 1 dimension, last override first
 	for k,v in pairs(params) do self.params[k] = v end
 end
 
---[[ Execute the ActorStateAction instance
-
-	Enable or disable the target actors based on the parameters of the instance.
-	
-	@param	stateByActorName	Table	(optional, defaults to empty table)
-		Associative array of actor states. Keys are the actors names, values are
-		the corresponding states. Used when we need to decide the state of an
-		actor based on the state of other actors.
-
-	@return	Table
-		Associative array of actor states that have been set by this call. Keys
-		are the actors names, values are the corresponding states.
-	--]]
+--- Execute the ActorStateAction instance
+ --
+ --	Enable or disable the target actors based on the parameters of the instance.
+ --	
+ --	@param	stateByActorName	Table	(optional, defaults to empty table)
+ --		Associative array of actor states. Keys are the actors names, values are
+ --		the corresponding states. Used when we need to decide the state of an
+ --		actor based on the state of other actors.
+ --
+ --	@return	Table
+ --		Associative array of actor states that have been set by this call. Keys
+ --		are the actors names, values are the corresponding states.
+ --
 function ActorStateAction:exec(stateByActorName)
-
 	stateByActorName = stateByActorName or {}
 
 	-- debug action processing
 	if #self.targets > 1 then
-		print(string.format("Processing state for actor group '%s'...", self.params.Group))
+		printf("Processing state for actor group '%s'...", self.params.Group)
 	else
 		local target = self.targets[1]
-		print(string.format("Processing state for single actor '%s'...", actor.GetName(target)))
+		printf("Processing state for single actor '%s'...", actor.GetName(target))
 	end
 
 	-- debug params
@@ -100,138 +200,21 @@ function ActorStateAction:exec(stateByActorName)
 	out = out:sub(1, -3) -- remove trailing coma and space
 	print(out)
 
-	-- enable/disable the actor(s) based on a given probability in percent
 	if self.params.EnableProb then
-		local isHidden = self.params.EnableProb < math.random(0, 100)
-		local doCollide = not isHidden
-
-		local result = {}
-		for _, target in pairs(self.targets) do
-			local actorName = actor.GetName(target)
-			printf("  Actor '%s': Visible=%s, Collide=%s",
-				actorName, not isHidden, doCollide)
-
-			actor.SetHidden(target, isHidden)
-			actor.SetEnableCollision(target, doCollide)
-			result[actorName] = doCollide
-		end
-		return result
-
-	-- enable a specified number of actors in the group
+		return _enableProb(targets, self.params.EnableProb)
 	elseif self.params.EnableNum then
-		
-		local result = {}
-		for index, target in ipairs(Tables.ShuffleTable(self.targets)) do
-			local actorName = actor.GetName(target)
-			local isHidden = index > self.params.EnableNum
-			local doCollide = not isHidden
-
-			printf("  Actor '%s': Visible=%s, Collide=%s",
-				actorName, not isHidden, doCollide)
-
-			actor.SetHidden(target, isHidden)
-			actor.SetEnableCollision(target, doCollide)
-			result[actorName] = doCollide
-		end
-		return result
-
-	-- enable a random number of actors in the group constrained by a maximum
-	-- and minimum
+		return _enableNum(targets, self.params.EnableNum)
 	elseif self.params.EnableMin or self.params.EnableMax then
-		local enableMin = 0
-		local enableMax = #self.targets
-
-		if self.params.EnableMin then
-			enableMin = math.min(math.max(
-				self.params.EnableMin, enableMin), enableMax)
-		end
-		if self.params.EnableMax then
-			enableMax = math.min(self.params.EnableMax, enableMax)
-		end
-		printf("  Adjusted params: EnableMin=%s, EnableMax=%s",
-			enableMin, enableMax)
-
-		local enableNum = math.random(enableMin, enableMax)
-		printf("  Random EnableNum value: %s",enableNum)
-
-		local result = {}
-		for index, target in ipairs(Tables.ShuffleTable(self.targets)) do
-			local actorName = actor.GetName(target)
-			local isHidden = index > enableNum
-			local doCollide = not isHidden
-
-			printf("  Actor '%s': Visible=%s, Collide=%s",
-				actorName, not isHidden, doCollide)
-
-			actor.SetHidden(target, isHidden)
-			actor.SetEnableCollision(target, doCollide)
-			actor.SetActive(target, not isHidden)
-			result[actorName] = doCollide
-		end
-		return result
-
-	-- enable/disable the actor(s) based on the state of another actor
+		return _enableRndNum(self.targets, self.params.EnableMin, self.params.EnableMax)
 	elseif self.params.EnableWith then
-		local result = {}
-		for _, target in pairs(self.targets) do
-			local actorName = actor.GetName(target)
-			
-			local linkedActorName
-			if self.params.EnableWith:sub(-1) == '_' then
-				local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
-				linkedActorName = table.concat({ self.params.EnableWith, suffix })
-
-				printf("  Computed EnableWith value: '%s'", linkedActorName)
-			else
-				linkedActorName = self.params.EnableWith
-			end
-
-			local linkedActorEnable = toboolean(stateByActorName[linkedActorName])
-			local isHidden = not linkedActorEnable
-			local doCollide = linkedActorEnable
-
-			printf("  Actor '%s': Visible=%s, Collide=%s",
-				actorName, not isHidden, doCollide)
-			
-			actor.SetHidden(target, isHidden)
-			actor.SetEnableCollision(target, doCollide)
-			result[actorName] = doCollide
-		end
-		return result
-	
-	-- enable/disable the actor(s) based on the state of another actor
+		return _enableWith(targets, self.params.EnableWith)
 	elseif self.params.DisableWith then
-		local result = {}
-		for _, target in pairs(self.targets) do
-			local actorName = actor.GetName(target)
-			
-			local linkedActorName
-			if self.params.DisableWith:sub(-1) == '_' then
-				local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
-				linkedActorName = table.concat({ self.params.DisableWith, suffix })
-
-				printf("  Computed DisableWith value: '%s'", linkedActorName)
-			else
-				linkedActorName = self.params.DisableWith
-			end
-
-			local linkedActorEnable = toboolean(stateByActorName[linkedActorName])
-			local isHidden = linkedActorEnable
-			local doCollide = not linkedActorEnable
-
-			printf("  Actor '%s': Visible=%s, Collide=%s",
-				actorName, not isHidden, doCollide)
-			
-			actor.SetHidden(target, isHidden)
-			actor.SetEnableCollision(target, doCollide)
-			result[actorName] = doCollide
-		end
+		return _disableWith(targets, self.params.DisableWith)
 
 	-- no param to trigger an action
 	else 
 		for _, target in pairs(self.targets) do
-			printf("  Actor '%s': no action taken",
-				actor.GetName(target))
+			printf("  Actor '%s': no action taken", actor.GetName(target))
 		end
 		return {}
 	end
