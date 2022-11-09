@@ -6,6 +6,7 @@
 --
 
 local Tables = require('Common.Tables')
+local log = require('dev.actor_state_logger')
 require("dev.functions")
 
 local ActorStateAction = {}
@@ -24,9 +25,10 @@ local function setActorState(target, object)
 	local actorStateStr
 	if Tables.notEmpty(out) then
 		actorStateStr = table.concat(out, ', ') else
-		actorStateStr = '(no action taken)' end
+		actorStateStr = '(no change)' end
 
-	printf("  Set actor '%s' state: %s", actor.GetName(target), actorStateStr)
+	log:Debug(sprintf("  Actor '%s' new state:", actor.GetName(target)))
+	log:Debug(sprintf("  %s", actorStateStr))
 end
 
 -- Set visibility and collision of a target actor based on the shouldEnable arg
@@ -75,8 +77,9 @@ local function _enableRndNum(targets, enableMin, enableMax)
 	local enableNum = math.random(enableMin, enableMax)
 	
 	-- debug
-	printf("  Adjusted params: EnableMin=%s, EnableMax=%s", enableMin, enableMax)
-	printf("  Random EnableNum value: %s", enableNum)
+	log:Debug(sprintf("  Adjusted params: EnableMin=%s, EnableMax=%s",
+		enableMin, enableMax))
+	log:Debug(sprintf("  Random EnableNum value: %s", enableNum))
 
 	return _enableNum(targets, enableNum)
 end
@@ -95,7 +98,8 @@ local function _copyStateFrom(targets, stateByActorName, linkedActorName, invers
 			local actorName = actor.GetName(target)
 			local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
 			linkedActorName = linkedActorName .. suffix
-			printf("  Computed linkedActorName value: '%s'", linkedActorName)
+			log:Debug(sprintf("  Computed linkedActorName value: '%s'",
+				linkedActorName))
 		end
 
 		local linkedActorEnabled = toboolean(stateByActorName[linkedActorName])
@@ -197,17 +201,18 @@ function ActorStateAction:exec(stateByActorName)
 
 	-- debug action processing
 	if #self.targets > 1 then
-		printf("Processing actor group '%s'...", self.params.Group)
+		log:Info(sprintf("Processing actor group '%s'...", self.params.Group))
 	else
 		local target = self.targets[1]
-		printf("Processing single actor '%s'...", actor.GetName(target))
+		log:Info(sprintf("Processing single actor '%s'...",
+			actor.GetName(target)))
 	end
 
 	-- debug params
-	local out = "  Params: "
+	local out = "  Action params: "
 	for k,v in pairs(self.params) do out = out..k..'='..v..', ' end
 	out = out:sub(1, -3) -- remove trailing coma and space
-	print(out)
+	log:Debug(out)
 
 	-- call the correct specialized function based on the parameters
 	if self.params.EnableProb then
@@ -225,8 +230,10 @@ function ActorStateAction:exec(stateByActorName)
 	-- omitted else case since all previous cases return
 
 	-- no parameter matches our selection, do nothing
-	for _, target in pairs(self.targets) do printf(
-		"  Actor '%s': no action taken", actor.GetName(target)) end
+	for _, target in pairs(self.targets) do
+		log:Debug(sprintf( "  Actor '%s': no action taken",
+			actor.GetName(target)))
+	end
 	
 	return {}
 end

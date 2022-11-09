@@ -28,6 +28,8 @@
 
 local Tables = require('Common.Tables')
 local ActorStateAction = require("dev.actor_state_action")
+local log = require('dev.actor_state_logger')
+
 require("dev.functions")
 
 local function validateInt(value, min, max)
@@ -124,7 +126,9 @@ local function debugParams(params)
 end
 
 local function extractParams(anActor)
-	print(string.format("Parsing parameters for actor '%s'...", actor.GetName(anActor)))
+	log:Debug(sprintf("Parsing parameters for actor '%s'...",
+		actor.GetName(anActor)))
+
 	local success, result = pcall(function()
 		-- returns for the inline function, not extractParams
 		return parseTags(actor.GetTags(anActor))
@@ -132,18 +136,15 @@ local function extractParams(anActor)
 	
 	if not success then
 		local error = result
-		print(string.format("Error: ActorStateManager: Parameter "..
-			"parsing failed for actor '%s': %s", actor.GetName(anActor), error))
+		log:Error(sprintf("Parameter parsing failed for actor '%s': %s",
+			actor.GetName(anActor), error))
 		return {}
 	end
 	
 	local params = result
-	if not next(params) then
-		print("  No params found")
-		return {}
-	end
-
-	printf('  found %s parameter(s): %s', Tables.count(params), debugParams(params))
+	
+	log:Debug(sprintf("  Found %s parameter(s): %s",
+		Tables.count(params), debugParams(params)))
 	return params
 end
 
@@ -152,15 +153,12 @@ local ActorStateManager = {
 }
 
 function ActorStateManager:Create()
-	print('')
-	print('--- ActorStateManager:Create() ---')
-	print('')
 	self.__index = self
 	local self = setmetatable({}, self)
 
-	printf("Gathering actors with tag '%s'...", self.flagTag)
+	log:Info(sprintf("Gathering actors with tag '%s'...", self.flagTag))
 	local actors = gameplaystatics.GetAllActorsWithTag(self.flagTag)
-	print(string.format("  Found %s actor(s)", #actors))
+	log:Info(sprintf("  Found %s actor(s)", #actors))
 
 	-- extract params and store them along their corresponding actor
 	-- to create a table accepted by ActorStateAction:new()
@@ -171,7 +169,7 @@ function ActorStateManager:Create()
 		}
 	end)
 
-	print("Creating a list of actions...")
+	log:Info("Creating action list...")
 
 	-- filter out items with empty params
 	actionArgsList = Tables.filter(actionArgsList, function(tbl)
@@ -221,15 +219,12 @@ function ActorStateManager:Create()
 	-- create list of ActorStateAction
 	self.actions = Tables.map(actorStateActionArgList, ActorStateAction.create)
 	
-	printf("  Created %s action(s)",  #self.actions)
+	log:Info(sprintf("Created %s action(s)",  #self.actions))
 
 	return self
 end
 
 function ActorStateManager:SetState()
-	print('')
-	print('--- ActorStateManager:SetState() ---')
-	print('')
 	-- delay actions having the "With" param since they depend on result of
 	-- other actions
 	local previousActionsResults = {}
