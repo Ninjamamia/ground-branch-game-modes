@@ -210,6 +210,17 @@ function Mode:OnUpriseCooldown()
 	AdminTools:ShowDebug(tostring(self.Teams.CIVArmed) .. ' is relaxed again.')
 	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
 	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
+	timer.Set(
+		'PostUpriseCooldown',
+		self,
+		self.PostUpriseCooldown,
+		3.0,
+		false
+	)
+end
+
+function Mode:PostUpriseCooldown()
+	AdminTools:ShowDebug('Killing ' .. tostring(self.Teams.CIVArmed) .. ' is punishable again now.')
 	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 

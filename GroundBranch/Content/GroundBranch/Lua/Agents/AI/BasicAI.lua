@@ -48,10 +48,12 @@ function BasicAI:OnBleedout()
     self.AgentsManager:OnAIBleedout(self)
 end
 
-function BasicAI:Kill(message)
+function BasicAI:Kill(message, isRespawnPrep)
 	ai.KillAI(self.CharacterController)
-    self.Healings = 255 -- avoid healing attempt in this case as the body disappears
-	gamemode.script:OnCharacterDied(self, self, nil)
+    if not (isRespawnPrep == true) then
+        self.Healings = 255 -- avoid healing attempt in this case as the body disappears
+	    gamemode.script:OnCharacterDied(self, self, nil)
+    end
 end
 
 function BasicAI:Respawn(Position)
@@ -79,7 +81,7 @@ function BasicAI:OnTeamAttitudeChange()
     self.SpawnPoint:SetTeamId(self.TeamId)
     if self.IsAlive then
         local Position = self:GetPosition()
-        self:Kill()
+        self:Kill('', true)
         self:Respawn(Position)
     end
 end
