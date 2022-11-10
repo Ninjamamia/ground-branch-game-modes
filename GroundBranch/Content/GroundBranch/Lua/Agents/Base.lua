@@ -27,7 +27,7 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
         self.EliminationCallback = eliminationCallback
         self.ActiveEliminationCallback = nil
     else
-        self.Name = "Unknonw"
+        self.Name = "Unknown"
         self.Character = nil
         self.TeamId = 255
         self.EliminationCallback = nil
@@ -120,6 +120,10 @@ function Base:CanHeal(WoundedAgent)
 end
 
 function Base:OnHealingCheckTick()
+    if self.IsAlive then
+        self.State = 'Aborted'
+        return true
+    end
     if self.State == 'Waiting' then
         self.tiState = self.tiState - 1
         if self.tiState <= 0 then
