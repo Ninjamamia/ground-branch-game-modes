@@ -142,6 +142,9 @@ function Mode:PreInit()
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AISpawns.OpFor.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
 	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
+
+	self.Teams.SuicideSquad:SetAttitude(self.Teams.BluFor, 'Neutral', true)
+	self.Teams.SuicideSquad:SetAttitude(self.Teams.OpFor, 'Neutral', true)
 end
 
 function Mode:PostInit()
@@ -247,8 +250,6 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
-	self.Teams.SuicideSquad:SetAttitude(self.Teams.BluFor, 'Neutral', true)
-	self.Teams.SuicideSquad:SetAttitude(self.Teams.OpFor, 'Neutral', true)
 end
 
 function Mode:ShouldCheckForTeamKills()

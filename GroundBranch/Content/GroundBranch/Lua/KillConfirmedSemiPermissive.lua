@@ -121,8 +121,17 @@ function Mode:PreInit()
 	if self.AISpawns.Uprise:GetTotalSpawnPointsCount() == 0 then
 		self.AISpawns.Uprise = MSpawnsGroups:Create(self.AISpawnDefs.Uprise.OldTag)
 	end
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.CIVArmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
 	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVUnarmed)
 	self.Teams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
+	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
+	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -153,24 +162,15 @@ end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
-	self.Teams.CIVUnarmed:SetAttitude(self.Teams.BluFor, 'Neutral')
-	self.Teams.CIVUnarmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
-	self.Teams.CIVUnarmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
 	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
-	self.Teams.CIVArmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
-	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
-	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
 	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
 	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:Uprise()
 	if not self.IsUprise then
-		self.Teams.CIVArmed:RemoveDefaultEliminationCallback()
-		self.Teams.BluFor:RemoveHealableTeam(self.Teams.CIVArmed)
-		self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
 		local tiUprise = math.random(50, 150) * 0.1
-		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
+		AdminTools:ShowDebug("Global uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
 		local sizeUprise = self.Settings.GlobalCIVUpriseSize.Value
 		if sizeUprise > 0 then
@@ -184,14 +184,33 @@ function Mode:OnUpriseSpawned()
 	self.Teams.BluFor:DisplayMessageToAlivePlayers('INTEL: Civilians are uprising, no more "mistakes" are permitted...', 'Upper', 5.0, 'Always')
 end
 
-function Mode:LocalUprise(killedCivLocation)
+function Mode:LocalUprise(killedAgentLocation)
 	local tiUprise = math.random(50, 150) * 0.1
 	local sizeUprise = math.random(0, self.Settings.LocalCIVUpriseSize.Value)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
-		self.AISpawns.Uprise:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
+		self.AISpawns.Uprise:AddSpawnsFromClosestGroup(sizeUprise, killedAgentLocation)
 		self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, self.AISpawnDefs.Uprise.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
 	end
+	local tiUpset = math.random(30, 90)
+	AdminTools:ShowDebug(tostring(self.Teams.CIVArmed) .. ' will uprise for ' .. tiUpset .. 's now...')
+	timer.Set(
+		'UpriseCooldown',
+		self,
+		self.OnUpriseCooldown,
+		tiUpset,
+		false
+	)
+	self.Teams.CIVArmed:RemoveDefaultEliminationCallback()
+	self.Teams.BluFor:RemoveHealableTeam(self.Teams.CIVArmed)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
+end
+
+function Mode:OnUpriseCooldown()
+	AdminTools:ShowDebug(tostring(self.Teams.CIVArmed) .. ' is relaxed again.')
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
+	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:OnLocalUpriseSpawned()
@@ -224,7 +243,7 @@ end
 function Mode:OnHVTDied(killData)
 	super.OnHVTDied(self, killData)
 	if self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
-		self:Uprise()
+		self:LocalUprise(killData:GetLocation())
 	end
 end
 
