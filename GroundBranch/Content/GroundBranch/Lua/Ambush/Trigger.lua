@@ -131,13 +131,13 @@ function Trigger:Trigger()
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, nothing to spawn.")
     end
     for _, Activate in pairs(self.Activates) do
-        local ActivateTrigger = self.Parent.Triggers[Activate]
+        local ActivateTrigger = self.Parent.TriggersByName[Activate]
         if ActivateTrigger ~= nil then
             ActivateTrigger:Activate(true)
         end
     end
     for _, MineName in pairs(self.Mines) do
-        local CurrMine = self.Parent.Mines[MineName]
+        local CurrMine = self.Parent.MinesByName[MineName]
         if CurrMine ~= nil then
             CurrMine:Trigger()
         end

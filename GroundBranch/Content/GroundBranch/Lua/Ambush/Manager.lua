@@ -5,8 +5,6 @@ local BlastZone = require('Ambush.BlastZone')
 local Mine = require('Ambush.Mine')
 
 local AmbushManager = {
-    TeamTag = nil,
-    Triggers = {}
 }
 
 AmbushManager.__index = AmbushManager
@@ -19,16 +17,16 @@ function AmbushManager:Create(teamTag)
     local self = setmetatable({}, AmbushManager)
     -- Setting attributes
     self.TeamTag = teamTag
-    self.Triggers = {}
-    self.Mines = {}
-    self.Defusers = {}
-    self.BlastZones = {}
+    self.TriggersByName = {}
+    self.MinesByName = {}
+    self.MinesByDefuserName = {}
+    self.BlastZonesByName = {}
     print('Gathering blast zones...')
     local BlastZones = gameplaystatics.GetAllActorsWithTag('BlastZone')
     local count = 0
     for _, Actor in ipairs(BlastZones) do
         local NewBlast = BlastZone:Create(self, Actor)
-        self.BlastZones[NewBlast.Name] = NewBlast
+        self.BlastZonesByName[NewBlast.Name] = NewBlast
         count = count + 1
     end
     print('Found a total of ' .. count .. ' blasts.')
@@ -37,7 +35,7 @@ function AmbushManager:Create(teamTag)
     count = 0
     for _, Actor in ipairs(Triggers) do
         local NewTrigg = Trigger:Create(self, Actor)
-        self.Triggers[NewTrigg.Name] = NewTrigg
+        self.TriggersByName[NewTrigg.Name] = NewTrigg
         count = count + 1
     end
     print('Found a total of ' .. count .. ' ambush triggers.')
@@ -46,13 +44,13 @@ function AmbushManager:Create(teamTag)
     count = 0
     for _, Actor in ipairs(Mines) do
         local NewMine = Mine:Create(self, Actor)
-        self.Mines[NewMine.Name] = NewMine
+        self.MinesByName[NewMine.Name] = NewMine
         for _, Defuser in ipairs(NewMine.Defusers) do
             local defuserName = actor.GetName(Defuser)
-            if self.Defusers[defuserName] == nil then
-                self.Defusers[defuserName] = {}
+            if self.MinesByDefuserName[defuserName] == nil then
+                self.MinesByDefuserName[defuserName] = {}
             end
-            table.insert(self.Defusers[defuserName], NewMine)
+            table.insert(self.MinesByDefuserName[defuserName], NewMine)
         end
         count = count + 1
     end
@@ -77,11 +75,11 @@ function AmbushManager:Create(teamTag)
 end
 
 function AmbushManager:GetMine(Name)
-    return self.Mines[Name]
+    return self.MinesByName[Name]
 end
 
 function AmbushManager:OnDefuse(Defuser)
-    local Mines = self.Defusers[actor.GetName(Defuser)]
+    local Mines = self.MinesByDefuserName[actor.GetName(Defuser)]
     if Mines ~= nil then
         for _, Mine in ipairs(Mines) do
             Mine:Defuse()
@@ -120,11 +118,11 @@ function AmbushManager:Activate(GameTrigger)
         if gamemode.script.Settings.MaxPresenceTime ~= nil then
             self.tiPresenceMax = gamemode.script.Settings.MaxPresenceTime.Value
         end
-        for _, BlastZone in pairs(self.BlastZones) do
+        for _, BlastZone in pairs(self.BlastZonesByName) do
             BlastZone:SetDebugVisibility(false)
         end
         print('Activating ambush triggers based on their chance...')
-        for _, Trigger in pairs(self.Triggers) do
+        for _, Trigger in pairs(self.TriggersByName) do
             BlastZone:SetDebugVisibility(false)
             if math.random(0, 99) < (Trigger.Chance or self.Chance) then
                 Trigger:Activate()
@@ -134,17 +132,17 @@ function AmbushManager:Activate(GameTrigger)
             end
         end
         print('Deactivating all mines in advance...') -- this is required to ensure that defuser collisions will be activated additively
-        for _, Mine in pairs(self.Mines) do
+        for _, Mine in pairs(self.MinesByName) do
             Mine:Deactivate()
         end
         print('Activating mines based on their chance...')
-        for _, Mine in pairs(self.Mines) do
+        for _, Mine in pairs(self.MinesByName) do
             if math.random(0, 99) < (Mine.Chance or self.Chance) then
                 Mine:Activate()
             end
         end
     else
-        local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+        local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
         if Trigger ~= nil then
             Trigger:Activate()
             Trigger:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
@@ -154,55 +152,55 @@ end
 
 function AmbushManager:Deactivate()
     print('Deactivating all ambush triggers...')
-    for _, Trigger in pairs(self.Triggers) do
+    for _, Trigger in pairs(self.TriggersByName) do
         Trigger:Deactivate()
     end
-    for _, Mine in pairs(self.Mines) do
+    for _, Mine in pairs(self.MinesByName) do
         Mine:Deactivate()
     end
 end
 
 function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)
-    local BlastZone = self.BlastZones[actor.GetName(GameTrigger)]
+    local BlastZone = self.BlastZonesByName[actor.GetName(GameTrigger)]
     if BlastZone ~= nil then
         BlastZone:OnBeginOverlap(Player)
     end
-    local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+    local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         Trigger:OnBeginOverlap(Player)
     end
 end
 
 function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
-    local BlastZone = self.BlastZones[actor.GetName(GameTrigger)]
+    local BlastZone = self.BlastZonesByName[actor.GetName(GameTrigger)]
     if BlastZone ~= nil then
         BlastZone:OnEndOverlap(Player)
     end
-    local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+    local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         Trigger:OnEndOverlap(Player)
     end
 end
 
 function AmbushManager:OnLaptopSuccess(GameTrigger)
-    local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+    local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         Trigger:OnLaptopSuccess()
     end
 end
 
 function AmbushManager:OnCustomEvent(GameTrigger, Player, postSpawnCallback, force)
-    local Trigger = self.Triggers[actor.GetName(GameTrigger)]
+    local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
         Trigger:OnCustomEvent(Player, postSpawnCallback, force)
     end
 end
 
 function AmbushManager:OnCharacterDied(KillData)
-    for _, BlastZone in pairs(self.BlastZones) do
+    for _, BlastZone in pairs(self.BlastZonesByName) do
         BlastZone:OnEndOverlap(KillData.KilledAgent)
     end
-    for _, Trigger in pairs(self.Triggers) do
+    for _, Trigger in pairs(self.TriggersByName) do
         Trigger:OnEndOverlap(KillData.KilledAgent)
     end
 end

@@ -29,7 +29,7 @@ function Mine:Create(Parent, Actor)
         if key ~= nil then
             print("    " .. Tag)
             if key == 'BlastZone' then
-                local BlastZone = self.Parent.BlastZones[value]
+                local BlastZone = self.Parent.BlastZonesByName[value]
                 if BlastZone ~= nil then
                     table.insert(self.BlastZones, BlastZone)
                 else
