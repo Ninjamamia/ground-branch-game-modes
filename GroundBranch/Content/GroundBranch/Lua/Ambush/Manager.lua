@@ -31,12 +31,21 @@ function AmbushManager:Create(teamTag)
     end
     print('Found a total of ' .. count .. ' blasts.')
     print('Gathering ambush triggers...')
-    local Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
     count = 0
-    for _, Actor in ipairs(Triggers) do
-        local NewTrigg = Trigger:Create(self, Actor)
+    -- search for laptops first explicitly because they have a different debug visiblily behaviour
+    local TriggerLaptops = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/Electronics/MilitaryLaptop/BP_Laptop_Usable.BP_Laptop_Usable_C', 'Ambush')
+    for _, Actor in ipairs(TriggerLaptops) do
+        local NewTrigg = Trigger:Create(self, Actor, true)
         self.TriggersByName[NewTrigg.Name] = NewTrigg
         count = count + 1
+    end
+    local Triggers = gameplaystatics.GetAllActorsWithTag('Ambush')
+    for _, Actor in ipairs(Triggers) do
+        if self.TriggersByName[actor.GetName(Actor)] == nil then
+            local NewTrigg = Trigger:Create(self, Actor)
+            self.TriggersByName[NewTrigg.Name] = NewTrigg
+            count = count + 1
+        end
     end
     print('Found a total of ' .. count .. ' ambush triggers.')
     print('Gathering mines...')
@@ -46,7 +55,7 @@ function AmbushManager:Create(teamTag)
         local NewMine = Mine:Create(self, Actor)
         self.MinesByName[NewMine.Name] = NewMine
         for _, Defuser in ipairs(NewMine.Defusers) do
-            local defuserName = actor.GetName(Defuser)
+            local defuserName = Defuser:GetName()
             if self.MinesByDefuserName[defuserName] == nil then
                 self.MinesByDefuserName[defuserName] = {}
             end
@@ -87,6 +96,18 @@ function AmbushManager:OnDefuse(Defuser)
     end
 end
 
+function AmbushManager:SyncState()
+    for _, BlastZone in pairs(self.BlastZonesByName) do
+        BlastZone:SyncState()
+    end
+    for _, Trigger in pairs(self.TriggersByName) do
+        Trigger:SyncState()
+    end
+    for _, Mine in pairs(self.MinesByName) do
+        Mine:SyncState()
+    end
+end
+
 function AmbushManager:Activate(GameTrigger)
     GameTrigger = GameTrigger or nil
     if GameTrigger == nil then
@@ -123,13 +144,14 @@ function AmbushManager:Activate(GameTrigger)
         end
         print('Activating ambush triggers based on their chance...')
         for _, Trigger in pairs(self.TriggersByName) do
-            BlastZone:SetDebugVisibility(false)
+            Trigger:SetDebugVisibility(false)
             if math.random(0, 99) < (Trigger.Chance or self.Chance) then
                 Trigger:Activate()
                 Trigger:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
             else
                 Trigger:Deactivate()
             end
+            Trigger:SyncState()
         end
         print('Deactivating all mines in advance...') -- this is required to ensure that defuser collisions will be activated additively
         for _, Mine in pairs(self.MinesByName) do
@@ -140,12 +162,14 @@ function AmbushManager:Activate(GameTrigger)
             if math.random(0, 99) < (Mine.Chance or self.Chance) then
                 Mine:Activate()
             end
+            Mine:SyncState()
         end
     else
         local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
         if Trigger ~= nil then
             Trigger:Activate()
             Trigger:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
+            Trigger:SyncState()
         end
     end
 end
@@ -158,6 +182,7 @@ function AmbushManager:Deactivate()
     for _, Mine in pairs(self.MinesByName) do
         Mine:Deactivate()
     end
+    self:SyncState()
 end
 
 function AmbushManager:OnGameTriggerBeginOverlap(GameTrigger, Player)

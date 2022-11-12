@@ -1,6 +1,7 @@
 local AdminTools = require('AdminTools')
 local Tables = require('Common.Tables')
 local SpawnPoint = require('Spawns.Point')
+local ActorState = require('common.ActorState')
 
 local Trigger = {
     Name = nil,
@@ -14,11 +15,13 @@ local Trigger = {
 
 Trigger.__index = Trigger
 
-function Trigger:Create(Parent, Actor)
+function Trigger:Create(Parent, Actor, IsLaptop)
     local self = setmetatable({}, Trigger)
     self.Parent = Parent
     self.Name = actor.GetName(Actor)
     self.Actor = Actor
+    self.ActorState = ActorState:Create(self.Actor)
+    self.IsLaptop = IsLaptop or false
     self.Tag = nil
     self.State = 'Inactive'
     self.Spawns = {}
@@ -58,8 +61,14 @@ function Trigger:__tostring()
     return 'Ambush Trigger ' .. self.Name
 end
 
+function Trigger:SyncState()
+    self.ActorState:Sync()
+end
+
 function Trigger:SetDebugVisibility(visible)
-    actor.SetHidden(self.Actor, not visible)
+    if not self.IsLaptop then
+        self.ActorState:SetVisible(visible)
+    end
 end
 
 function Trigger:Activate(IsLinked)
@@ -110,7 +119,7 @@ function Trigger:Activate(IsLinked)
     else
         self.Agents = {}
         self.AgentsCount = 0
-        actor.SetActive(self.Actor, true)
+        self.ActorState:SetActive(true)
     end
 end
 
@@ -119,7 +128,7 @@ function Trigger:Deactivate()
     self.State = 'Inactive'
     self.Agents = {}
     self.AgentsCount = 0
-    actor.SetActive(self.Actor, false)
+    self.ActorState:SetActive(false)
 end
 
 function Trigger:Trigger()

@@ -25,7 +25,6 @@ local NoSoftFail = require("Objectives.NoSoftFail")
 local AdminTools = require('AdminTools')
 local MSpawnsGroups         = require('Spawns.Groups')
 local Callback 				= require('common.Callback')
-local MTeams                = require('Agents.Team')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))

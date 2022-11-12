@@ -379,7 +379,7 @@ function Mode:OnPlayerDied(killData)
 end
 
 function Mode:OnMissionSettingChanged(Setting, NewValue)
-	print('OnMissionSettingChanged')
+	print('OnMissionSettingChanged: ' .. Setting .. ' = ' .. NewValue)
 	self.AgentsManager:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 
