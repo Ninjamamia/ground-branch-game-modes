@@ -50,10 +50,6 @@ function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, Ba
     self.TriggerAngleHalf = self.TriggerAngle / 2
 end
 
-function SuicideAI:__tostring()
-    return self.Type .. ' ' .. self.Name
-end
-
 function SuicideAI:OnCharacterDied(KillData)
     super.OnCharacterDied(self, KillData)
     timer.Clear('Tick_' .. self.UUID, self)
@@ -127,7 +123,7 @@ function SuicideAI:GetTargets()
     local PrelimTargets = {}
     print('SuicideAI:GetTargets: Collecting candidates (in range)...')
     for _, Agent in ipairs(self.AgentsManager.Agents) do
-        if Agent.IsAlive then
+        if Agent.IsAlive and Agent ~= self then
             local AgentPos = Agent:GetPosition()
             local DistVect = AgentPos.Location - MyPos.Location
             local Dist = vector.Size(DistVect)
@@ -185,6 +181,7 @@ function SuicideAI:OnTick()
             for _, Target in ipairs(self:GetTargets()) do
                 Target:Kill('You got killed by a suicide bomber!')
             end
+            self:Kill()
         else
             local tiSleep = math.min(10.0, math.max(0.1, Dist / 1000.0))
             self:StartTimer(tiSleep)

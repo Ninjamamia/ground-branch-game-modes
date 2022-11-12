@@ -30,10 +30,6 @@ function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, Base
     self.RespawnCount = 0
 end
 
-function BasicAI:__tostring()
-    return self.Type .. ' ' .. self.Name
-end
-
 function BasicAI:CleanUp()
     self.SpawnPoint:SetTeamId(self.OriginalTeamId)
 	ai.CleanUp(self.UUID)

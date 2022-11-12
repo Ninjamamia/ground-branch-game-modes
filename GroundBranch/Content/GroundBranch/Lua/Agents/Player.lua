@@ -29,10 +29,6 @@ function Player:Init(AgentsManager, characterController, eliminationCallback)
     self.OriginalInsertionPointName = gamemode.GetInsertionPointName(self.CurrentPlayerStart)
 end
 
-function Player:__tostring()
-    return self.Type .. ' ' .. self.Name
-end
-
 function Player:AwardPlayerScore(action)
     self.Team:AwardPlayerScore(self.CharacterController, action)
 end

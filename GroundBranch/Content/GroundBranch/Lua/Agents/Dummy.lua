@@ -21,10 +21,6 @@ function Dummy:Init(AgentsManager)
     super.Init(self, AgentsManager, nil, nil)
 end
 
-function Dummy:__tostring()
-    return self.Type .. ' ' .. self.Name
-end
-
 function Dummy:OnCharacterDied(KillData)
     print("Dummies dont die...")
 end

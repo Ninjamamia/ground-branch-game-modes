@@ -32,6 +32,8 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
         self.TeamId = 255
         self.EliminationCallback = nil
     end
+    getmetatable(self).__tostring = Base.__tostring
+    getmetatable(self).__eq = Base.__eq
 end
 
 function Base:PostInit()
@@ -42,6 +44,10 @@ end
 
 function Base:__tostring()
     return self.Type .. ' ' .. self.Name
+end
+
+function Base:__eq(Other)
+    return self.Type == Other.Type and self.Name == Other.Name
 end
 
 function Base:GetMaxHealings()
