@@ -36,6 +36,32 @@ function Tables.isEmpty(tbl)
     return not Tables.notEmpty(tbl)
 end
 
+function Tables.all(tbl, testFn)
+    for _, value in pairs(tbl) do
+        if not testFn(value) then
+            return false
+        end
+    end
+    return true
+end
+
+function Tables.every(...)
+    return Tables.all(...)
+end
+
+function Tables.any(tbl, testFn)
+    for _, value in pairs(tbl) do
+        if testFn(value) then
+            return true
+        end
+    end
+    return false
+end
+
+function Tables.some(...)
+    return Tables.any(...)
+end
+
 function Tables.reduce(tbl, reducerFn, defaultResult)
     local result = defaultResult
     for _, value in pairs(tbl) do
