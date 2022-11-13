@@ -58,14 +58,14 @@ end
 function SuicideAI:PostInit()
     super.PostInit(self)
     if self.IsAlive then
-        self:StartTimer(1.0)
+        self:StartTimer(0.1)
     end
 end
 
 function SuicideAI:Respawn(Position)
     super.Respawn(self, Position)
     if self.IsAlive then
-        self:StartTimer(1.0)
+        self:StartTimer(0.1)
     end
 end
 
