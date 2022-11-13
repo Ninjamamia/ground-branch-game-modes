@@ -19,7 +19,7 @@ local UnitTest = {
 UnitTest.__index = UnitTest
 
 -- Hook into Logger to get deterministic tostring's (e.g: table 0xff00...)
-local Logger = require("Common.Logger")
+local Logger = require("common.Logger")
 Logger.toStringFunction = function(obj)
     if type(obj) == 'table' or type(obj) == 'function' or
             type(obj) == 'userdata' or type(obj) == 'thread' then
