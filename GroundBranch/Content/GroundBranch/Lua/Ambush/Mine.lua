@@ -85,7 +85,7 @@ function Mine:Activate()
     for _, Prop in pairs(self.Props) do
         Prop:SetActive(true)
         Prop:SetVisible(true)
-        Prop:SetCollidable(false)
+        Prop:SetCollidable(not Prop.Walkthrough)
     end
     for _, Prop in ipairs(self.Defusers) do
         Prop:SetActive(true)
@@ -124,7 +124,7 @@ function Mine:Defuse()
     for _, Prop in pairs(self.Props) do
         Prop:SetActive(true)
         Prop:SetVisible(Prop.Keep)
-        Prop:SetCollidable(true)
+        Prop:SetCollidable(not Prop.Walkthrough)
     end
     for _, Prop in ipairs(self.Defusers) do
         Prop:SetVisible(false)

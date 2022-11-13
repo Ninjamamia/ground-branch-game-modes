@@ -12,6 +12,7 @@ function Prop:Create(Parent, Actor)
     self.ActorState = ActorState:Create(self.Actor)
     self.Name = actor.GetName(Actor)
     self.Keep = actor.HasTag(Actor, 'Keep')
+    self.Walkthrough = actor.HasTag(Actor, 'Walkthrough')
     self.IsActive = true
     self.IsVisible = true
     self.IsCollidable = true
