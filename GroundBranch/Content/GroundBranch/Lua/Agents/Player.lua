@@ -41,13 +41,9 @@ function Player:OnCharacterDied(KillData)
     super.OnCharacterDied(self, KillData)
     if gamemode.GetRoundStage() == 'InProgress' then
         AdminTools:NotifyKIA(self.CharacterController)
+        player.SetLives(self.CharacterController, 0)
     end
-    self.CurrentPlayerStart = self.Team:GetClosestHospitalStart(self:GetPosition(), self.OriginalInsertionPointName) -- do this here as well in case the player gets resurrected by an admin
-end
-
-function Player:OnBleedout()
-    super.OnBleedout(self)
-    player.SetLives(self.CharacterController, 0)
+    self.CurrentPlayerStart = self:GetPosition() -- do this here in case the player gets resurrected by an admin
 end
 
 function Player:Respawn()
@@ -56,6 +52,7 @@ function Player:Respawn()
 end
 
 function Player:PrepareRespawn()
+    player.SetLives(self.CharacterController, 1)
     self:AwardTeamScore('Respawn')
 end
 
@@ -80,7 +77,7 @@ end
 function Player:Kill(message)
     self.DeathMessage = message
     player.FreezePlayer(player.GetPlayerState(self.Character), 2.0)
-	player.ShowGameMessage(self.Character, message, 'Upper', 2.0)
+	self:DisplayMessage(message, 'Upper', 2.0)
     timer.Set(
             'PreKill_' .. self.Name,
             self,
@@ -92,7 +89,7 @@ end
 
 function Player:PostFreeze()
 	gamemode.EnterReadyRoom(player.GetPlayerState(self.Character))
-	player.ShowGameMessage(self.Character, self.DeathMessage, 'Upper', 3.0)
+	self:DisplayMessage(self.DeathMessage, 'Upper', 3.0)
 end
 
 function Player:OnLogOut()
