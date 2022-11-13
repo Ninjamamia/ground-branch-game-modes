@@ -27,6 +27,7 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     self.Spawns = {}
     self.Activates = {}
     self.Mines = {}
+    self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
     print(tostring(self) .. ' found.')
     print('  Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -66,7 +67,7 @@ function Trigger:SyncState()
 end
 
 function Trigger:SetDebugVisibility(visible)
-    if not self.IsLaptop then
+    if not self.IsLaptop and not self.VisibleWhenActive then
         self.ActorState:SetVisible(visible)
     end
 end
@@ -121,6 +122,9 @@ function Trigger:Activate(IsLinked)
         self.AgentsCount = 0
         self.ActorState:SetActive(true)
     end
+    if self.VisibleWhenActive then
+        self.ActorState:SetVisible(true)
+    end
 end
 
 function Trigger:Deactivate()
@@ -129,6 +133,7 @@ function Trigger:Deactivate()
     self.Agents = {}
     self.AgentsCount = 0
     self.ActorState:SetActive(false)
+    self.ActorState:SetVisible(false)
 end
 
 function Trigger:Trigger()
@@ -143,6 +148,7 @@ function Trigger:Trigger()
         local ActivateTrigger = self.Parent.TriggersByName[Activate]
         if ActivateTrigger ~= nil then
             ActivateTrigger:Activate(true)
+            ActivateTrigger:SyncState()
         end
     end
     for _, MineName in pairs(self.Mines) do
@@ -151,6 +157,9 @@ function Trigger:Trigger()
             CurrMine:Trigger()
         end
     end
+    self.ActorState:SetActive(false)
+    self.ActorState:SetVisible(false)
+    self:SyncState()
 end
 
 function Trigger:OnBeginOverlap(Agent)
