@@ -152,7 +152,7 @@ end
  --
 function ActorStateAction:new(object)
 	self.__index = self
-	local self = setmetatable(object or {}, self)	
+	local self = setmetatable(object or {}, self)
 
 	self.targets = default(self.targets, {})
 	self.params = default(self.params, {})
