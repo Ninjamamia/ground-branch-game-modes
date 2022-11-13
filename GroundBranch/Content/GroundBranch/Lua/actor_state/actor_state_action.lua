@@ -5,12 +5,12 @@
 -- and _disableRndNum(), link them with correct params in ActorStateAction:exec()
 --
 
-local toboolean     = require('common.functions').toboolean
-local sprintf       = require('common.functions').sprintf
-local default       = require('common.functions').default
-local shuffleTable  = require('common.tables').ShuffleTable
-local tableNotEmpty = require('common.tables').notEmpty
-local log           = require('dev.actor_state_logger')
+local toboolean     = require('common.Functions').toboolean
+local sprintf       = require('common.Functions').sprintf
+local default       = require('common.Functions').default
+local shuffleTable  = require('common.Tables').ShuffleTable
+local tableNotEmpty = require('common.Tables').notEmpty
+local log           = require('actor_state.actor_state_logger')
 
 local ActorStateAction = {}
 

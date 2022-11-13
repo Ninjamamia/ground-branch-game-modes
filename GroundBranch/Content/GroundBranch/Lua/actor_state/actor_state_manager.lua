@@ -35,8 +35,8 @@ local count            = require('common.tables').count
 local notEmpty         = require('common.tables').notEmpty
 local mergeAssoc       = require('common.tables').naiveMergeAssocTables
 local concatTables     = require('common.tables').ConcatenateTables
-local ActorStateAction = require("dev.actor_state_action")
-local log              = require('dev.actor_state_logger')
+local ActorStateAction = require("actor_state.actor_state_action")
+local log              = require('actor_state.actor_state_logger')
 
 local function validateInt(value, min, max)
 	intValue = tonumber(value)

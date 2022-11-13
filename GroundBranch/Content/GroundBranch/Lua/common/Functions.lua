@@ -2,7 +2,7 @@
 -- Bunch of useful functions
 --
 
-local Tables = require('Common.Tables')
+local Tables = require('common.Tables')
 local functions = {}
 
 function functions.toboolean(value)
