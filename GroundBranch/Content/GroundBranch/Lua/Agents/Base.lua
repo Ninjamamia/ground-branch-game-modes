@@ -43,7 +43,7 @@ function Base:PostInit()
 end
 
 function Base:__tostring()
-    return self.Type .. ' ' .. self.Name
+    return self.Name
 end
 
 function Base:__eq(Other)
