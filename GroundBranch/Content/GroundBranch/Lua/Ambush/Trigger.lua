@@ -203,9 +203,9 @@ function Trigger:OnEndOverlap(Agent)
     end
 end
 
-function Trigger:OnLaptopSuccess()
+function Trigger:OnLaptopSuccess(Agent)
     if self.State == 'Active' then
-        AdminTools:ShowDebug('Laptop ' .. self.Name .. ' used successfully')
+        AdminTools:ShowDebug(tostring(Agent) .. ' used Laptop ' .. self.Name .. ' successfully')
         self:Trigger()
     end
 end

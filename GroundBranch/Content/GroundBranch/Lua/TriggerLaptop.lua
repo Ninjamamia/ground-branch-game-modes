@@ -27,7 +27,7 @@ function laptop:ServerUseTimer(User, DeltaTime)
 		timer.Clear(self.Timers.Timeout.Name, self)
 		Result.Message = self.OnSuccess
 		if gamemode.script.AmbushManager ~= nil then
-			gamemode.script.AmbushManager:OnLaptopSuccess(self.Object)
+			gamemode.script.AmbushManager:OnLaptopSuccess(self.Object, gamemode.script.AgentsManager:GetAgent(User))
 		else
 			AdminTools:ShowDebug("TriggerLaptop: gamemode doesn't define AmbushManager")
 		end

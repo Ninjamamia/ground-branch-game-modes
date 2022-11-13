@@ -87,7 +87,8 @@ function AmbushManager:GetMine(Name)
     return self.MinesByName[Name]
 end
 
-function AmbushManager:OnDefuse(Defuser)
+function AmbushManager:OnDefuse(Defuser, DefusingAgent)
+    DefusingAgent:DisplayMessage('IED sucessfully defused.', 'Upper', 2.0)
     local Mines = self.MinesByDefuserName[actor.GetName(Defuser)]
     if Mines ~= nil then
         for _, Mine in ipairs(Mines) do
@@ -207,10 +208,10 @@ function AmbushManager:OnGameTriggerEndOverlap(GameTrigger, Player)
     end
 end
 
-function AmbushManager:OnLaptopSuccess(GameTrigger)
+function AmbushManager:OnLaptopSuccess(GameTrigger, Player)
     local Trigger = self.TriggersByName[actor.GetName(GameTrigger)]
     if Trigger ~= nil then
-        Trigger:OnLaptopSuccess()
+        Trigger:OnLaptopSuccess(Player)
     end
 end
 
