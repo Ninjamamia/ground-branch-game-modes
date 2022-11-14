@@ -74,12 +74,16 @@ function main()
     -- dunno why but UnitTest.lua changes print behaviour, have to print a space
     print(' ');print('Testing testActorStateManager:enableActor()...');print(' ')
     test_enableActor()
+
     print(' ');print('Testing ActorStateManager:parseActors()...');print(' ')
     test_parseActors()
+
     print(' ');print('Testing ActorStateManager:setStateFromList()...');print(' ')
     test_setStateFromList() 
+
     print(' ');print('Testing ActorStateManager:setState()...');print(' ')
     test_setState()
+
     print(' ')
     print('Test summary')
     print('------------')
@@ -103,11 +107,11 @@ function test_parseActors()
         gameplaystatics.addActor(actor.create())
         gameplaystatics.addActor(actor.create())
         
+        local asm = ActorStateManager:create()
         local target = actor.create()
-        actor.SetTag(target, ActorStateManager.flagTag)
+        actor.SetTag(target, asm.flagTag)
         gameplaystatics.addActor(target)
-
-        local actionList = ActorStateManager:create():parseActors()
+        local actionList = asm:parseActors()
 
         assert(#actionList == 1, 'Did not create exactly one action')
         assert(actionList[1].targets ~= nil, 'Action contains no targets')

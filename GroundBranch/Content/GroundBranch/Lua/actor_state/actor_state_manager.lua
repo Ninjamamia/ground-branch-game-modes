@@ -46,14 +46,7 @@ local reduce           = require('common.Tables').reduce
 local defaultTable     = require('common.Tables').setDefault
 local shuffleTable     = require('common.Tables').ShuffleTable
 
-local ActorStateManager = {
-    flagTag = 'ActorState',
-    -- ^ this is the tag actors need to wear to be managed automatically.
-    stateByActorName = defaultTable({}, true),
-    -- ^ this is a map of actor states by actor name. Used when we need to
-    -- decide the state of an actor based on the state of other actors. Enmpty
-    -- index returns true (enabled).
-}
+local ActorStateManager = {}
 
 local function validateInt(value, min, max)
     intValue = tonumber(value)
@@ -241,6 +234,12 @@ end
 function ActorStateManager:create()
     self.__index = self
     local self = setmetatable({}, self)
+    self.flagTag = default('ActorState')
+    self.stateByActorName = defaultTable({}, true)
+    -- ^ this is a map of actor states by actor name. Used when we need to
+    -- decide the state of an actor based on the state of other actors. Enmpty
+    -- index returns true (enabled).
+
     log:Info('ActorStateManager instantiated')
     return self
 end
@@ -251,13 +250,8 @@ function ActorStateManager:enableActor(target, shouldEnable)
         visible = shouldEnable,
         collide = shouldEnable,
     })
-    -- no need to store the enable state since self.stateByActorName defaults
-    -- to true
-    if not shouldEnable then
-        self.stateByActorName[actor.GetName(target)] = shouldEnable
-    else
-        self.stateByActorName[actor.GetName(target)] = nil
-    end
+   
+    self.stateByActorName[actor.GetName(target)] = shouldEnable
 end
 
 --- Enable or disable the given actors based on the given parameters
