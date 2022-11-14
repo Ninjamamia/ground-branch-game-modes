@@ -66,6 +66,7 @@ local function validateInt(value, min, max)
 end
 
 local function validateParam(paramName, paramValue)
+    paramName = paramName:lower(paramName)
     if paramName == 'act' then
         if paramValue ~= 'enable' and paramValue ~= 'disable' then
             error(string.format(
@@ -252,8 +253,10 @@ function ActorStateManager:enableActor(target, shouldEnable)
     })
     -- no need to store the enable state since self.stateByActorName defaults
     -- to true
-    if not shouldEnable then 
+    if not shouldEnable then
         self.stateByActorName[actor.GetName(target)] = shouldEnable
+    else
+        self.stateByActorName[actor.GetName(target)] = nil
     end
 end
 
@@ -319,18 +322,41 @@ function ActorStateManager:setState(targets, params)
         num = math.random(min, max)
         -- print(string.format('min: %s, max: %s, computed num: %s', min, max, num))
     end
+    local linkedActorName = params.with
+    local shouldCompleteLinkedActorName
+    -- special case to when the linkedActorName ends with _, we  use the actor's
+    -- name suffix to complete linkedActorName
+    if linkedActorName then
+        shouldCompleteLinkedActorName = linkedActorName:sub(-1) == '_'
+    end
 
     -- debug computed params
-    log:Debug(sprintf('  Effective params: probRealised=%s, num=%s, reverse=%s', probRealised, num, reverse))
+    log:Debug(sprintf('  Effective params: probRealised=%s, num=%s, with=%s, reverse=%s', probRealised, num, linkedActorName, reverse))
     
     -- process the targets
     local countTargets = 0
     for index, target in ipairs(shuffleTable(targets)) do
         local reachedNum = index > num
+
         local shouldEnable = true
+        if linkedActorName then
+            if shouldCompleteLinkedActorName then
+                local actorName = actor.GetName(target)
+                local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
+                linkedActorName = linkedActorName .. suffix
+                log:Debug(sprintf("  Computed with value: '%s'", linkedActorName))
+            end
+            local isLinkedActorEnabled = self.stateByActorName[linkedActorName]
+            log:Debug(sprintf('isLinkedActorEnabled: %s', isLinkedActorEnabled))
+            if not self.stateByActorName[linkedActorName] then
+                shouldEnable = not shouldEnable
+            end
+        end
         if not probRealised then shouldEnable = not shouldEnable end
         if reachedNum       then shouldEnable = not shouldEnable end
         if reverse          then shouldEnable = not shouldEnable end
+
+
 
         self:enableActor(target, shouldEnable)
         result[actor.GetName(target)] = shouldEnable

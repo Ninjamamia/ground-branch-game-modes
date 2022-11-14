@@ -71,20 +71,15 @@ function main()
 
     print('ActorState module test')
     print('----------------------')
-
     -- dunno why but UnitTest.lua changes print behaviour, have to print a space
     print(' ');print('Testing testActorStateManager:enableActor()...');print(' ')
     test_enableActor()
-
     print(' ');print('Testing ActorStateManager:parseActors()...');print(' ')
     test_parseActors()
-
     print(' ');print('Testing ActorStateManager:setStateFromList()...');print(' ')
-    test_setStateFromList()
-    
+    test_setStateFromList() 
     print(' ');print('Testing ActorStateManager:setState()...');print(' ')
     test_setState()
-
     print(' ')
     print('Test summary')
     print('------------')
@@ -102,7 +97,6 @@ function test_parseActors()
 
         assert(#actionList == 0, 'Created unnecessary action')
     end)
-
     test('Parse one actor with the flag tag but no tag parameters', function()
         gameplaystatics.reset()
         gameplaystatics.addActor(actor.create())
@@ -122,7 +116,6 @@ function test_parseActors()
         assert(type(actionList[1].params) == "table", 'Action params is not a table')
         assert(isEmpty(actionList[1].params), 'Action params is not an empty table')
     end)
-
     test('Parse one actor with all tag parameters', function()
         gameplaystatics.reset()
         gameplaystatics.addActor(actor.create())
@@ -153,7 +146,6 @@ function test_parseActors()
         assert(actionList[1].params.min == 1, 'Param min is not set to the correct value')
         assert(actionList[1].params.max == 9, 'Param max is not set to the correct value')
     end)
-
     test('Parse multiple lone actors', function()
         gameplaystatics.reset()
         gameplaystatics.addActor(actor.create())
@@ -170,7 +162,6 @@ function test_parseActors()
 
         assert(#actionList == 3, 'Did not create the correct number of actions')
     end)
-
     test('Parse multiple actors in a group', function()
         gameplaystatics.reset()
         gameplaystatics.addActor(actor.create())
@@ -188,7 +179,6 @@ function test_parseActors()
 
         assert(#actionList == 1, 'Did not create the correct number of actions')
     end)
-
     test('Parse multiple actors in multiple groups', function()
         gameplaystatics.reset()
         gameplaystatics.addActor(actor.create())
@@ -208,7 +198,6 @@ function test_parseActors()
 
         assert(#actionList == 3, 'Did not create the correct number of actions')
     end)
-
     test('Parse actors with different flag tags', function()
         gameplaystatics.reset()
         gameplaystatics.addActor(actor.create())
@@ -275,7 +264,6 @@ function test_setStateFromList()
 
         assert(isEmpty(actions), 'The setState() method was not called for every target groups')
     end)
-
     test('Delay target groups having a with paramter', function()
         local actions = { 
             { params={ with='true' }},
@@ -304,7 +292,7 @@ function test_setStateFromList()
 end
 
 function test_setState()
-    do -- should enable all targets
+    test('Enable all targets', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))
@@ -317,28 +305,25 @@ function test_setState()
             assert(all(targets, collideIsTrue), 'At least one target has collide not set to true')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
         end
-        test('Enable all targets', function()
+        
+        runTest()
+        runTest({})
+        runTest({ prob=100 })
+        runTest({ num=10 })
+        runTest({ prob=100, num=10 })
+        runTest({ prob=0, num=0 })
 
-            -- enable all
-            runTest()
-            runTest({})
-            runTest({ prob=100 })
-            runTest({ num=10 })
-            runTest({ prob=100, num=10 })
-            runTest({ prob=0, num=0 })
+        runTest({ act='enable' })
+        runTest({ act='enable', prob=100 })
+        runTest({ act='enable', num=10 })
+        runTest({ act='enable', prob=100, num=10 })
+        runTest({ act='enable', prob=0, num=0 })
 
-            runTest({ act='enable' })
-            runTest({ act='enable', prob=100 })
-            runTest({ act='enable', num=10 })
-            runTest({ act='enable', prob=100, num=10 })
-            runTest({ act='enable', prob=0, num=0 })
-
-            runTest({ act='disable', prob=0 })
-            runTest({ act='disable', prob=0, num=100})
-            runTest({ act='disable', num=0 })
-        end)
-    end
-    do -- should disable all targets
+        runTest({ act='disable', prob=0 })
+        runTest({ act='disable', prob=0, num=100})
+        runTest({ act='disable', num=0 })
+    end)
+    test('Disable all targets', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))
@@ -351,20 +336,18 @@ function test_setState()
             assert(all(targets, collideIsFalse), 'At least one target has collide not set to false')
             assert(all(targets, activeIsNil),   'At least one target has active not set to nil')
         end
-        test('Disable all targets', function()
-            -- disable all
-            runTest({ act='disable' })
-            runTest({ act='disable', prob=100 })
-            runTest({ act='disable', num=10 })
-            runTest({ act='disable', prob=100, num=10 })
-            runTest({ act='disable', prob=0, num=0 })
 
-            runTest({ act='enable', prob=0 })
-            runTest({ act='enable', prob=0, num=100})
-            runTest({ act='enable', num=0 })
-        end)
-    end
-    do -- should enable specific number of targets
+        runTest({ act='disable' })
+        runTest({ act='disable', prob=100 })
+        runTest({ act='disable', num=10 })
+        runTest({ act='disable', prob=100, num=10 })
+        runTest({ act='disable', prob=0, num=0 })
+
+        runTest({ act='enable', prob=0 })
+        runTest({ act='enable', prob=0, num=100})
+        runTest({ act='enable', num=0 })
+    end)
+    test('Enable specific number of targets', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))            
@@ -380,18 +363,16 @@ function test_setState()
             assert(all(targets, visibleEqCollide), 'At least one target has visible not set to the same value as collide')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
         end
-        test('Enable specific number of targets', function()
-            runTest({ act='enable', num=0 })
-            runTest({ act='enable', num=1 })
-            runTest({ act='enable', num=9 })
-            runTest({ act='enable', num=10 })
+        runTest({ act='enable', num=0 })
+        runTest({ act='enable', num=1 })
+        runTest({ act='enable', num=9 })
+        runTest({ act='enable', num=10 })
 
-            -- -- make sure min and max are disregarded when num is provided
-            runTest({ act='enable', num=0, min=10 })
-            runTest({ act='enable', num=10, max=0 })
-        end)
-    end
-    do -- should disable specific number of targets
+        -- -- make sure min and max are disregarded when num is provided
+        runTest({ act='enable', num=0, min=10 })
+        runTest({ act='enable', num=10, max=0 })
+    end)
+    test('Disable specific number of targets', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))
@@ -407,18 +388,16 @@ function test_setState()
             assert(all(targets, visibleEqCollide), 'At least one target has visible not set to the same value as collide')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil') 
         end
-        test('Disable specific number of targets', function()
-            runTest({ act='disable', num=0 })
-            runTest({ act='disable', num=1 })
-            runTest({ act='disable', num=9 })
-            runTest({ act='disable', num=10 })
+        runTest({ act='disable', num=0 })
+        runTest({ act='disable', num=1 })
+        runTest({ act='disable', num=9 })
+        runTest({ act='disable', num=10 })
 
-            -- make sure min and max are disregarded when num is provided
-            runTest({ act='disable', num=0, min=10 })
-            runTest({ act='disable', num=10, max=0 })
-        end)
-    end
-    do -- should enable a random number of targets with a max
+        -- make sure min and max are disregarded when num is provided
+        runTest({ act='disable', num=0, min=10 })
+        runTest({ act='disable', num=10, max=0 })
+    end)
+    test('Enable a random number of targets with a max', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))
@@ -434,14 +413,12 @@ function test_setState()
             assert(all(targets, visibleEqCollide), 'At least one target has visible not set to the same value as collide')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
         end
-        test('Enable a random number of targets with a max', function()
-            runTest({ act='enable', min=0 })
-            runTest({ act='enable', min=1 })
-            runTest({ act='enable', min=9 })
-            runTest({ act='enable', min=10 })
-        end)
-    end
-    do -- should disable a random number of targets with a minimum
+        runTest({ act='enable', min=0 })
+        runTest({ act='enable', min=1 })
+        runTest({ act='enable', min=9 })
+        runTest({ act='enable', min=10 })
+    end)
+    test('Disable a random number of targets with a minimum', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))
@@ -457,14 +434,12 @@ function test_setState()
             assert(all(targets, visibleEqCollide), 'At least one target has visible not set to the same value as collide')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
         end
-        test('Disable a random number of targets with a minimum', function()
-            runTest({ act='disable', min=0 })
-            runTest({ act='disable', min=1 })
-            runTest({ act='disable', min=9 })
-            runTest({ act='disable', min=10 })
-        end)
-    end
-    do -- should enable a random number of targets with a maximum
+        runTest({ act='disable', min=0 })
+        runTest({ act='disable', min=1 })
+        runTest({ act='disable', min=9 })
+        runTest({ act='disable', min=10 })
+    end)
+    test('Enable a random number of targets with a maximum', function()
         local function runTest(params)
             local targets = getTargets()
             -- print(debugTargets(targets))
@@ -480,19 +455,14 @@ function test_setState()
             assert(all(targets, visibleEqCollide), 'At least one target has visible not set to the same value as collide')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
         end
-        test('Enable a random number of targets with a maximum', function()
-            runTest({ act='enable', max=0 })
-            runTest({ act='enable', max=1 })
-            runTest({ act='enable', max=9 })
-            runTest({ act='enable', max=10 })
-        end)
-    end
-    do -- should disable a random number of targets with a maximum
+        runTest({ act='enable', max=0 })
+        runTest({ act='enable', max=1 })
+        runTest({ act='enable', max=9 })
+        runTest({ act='enable', max=10 })
+    end)
+    test('Disable a random number of targets with a maximum', function()
         local function runTest(params)
             local targets = getTargets()            
-            -- print(debugTargets(targets))
-            -- print(debugParams(params))
-            -- log:SetLogLevel('DEBUG')
             
             ActorStateManager:create():setState(targets, params)
 
@@ -503,13 +473,45 @@ function test_setState()
             assert(all(targets, visibleEqCollide), 'At least one target has visible not set to the same value as collide')
             assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
         end
-        test('Disable a random number of targets with a maximum', function()
-            runTest({ act='disable', max=0 })
-            runTest({ act='disable', max=1 })
-            runTest({ act='disable', max=9 })
-            runTest({ act='disable', max=10 })
-        end)
-    end
+        runTest({ act='disable', max=0 })
+        runTest({ act='disable', max=1 })
+        runTest({ act='disable', max=9 })
+        runTest({ act='disable', max=10 })
+    end)
+    test('Enable targets based on state of another actor', function()
+        local withTarget = actor.create()
+        local targets = getTargets()
+
+        ActorStateManager:create():setState(targets, { with=actor.GetName(withTarget) })
+
+        assert(all(targets, visibleIsTrue), 'At least one target has visible not set to true')
+        assert(all(targets, collideIsTrue), 'At least one target has collide not set to true')
+        assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
+    end)
+    test('Enable targets based on state of another explicitly enabled actor', function()
+        local withTarget = actor.create()
+        local targets = getTargets()
+            
+        local asm = ActorStateManager:create()
+        asm:enableActor(withTarget, true)
+        asm:setState(targets, { with=actor.GetName(withTarget) })
+
+        assert(all(targets, visibleIsTrue), 'At least one target has visible not set to true')
+        assert(all(targets, collideIsTrue), 'At least one target has collide not set to true')
+        assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
+    end)
+    test('Enable targets based on state of another explicitly disabled actor', function()
+        local withTarget = actor.create()
+        local targets = getTargets()
+            
+        local asm = ActorStateManager:create()
+        asm:enableActor(withTarget, false)
+        asm:setState(targets, { with=actor.GetName(withTarget) })
+
+        assert(all(targets, visibleIsFalse), 'At least one target has visible not set to false')
+        assert(all(targets, collideIsFalse), 'At least one target has collide not set to false')
+        assert(all(targets, activeIsNil), 'At least one target has active not set to nil')
+    end)
 end
 
 main()
