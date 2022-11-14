@@ -10,7 +10,6 @@ local log               = require('actor_state.actor_state_logger')
 local all               = require('common.Tables').all
 local count             = require('common.Tables').count
 local copyTable         = require('common.Tables').Copy
-local debugTable        = require('common.Tables').debug
 local filter            = require('common.Tables').filter
 local isEmpty           = require('common.Tables').isEmpty
 local test              = require('common.UnitTest')

@@ -33,7 +33,7 @@
 ---
 local log              = require('actor_state.actor_state_logger')
 local default          = require('common.Functions').default
-local sprintf          = require("common.Functions").sprintf
+local sprintf          = require("common.Strings").sprintf
 local concatTables     = require('common.Tables').ConcatenateTables
 local count            = require('common.Tables').count
 local filter           = require('common.Tables').filter

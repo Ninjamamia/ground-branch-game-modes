@@ -26,4 +26,12 @@ function Strings.GetSuffix(stringCheck, prefix)
     return ''
 end
 
+function Strings.sprintf(...)
+    return string.format(...)
+end
+
+function Strings.printf(...)
+    print(string.format(...))
+end
+
 return Strings
