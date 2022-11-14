@@ -112,6 +112,11 @@ function Tables.naiveMergeAssocTables(tbl1, ...)
     return result
 end
 
+function Tables.setDefault(tbl, defaultValue)
+    setmetatable(tbl, { __index = function () return defaultValue end })
+    return tbl
+end
+
 ---Returns a copy of the provided table with shuffled entries.
 ---@param orderedTable table an ordered table that we want to shuffle.
 ---@return table shuffledTable a copy of the provdide table with shuffled entries.

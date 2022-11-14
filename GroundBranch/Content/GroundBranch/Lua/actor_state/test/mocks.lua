@@ -4,19 +4,17 @@ local Mocks = {}
 -- Mocking Actor UserData
 --
 Mocks.Actor = { count = 0 }
+Mocks.Actor.__index = Mocks.Actor;
 
-function Mocks.Actor:new()
+function Mocks.Actor.create()
 	Mocks.Actor.count = Mocks.Actor.count + 1
-	self.__index = self;
-	o = {
+	local self = setmetatable({
 		name = "test_actor_"..Mocks.Actor.count,
 		tags = {},
 		active = nil,
 		visible = nil,
 		collide = nil,
-	}
-	
-	local self = setmetatable(o, self);
+	}, Mocks.Actor);
 	return self
 end
 function Mocks.Actor.GetName(self) return self.name end
@@ -34,18 +32,26 @@ function Mocks.Actor.__concat(self, other)
 	return tostring(self)..tostring(other)
 end
 
--- gameplaystatics = {}
+Mocks.Gameplaystatics = {
+	mockedActors = {}
+}
+function Mocks.Gameplaystatics.reset()
+	Mocks.Gameplaystatics.mockedActors = {}
+end
+function Mocks.Gameplaystatics.addActor(actor)
+	table.insert(Mocks.Gameplaystatics.mockedActors, actor)
+end
 
--- function gameplaystatics:GetAllActorsWithTag(tag)
--- 	local actorList = {}
--- 	for _i, anActor in ipairs(mockedActors) do
--- 		for _i, aTag in ipairs(anActor:GetTags()) do
--- 			if tag == aTag then
--- 				table.insert(actorList, anActor)
--- 			end
--- 		end
--- 	end
--- 	return actorList
--- end
+function Mocks.Gameplaystatics.GetAllActorsWithTag(tag)
+	local actorList = {}
+	for _i, anActor in ipairs(Mocks.Gameplaystatics.mockedActors) do
+		for _i, aTag in ipairs(actor.GetTags(anActor)) do
+			if tag == aTag then
+				table.insert(actorList, anActor)
+			end
+		end
+	end
+	return actorList
+end
 
 return Mocks
