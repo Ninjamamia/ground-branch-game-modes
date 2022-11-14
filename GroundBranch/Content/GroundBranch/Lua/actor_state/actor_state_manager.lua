@@ -338,10 +338,9 @@ function ActorStateManager:setState(targets, params)
                 local actorName = actor.GetName(target)
                 local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
                 linkedActorName = linkedActorName .. suffix
-                log:Debug(sprintf("  Computed with value: '%s'", linkedActorName))
             end
             local isLinkedActorEnabled = self.stateByActorName[linkedActorName]
-            log:Debug(sprintf('isLinkedActorEnabled: %s', isLinkedActorEnabled))
+            log:Debug(sprintf("  Actor '%s' is enabled: %s", linkedActorName, isLinkedActorEnabled))
             if not self.stateByActorName[linkedActorName] then
                 shouldEnable = not shouldEnable
             end
