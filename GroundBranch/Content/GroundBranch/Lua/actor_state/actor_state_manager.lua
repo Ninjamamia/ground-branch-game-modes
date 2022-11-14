@@ -32,7 +32,7 @@
  --     randomly. Disregarded when <num> is provided. 
 ---
 local log              = require('actor_state.actor_state_logger')
-local default          = require('common.Functions').default
+local default          = require('common.Values').default
 local sprintf          = require("common.Strings").sprintf
 local concatTables     = require('common.Tables').ConcatenateTables
 local count            = require('common.Tables').count
