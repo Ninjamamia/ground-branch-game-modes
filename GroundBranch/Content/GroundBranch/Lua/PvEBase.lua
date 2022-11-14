@@ -6,7 +6,7 @@ local AmbushManager         = require('Ambush.Manager')
 local Callback 				= require('common.Callback')
 local CallbackList			= require('common.CallbackList')
 local KillData              = require('Agents.KillData')
-local actorStateManager 	= require("actor_state.actor_state_manager")
+local ActorStateManager 	= require("actor_state.actor_state_manager")
 
 local Mode = {
 	UseReadyRoom = true,
@@ -127,10 +127,10 @@ end
 
 function Mode:PreInit()
 	print('Pre initialization')
-	
+
 	-- testing the ActorStateManager
-	self.ActorStateManager = actorStateManager:Create()
-	self.ActorStateManager:SetState()
+	self.ActorStateManager = ActorStateManager:create()
+	self.ActorStateManager:setStateFromList(self.ActorStateManager:parseActors())
 
 	-- usual code
 	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
