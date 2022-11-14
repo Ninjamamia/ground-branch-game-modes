@@ -24,19 +24,16 @@ function Base:Init(AgentsManager, characterController, eliminationCallback)
         self.TeamId = actor.GetTeamId(characterController)
         self.Team = self.AgentsManager:GetTeamByID(self.TeamId)
         self.HealableTeams = self.Team.HealableTeams
-        self.IsCustomEliminationCallback = false
-        if eliminationCallback ~= nil then
-            self.IsCustomEliminationCallback = true
-            self.eliminationCallback = eliminationCallback
-        else
-            self.eliminationCallback = self.Team:GetDefaultEliminationCallback()
-        end
+        self.EliminationCallback = eliminationCallback
+        self.ActiveEliminationCallback = nil
     else
-        self.Name = "Unknonw"
+        self.Name = "Unknown"
         self.Character = nil
         self.TeamId = 255
-        self.eliminationCallback = nil
+        self.EliminationCallback = nil
     end
+    getmetatable(self).__tostring = Base.__tostring
+    getmetatable(self).__eq = Base.__eq
 end
 
 function Base:PostInit()
@@ -46,7 +43,11 @@ function Base:PostInit()
 end
 
 function Base:__tostring()
-    return self.Type .. ' ' .. self.Name
+    return self.Name
+end
+
+function Base:__eq(Other)
+    return self.Type == Other.Type and self.Name == Other.Name
 end
 
 function Base:GetMaxHealings()
@@ -88,6 +89,7 @@ function Base:OnCharacterDied(KillData)
     self.KillData = KillData
 	self.IsAlive = false
     if gamemode.GetRoundStage() == 'InProgress' then
+        self.ActiveEliminationCallback = self.EliminationCallback or self.Team:GetDefaultEliminationCallback()
         if self.Healings < self:GetMaxHealings() then
             self.Healings = self.Healings + 1
             AdminTools:ShowDebug(tostring(self) .. ' is wounded and can be healed now (' .. self.Healings .. ' of ' .. self:GetMaxHealings() .. ')')
@@ -101,7 +103,11 @@ function Base:OnCharacterDied(KillData)
 end
 
 function Base:OnBleedout()
-    self.eliminationCallback:Call(self.KillData)
+    if self.ActiveEliminationCallback ~= nil then
+        self.ActiveEliminationCallback:Call(self.KillData)
+    else
+        print(tostring(self) .. ": unable to determine active elimination callback!")
+    end
 end
 
 function Base:Kill(message)
@@ -120,6 +126,10 @@ function Base:CanHeal(WoundedAgent)
 end
 
 function Base:OnHealingCheckTick()
+    if self.IsAlive then
+        self.State = 'Aborted'
+        return true
+    end
     if self.State == 'Waiting' then
         self.tiState = self.tiState - 1
         if self.tiState <= 0 then
@@ -190,9 +200,6 @@ function Base:MoveTo(NewTeam)
 end
 
 function Base:OnTeamAttitudeChange()
-    if self.IsCustomEliminationCallback == false then
-        self.eliminationCallback = self.Team:GetDefaultEliminationCallback()
-    end
 end
 
 function Base:DisplayMessageToHealers(healers, message)

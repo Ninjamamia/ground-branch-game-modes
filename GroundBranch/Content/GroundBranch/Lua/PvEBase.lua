@@ -78,12 +78,15 @@ local Mode = {
 		OpFor = {
 			TeamId = 100,
 			Name = 'OpFor',
-			Tag = 'OpFor'
 		},
 		SuicideSquad = {
 			TeamId = 30,
 			Name = 'SuicideSquad',
-			Tag = 'SuicideSquad'
+		}
+	},
+	AISpawnDefs = {
+		OpFor = {
+			Tag = 'OpFor'
 		}
 	},
 	Teams = {
@@ -142,11 +145,14 @@ function Mode:PreInit()
 	self:CreateTeams()
 	-- Gathers all OpFor spawn points by priority
 	self.AISpawns.OpFor = MSpawnsPriority:Create()
-	self.AmbushManager = AmbushManager:Create(self.AiTeams.OpFor.Tag)
+	self.AmbushManager = AmbushManager:Create(self.AISpawnDefs.OpFor.Tag)
 
 	TotalSpawns = math.min(ai.GetMaxCount(), self.AISpawns.OpFor.Total)
 	self.Settings.OpForCount.Max = TotalSpawns
 	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
+
+	self.Teams.SuicideSquad:SetAttitude(self.Teams.BluFor, 'Neutral', true)
+	self.Teams.SuicideSquad:SetAttitude(self.Teams.OpFor, 'Neutral', true)
 end
 
 function Mode:PostInit()
@@ -252,8 +258,6 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
-	self.Teams.SuicideSquad:SetAttitude(self.Teams.BluFor, 'Neutral', true)
-	self.Teams.SuicideSquad:SetAttitude(self.Teams.OpFor, 'Neutral', true)
 end
 
 function Mode:ShouldCheckForTeamKills()
@@ -366,7 +370,7 @@ end
 
 function Mode:SpawnOpFor()
 	self.AISpawns.OpFor:SelectSpawnPoints()
-	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AiTeams.OpFor.Tag)
+	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AISpawnDefs.OpFor.Tag)
 end
 
 function Mode:OnOpForDied(killData)
@@ -383,7 +387,7 @@ function Mode:OnPlayerDied(killData)
 end
 
 function Mode:OnMissionSettingChanged(Setting, NewValue)
-	print('OnMissionSettingChanged')
+	print('OnMissionSettingChanged: ' .. Setting .. ' = ' .. NewValue)
 	self.AgentsManager:SetMaxConcurrentAICount(self.Settings.AIMaxConcurrentCount.Value)
 end
 

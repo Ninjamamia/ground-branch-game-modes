@@ -23,7 +23,7 @@ Key,SourceString,Comment
 "missionsetting_displayobjectiveprompts_1","Yes","Opsboard"
 "missionsetting_respawncost","Respawn Cost","Opsboard"
 "missionsetting_reinforcements","Size of HVT reinforcements","Opsboard"
-"missionsetting_upriseonhvtkillchance","Chance For An Uprise On HVT Elimitation","Opsboard"
+"missionsetting_upriseonhvtkillchance","Chance For a local Uprise On HVT Elimitation","Opsboard"
 "missionsetting_globalcivuprisesize","Size of global Armed CIV Uprise","Opsboard"
 "missionsetting_localcivuprisesize","Size of local Armed CIV Uprise","Opsboard"
 "missionsetting_civpopulation","CIV Population","Opsboard"

@@ -25,7 +25,6 @@ local NoSoftFail = require("Objectives.NoSoftFail")
 local AdminTools = require('AdminTools')
 local MSpawnsGroups         = require('Spawns.Groups')
 local Callback 				= require('common.Callback')
-local MTeams                = require('Agents.Team')
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))
@@ -89,17 +88,20 @@ Mode.Settings.CIVPopulation = {
 -- Add additional teams
 Mode.AiTeams.CIVUnarmed = {
 	Name = 'CIVUnarmed',
-	Tag = 'CIV_Unarmed',
 	TeamId = 10,
-	CalculatedAiCount = 0,
-	Spawns = nil
 }
 Mode.AiTeams.CIVArmed = {
 	Name = 'CIVArmed',
-	Tag = 'CIV_Armed',
 	TeamId = 20,
-	CalculatedAiCount = 0,
-	Spawns = nil
+}
+
+Mode.AISpawnDefs.CIV = {
+	Tag = 'CIV',
+	OldTag = 'CIV_Unarmed',
+}
+Mode.AISpawnDefs.Uprise = {
+	Tag = 'Uprise',
+	OldTag = 'CIV_Armed',
 }
 
 -- Indicates that the uprise is triggered already
@@ -110,10 +112,25 @@ Mode.UpriseChance = 0
 
 function Mode:PreInit()
 	super.PreInit(self)
-	self.AISpawns.CIVUnarmed = MSpawnsGroups:Create(self.AiTeams.CIVUnarmed.Tag)
-	self.AISpawns.CIVArmed = MSpawnsGroups:Create(self.AiTeams.CIVArmed.Tag)
+	self.AISpawns.CIV = MSpawnsGroups:Create(self.AISpawnDefs.CIV.Tag)
+	if self.AISpawns.CIV:GetTotalSpawnPointsCount() == 0 then
+		self.AISpawns.CIV = MSpawnsGroups:Create(self.AISpawnDefs.CIV.OldTag)
+	end
+	self.AISpawns.Uprise = MSpawnsGroups:Create(self.AISpawnDefs.Uprise.Tag)
+	if self.AISpawns.Uprise:GetTotalSpawnPointsCount() == 0 then
+		self.AISpawns.Uprise = MSpawnsGroups:Create(self.AISpawnDefs.Uprise.OldTag)
+	end
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
+	self.Teams.CIVUnarmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.CIVArmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
 	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVUnarmed)
 	self.Teams.CIVUnarmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
+	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
+	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:TakeChance(chance)
@@ -138,35 +155,26 @@ function Mode:OnRoundStageSet(RoundStage)
 end
 
 function Mode:SpawnCIVs()
-	self.AISpawns.CIVUnarmed:AddRandomSpawns()
-	self.AISpawns.CIVUnarmed:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value, self.AiTeams.CIVUnarmed.Tag)
+	self.AISpawns.CIV:AddRandomSpawns()
+	self.AISpawns.CIV:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value, self.AISpawnDefs.CIV.Tag)
 end
 
 function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
-	self.Teams.CIVUnarmed:SetAttitude(self.Teams.BluFor, 'Neutral')
-	self.Teams.CIVUnarmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
-	self.Teams.CIVUnarmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
 	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
-	self.Teams.CIVArmed:SetAttitude(self.Teams.OpFor, 'Friendly', true)
-	self.Teams.CIVArmed:SetAttitude(self.Teams.SuicideSquad, 'Neutral', true)
-	self.Teams.CIVArmed:SetAttitude(self.Teams.CIVUnarmed, 'Friendly', true)
 	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
 	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:Uprise()
 	if not self.IsUprise then
-		self.Teams.CIVArmed:RemoveDefaultEliminationCallback()
-		self.Teams.BluFor:RemoveHealableTeam(self.Teams.CIVArmed)
-		self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
 		local tiUprise = math.random(50, 150) * 0.1
-		AdminTools:ShowDebug("Uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
+		AdminTools:ShowDebug("Global uprise triggered, spawning armed CIVs in " .. tiUprise .. "s")
 		self.IsUprise = true
 		local sizeUprise = self.Settings.GlobalCIVUpriseSize.Value
 		if sizeUprise > 0 then
-			self.AISpawns.CIVArmed:AddRandomSpawns()
-			self.AISpawns.CIVArmed:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
+			self.AISpawns.Uprise:AddRandomSpawns()
+			self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, self.AISpawnDefs.Uprise.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
 		end
 	end
 end
@@ -175,14 +183,44 @@ function Mode:OnUpriseSpawned()
 	self.Teams.BluFor:DisplayMessageToAlivePlayers('INTEL: Civilians are uprising, no more "mistakes" are permitted...', 'Upper', 5.0, 'Always')
 end
 
-function Mode:LocalUprise(killedCivLocation)
+function Mode:LocalUprise(killedAgentLocation)
 	local tiUprise = math.random(50, 150) * 0.1
 	local sizeUprise = math.random(0, self.Settings.LocalCIVUpriseSize.Value)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
-		self.AISpawns.CIVArmed:AddSpawnsFromClosestGroup(sizeUprise, killedCivLocation)
-		self.AISpawns.CIVArmed:Spawn(tiUprise, 0.4, sizeUprise, self.AiTeams.CIVArmed.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
+		self.AISpawns.Uprise:AddSpawnsFromClosestGroup(sizeUprise, killedAgentLocation)
+		self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, self.AISpawnDefs.Uprise.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
 	end
+	local tiUpset = math.random(30, 90)
+	AdminTools:ShowDebug(tostring(self.Teams.CIVArmed) .. ' will uprise for ' .. tiUpset .. 's now...')
+	timer.Set(
+		'UpriseCooldown',
+		self,
+		self.OnUpriseCooldown,
+		tiUpset,
+		false
+	)
+	self.Teams.CIVArmed:RemoveDefaultEliminationCallback()
+	self.Teams.BluFor:RemoveHealableTeam(self.Teams.CIVArmed)
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Hostile')
+end
+
+function Mode:OnUpriseCooldown()
+	AdminTools:ShowDebug(tostring(self.Teams.CIVArmed) .. ' is relaxed again.')
+	self.Teams.CIVArmed:SetAttitude(self.Teams.BluFor, 'Neutral')
+	self.Teams.BluFor:AddHealableTeam(self.Teams.CIVArmed)
+	timer.Set(
+		'PostUpriseCooldown',
+		self,
+		self.PostUpriseCooldown,
+		3.0,
+		false
+	)
+end
+
+function Mode:PostUpriseCooldown()
+	AdminTools:ShowDebug('Killing ' .. tostring(self.Teams.CIVArmed) .. ' is punishable again now.')
+	self.Teams.CIVArmed:SetDefaultEliminationCallback(Callback:Create(self, self.OnCivDied))
 end
 
 function Mode:OnLocalUpriseSpawned()
@@ -215,7 +253,7 @@ end
 function Mode:OnHVTDied(killData)
 	super.OnHVTDied(self, killData)
 	if self:TakeChance(self.Settings.UpriseOnHVTKillChance.Value) then
-		self:Uprise()
+		self:LocalUprise(killData:GetLocation())
 	end
 end
 

@@ -29,10 +29,6 @@ function Player:Init(AgentsManager, characterController, eliminationCallback)
     self.OriginalInsertionPointName = gamemode.GetInsertionPointName(self.CurrentPlayerStart)
 end
 
-function Player:__tostring()
-    return self.Type .. ' ' .. self.Name
-end
-
 function Player:AwardPlayerScore(action)
     self.Team:AwardPlayerScore(self.CharacterController, action)
 end
@@ -47,6 +43,7 @@ function Player:OnCharacterDied(KillData)
         AdminTools:NotifyKIA(self.CharacterController)
         player.SetLives(self.CharacterController, 0)
     end
+    self.CurrentPlayerStart = self:GetPosition() -- do this here in case the player gets resurrected by an admin
 end
 
 function Player:Respawn()
@@ -80,7 +77,7 @@ end
 function Player:Kill(message)
     self.DeathMessage = message
     player.FreezePlayer(player.GetPlayerState(self.Character), 2.0)
-	player.ShowGameMessage(self.Character, message, 'Upper', 2.0)
+	self:DisplayMessage(message, 'Upper', 2.0)
     timer.Set(
             'PreKill_' .. self.Name,
             self,
@@ -92,7 +89,7 @@ end
 
 function Player:PostFreeze()
 	gamemode.EnterReadyRoom(player.GetPlayerState(self.Character))
-	player.ShowGameMessage(self.Character, self.DeathMessage, 'Upper', 3.0)
+	self:DisplayMessage(self.DeathMessage, 'Upper', 3.0)
 end
 
 function Player:OnLogOut()

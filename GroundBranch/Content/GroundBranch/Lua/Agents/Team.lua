@@ -82,6 +82,7 @@ function Team:Create(
     self.HospitalStartsCount = 0
     self.InsertionPointsCount = 0
     self.DefaultEliminationCallback = nil
+    self.Attitudes = {}
     self.HealableTeams = {}
     self.HealableTeams[self.Id] = true
     for _, insertionPoint in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
@@ -232,12 +233,23 @@ end
 
 function Team:SetAttitude(OtherTeam, Attitude, mutual)
     mutual = mutual or false
+    AdminTools:ShowDebug(tostring(self) .. ': setting attitude towards ' .. tostring(OtherTeam) .. ' to ' .. Attitude)
 	gamemode.SetTeamAttitude(self.Id, OtherTeam.Id, Attitude)
+    self.Attitudes[OtherTeam.Id] = Attitude
     for _, Agent in ipairs(self.Agents.All) do
         Agent:OnTeamAttitudeChange()
     end
     if mutual then
         OtherTeam:SetAttitude(self, Attitude)
+    end
+end
+
+function Team:GetAttitude(OtherTeam)
+    local Attitude = self.Attitudes[OtherTeam.Id]
+    if Attitude == nil then
+        return 'Hostile'
+    else
+        return Attitude
     end
 end
 

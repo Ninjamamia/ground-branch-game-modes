@@ -1,4 +1,5 @@
 local AdminTools = require('AdminTools')
+local ActorState = require('common.ActorState')
 
 local BlastZone = {
 }
@@ -10,6 +11,7 @@ function BlastZone:Create(Parent, Actor)
     self.Parent = Parent
     self.Name = actor.GetName(Actor)
     self.Actor = Actor
+    self.ActorState = ActorState:Create(self.Actor)
     print(tostring(self) .. ' found.')
     return self
 end
@@ -18,28 +20,33 @@ function BlastZone:__tostring()
     return 'BlastZone ' .. self.Name
 end
 
+function BlastZone:SyncState()
+    self.ActorState:Sync()
+end
+
 function BlastZone:SetDebugVisibility(visible)
-    actor.SetHidden(self.Actor, not visible)
+    self.ActorState:SetVisible(visible)
 end
 
 function BlastZone:Activate()
     print('Activating ' .. tostring(self) .. '...')
     self.Agents = {}
     self.AgentsCount = 0
-    actor.SetActive(self.Actor, true)
+    self.ActorState:SetActive(true)
 end
 
 function BlastZone:Deactivate()
     print('Deactivating ' .. tostring(self) .. '...')
     self.Agents = {}
     self.AgentsCount = 0
-    actor.SetActive(self.Actor, false)
+    self.ActorState:SetActive(false)
 end
 
 function BlastZone:Trigger()
     for _, Agent in pairs(self.Agents) do
         Agent:Kill('You just got killed by explosives!')
     end
+    self.ActorState:SetActive(false)
 end
 
 function BlastZone:OnBeginOverlap(Agent)

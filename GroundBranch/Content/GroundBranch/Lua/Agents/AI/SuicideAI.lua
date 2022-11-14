@@ -21,12 +21,15 @@ end
 
 function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
     super.Init(self, AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+    self.State = 'Idle'
     self.TriggerTeams = {}
     self.TriggerRadius = 1000
     self.TriggerHeight = 1000000
     self.TriggerAngle = 360
     self.BlastRadius = 1500
     self.BlastHeight = 1000000
+    self.tiRecognition = 0.0
+    self.tiReaction = 0.0
     self.Mine = nil
     print('  This is a Suicide AI, Parameters:')
     for _, Tag in ipairs(spawnPoint:GetTags()) do
@@ -50,10 +53,6 @@ function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, Ba
     self.TriggerAngleHalf = self.TriggerAngle / 2
 end
 
-function SuicideAI:__tostring()
-    return self.Type .. ' ' .. self.Name
-end
-
 function SuicideAI:OnCharacterDied(KillData)
     super.OnCharacterDied(self, KillData)
     timer.Clear('Tick_' .. self.UUID, self)
@@ -62,14 +61,16 @@ end
 function SuicideAI:PostInit()
     super.PostInit(self)
     if self.IsAlive then
-        self:StartTimer(1.0)
+        self.State = 'Idle'
+        self:StartTimer(0.1)
     end
 end
 
 function SuicideAI:Respawn(Position)
     super.Respawn(self, Position)
     if self.IsAlive then
-        self:StartTimer(1.0)
+        self.State = 'Idle'
+        self:StartTimer(0.1)
     end
 end
 
@@ -127,7 +128,7 @@ function SuicideAI:GetTargets()
     local PrelimTargets = {}
     print('SuicideAI:GetTargets: Collecting candidates (in range)...')
     for _, Agent in ipairs(self.AgentsManager.Agents) do
-        if Agent.IsAlive then
+        if Agent.IsAlive and Agent ~= self then
             local AgentPos = Agent:GetPosition()
             local DistVect = AgentPos.Location - MyPos.Location
             local Dist = vector.Size(DistVect)
@@ -176,20 +177,55 @@ end
 
 function SuicideAI:OnTick()
     if self.IsAlive then
-        local Dist = self:CheckTrigger()
-        if Dist < 1 then
-            AdminTools:ShowDebug(tostring(self) .. ': Boom!')
-            if self.Mine ~= nil then
-                self.Mine:Trigger(true)
+        if self.State == 'Idle' then
+            local Dist = self:CheckTrigger()
+            if Dist < 1 then
+                if self.tiRecognition > 0.1 then
+                    AdminTools:ShowDebug(tostring(self) .. ': Recognizing...')
+                    self.State = 'Recognition'
+                    self:StartTimer(self.tiRecognition)
+                elseif self.tiReaction > 0.1 then
+                    AdminTools:ShowDebug(tostring(self) .. ': Reacting...')
+                    self.State = 'Reaction'
+                    self:StartTimer(self.tiReaction)
+                else
+                    self:Detonate()
+                end
+            else
+                local tiSleep = math.min(10.0, math.max(0.1, Dist / 1000.0))
+                self:StartTimer(tiSleep)
             end
-            for _, Target in ipairs(self:GetTargets()) do
-                Target:Kill('You got killed by a suicide bomber!')
+        elseif self.State == 'Recognition' then
+            local Dist = self:CheckTrigger()
+            if Dist < 1 then
+                if self.tiReaction > 0.1 then
+                    AdminTools:ShowDebug(tostring(self) .. ': Reacting...')
+                    self.State = 'Reaction'
+                    self:StartTimer(self.tiReaction)
+                else
+                    self:Detonate()
+                end
+            else
+                local tiSleep = math.min(10.0, math.max(0.1, Dist / 1000.0))
+                AdminTools:ShowDebug(tostring(self) .. ': Idle.')
+                self.State = 'Idle'
+                self:StartTimer(tiSleep)
             end
-        else
-            local tiSleep = math.min(10.0, math.max(0.1, Dist / 1000.0))
-            self:StartTimer(tiSleep)
+        elseif self.State == 'Reaction' then
+            self:Detonate()
         end
     end
+end
+
+function SuicideAI:Detonate()
+    AdminTools:ShowDebug(tostring(self) .. ': Boom!')
+    if self.Mine ~= nil then
+        self.Mine:Trigger(true)
+    end
+    for _, Target in ipairs(self:GetTargets()) do
+        Target:Kill('You got killed by a suicide bomber!')
+    end
+    self:Kill()
 end
 
 return SuicideAI

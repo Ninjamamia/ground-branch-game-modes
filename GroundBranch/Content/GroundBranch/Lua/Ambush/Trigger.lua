@@ -1,6 +1,7 @@
 local AdminTools = require('AdminTools')
 local Tables = require('Common.Tables')
 local SpawnPoint = require('Spawns.Point')
+local ActorState = require('common.ActorState')
 
 local Trigger = {
     Name = nil,
@@ -14,16 +15,19 @@ local Trigger = {
 
 Trigger.__index = Trigger
 
-function Trigger:Create(Parent, Actor)
+function Trigger:Create(Parent, Actor, IsLaptop)
     local self = setmetatable({}, Trigger)
     self.Parent = Parent
     self.Name = actor.GetName(Actor)
     self.Actor = Actor
+    self.ActorState = ActorState:Create(self.Actor)
+    self.IsLaptop = IsLaptop or false
     self.Tag = nil
     self.State = 'Inactive'
     self.Spawns = {}
     self.Activates = {}
     self.Mines = {}
+    self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
     print(tostring(self) .. ' found.')
     print('  Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -58,8 +62,14 @@ function Trigger:__tostring()
     return 'Ambush Trigger ' .. self.Name
 end
 
+function Trigger:SyncState()
+    self.ActorState:Sync()
+end
+
 function Trigger:SetDebugVisibility(visible)
-    actor.SetHidden(self.Actor, not visible)
+    if not self.IsLaptop and not self.VisibleWhenActive then
+        self.ActorState:SetVisible(visible)
+    end
 end
 
 function Trigger:Activate(IsLinked)
@@ -110,7 +120,10 @@ function Trigger:Activate(IsLinked)
     else
         self.Agents = {}
         self.AgentsCount = 0
-        actor.SetActive(self.Actor, true)
+        self.ActorState:SetActive(true)
+    end
+    if self.VisibleWhenActive then
+        self.ActorState:SetVisible(true)
     end
 end
 
@@ -119,7 +132,8 @@ function Trigger:Deactivate()
     self.State = 'Inactive'
     self.Agents = {}
     self.AgentsCount = 0
-    actor.SetActive(self.Actor, false)
+    self.ActorState:SetActive(false)
+    self.ActorState:SetVisible(false)
 end
 
 function Trigger:Trigger()
@@ -131,17 +145,21 @@ function Trigger:Trigger()
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, nothing to spawn.")
     end
     for _, Activate in pairs(self.Activates) do
-        local ActivateTrigger = self.Parent.Triggers[Activate]
+        local ActivateTrigger = self.Parent.TriggersByName[Activate]
         if ActivateTrigger ~= nil then
             ActivateTrigger:Activate(true)
+            ActivateTrigger:SyncState()
         end
     end
     for _, MineName in pairs(self.Mines) do
-        local CurrMine = self.Parent.Mines[MineName]
+        local CurrMine = self.Parent.MinesByName[MineName]
         if CurrMine ~= nil then
             CurrMine:Trigger()
         end
     end
+    self.ActorState:SetActive(false)
+    self.ActorState:SetVisible(false)
+    self:SyncState()
 end
 
 function Trigger:OnBeginOverlap(Agent)
@@ -185,9 +203,9 @@ function Trigger:OnEndOverlap(Agent)
     end
 end
 
-function Trigger:OnLaptopSuccess()
+function Trigger:OnLaptopSuccess(Agent)
     if self.State == 'Active' then
-        AdminTools:ShowDebug('Laptop ' .. self.Name .. ' used successfully')
+        AdminTools:ShowDebug(tostring(Agent) .. ' used Laptop ' .. self.Name .. ' successfully')
         self:Trigger()
     end
 end

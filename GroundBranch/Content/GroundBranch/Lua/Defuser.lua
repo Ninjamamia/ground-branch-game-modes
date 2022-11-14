@@ -27,7 +27,7 @@ function laptop:ServerUseTimer(User, DeltaTime)
 	if Result.Percentage == 1.0 then
 		timer.Clear(self.Timers.Timeout.Name, self)
 		if gamemode.script.AmbushManager ~= nil then
-			gamemode.script.AmbushManager:OnDefuse(self.Object)
+			gamemode.script.AmbushManager:OnDefuse(self.Object, gamemode.script.AgentsManager:GetAgent(User))
 		else
 			AdminTools:ShowDebug("Defuser: gamemode doesn't define AmbushManager")
 		end
