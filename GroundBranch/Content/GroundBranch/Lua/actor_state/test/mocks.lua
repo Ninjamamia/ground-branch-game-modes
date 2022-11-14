@@ -1,7 +1,7 @@
 local Mocks = {}
 
 --
--- Mocking Actor UserData
+-- Mocking actor UserData
 --
 Mocks.Actor = { count = 0 }
 Mocks.Actor.__index = Mocks.Actor;
@@ -32,12 +32,16 @@ function Mocks.Actor.__concat(self, other)
 	return tostring(self)..tostring(other)
 end
 
+--
+-- Mocking gameplaystatics UserData
+--
 Mocks.Gameplaystatics = {
 	mockedActors = {}
 }
 function Mocks.Gameplaystatics.reset()
 	Mocks.Gameplaystatics.mockedActors = {}
 end
+
 function Mocks.Gameplaystatics.addActor(actor)
 	table.insert(Mocks.Gameplaystatics.mockedActors, actor)
 end
@@ -45,7 +49,7 @@ end
 function Mocks.Gameplaystatics.GetAllActorsWithTag(tag)
 	local actorList = {}
 	for _i, anActor in ipairs(Mocks.Gameplaystatics.mockedActors) do
-		for _i, aTag in ipairs(actor.GetTags(anActor)) do
+		for _i, aTag in ipairs(Mocks.Actor.GetTags(anActor)) do
 			if tag == aTag then
 				table.insert(actorList, anActor)
 			end
