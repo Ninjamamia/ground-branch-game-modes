@@ -29,7 +29,7 @@ function Mine:Create(Parent, Actor)
     for _, Tag in ipairs(actor.GetTags(Actor)) do
         local key
         local value
-        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")
+        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
             print("    " .. Tag)
             if key == 'BlastZone' then

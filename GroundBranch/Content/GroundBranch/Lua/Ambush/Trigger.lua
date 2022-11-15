@@ -33,7 +33,7 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     for _, Tag in ipairs(actor.GetTags(Actor)) do
         local key
         local value
-        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")
+        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
             print("    " .. Tag)
             if key == "Group" then
@@ -120,8 +120,8 @@ function Trigger:Activate(IsLinked)
     else
         self.Agents = {}
         self.AgentsCount = 0
-        self.ActorState:SetActive(true)
     end
+    self.ActorState:SetActive(true)
     if self.VisibleWhenActive then
         self.ActorState:SetVisible(true)
     end
@@ -144,6 +144,8 @@ function Trigger:Trigger()
     else
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, nothing to spawn.")
     end
+    self.ActorState:SetActive(false)
+    self.ActorState:SetVisible(false)
     for _, Activate in pairs(self.Activates) do
         local ActivateTrigger = self.Parent.TriggersByName[Activate]
         if ActivateTrigger ~= nil then
@@ -157,8 +159,6 @@ function Trigger:Trigger()
             CurrMine:Trigger()
         end
     end
-    self.ActorState:SetActive(false)
-    self.ActorState:SetVisible(false)
     self:SyncState()
 end
 

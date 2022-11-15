@@ -35,7 +35,7 @@ function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, Ba
     for _, Tag in ipairs(spawnPoint:GetTags()) do
         local key
         local value
-        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(%w+)")
+        _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
             print("    " .. Tag)
             if key == 'TriggerTeam' then
