@@ -1,18 +1,14 @@
 local Functions = {}
 
---- Create a function that combine multiple functions in sequence providing
---- return values of the firsts to the laters
- -- 
- -- Easy way to understand is if you want to avoid this kind of nested calls:
- --    string.reverse(string.trim(string.uppercase(table.concat(myStrTable)))
+--- Combine functions in sequence passing each return value to the next function
  --
- -- You can rewrite it:
- --    fn = pipe(table.concat, string.uppercase, string.trim, string.reverse)
- --    fn(myStrTable)
+ -- Provide nicer syntax for nested function calls:
+ -- pipe(table.concat, string.uppercase, string.trim, string.reverse)(strTbl)
+ -- is the same as:
+ -- string.reverse(string.trim(string.uppercase(table.concat(strTbl)))
  --
- -- @param args,... function - variable arg number
- -- @return The return value of the last executed function
- --
+ -- @param args table   The functions to pipe (variable arg number)
+ -- @return             The return value of the last executed function
 function Functions.pipe(...)
     local arg = {...}
     return function(...)

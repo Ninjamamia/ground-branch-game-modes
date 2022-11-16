@@ -5,7 +5,12 @@ Tables.__index = Tables
 local NEWLINE = string.char(10)
 
 
--- Bunch of new functions
+--- Get a indented string representation of a table's content (recursively)
+---
+--- @param tbl table        The table to debug
+--- @param level integer    Start indentation level (optional, defaults to 0)
+--- @return string          A string representation of the table's content
+---
 function Tables.debug(tbl, level)
     if not level then level = 0 end
     local Prefix = function() return string.rep("  ", level) end
@@ -28,20 +33,43 @@ function Tables.debug(tbl, level)
     return output
 end
 
+--- Test if a table is empty
+---
+--- @param tbl table    The table to test for emptiness
+--- @return boolean     True if the table is empty
+---
 function Tables.isEmpty(tbl)
     return not next(tbl)
 end
 
+--- Test if a table is not empty
+---
+--- @param tbl table    The table to test for non emptiness
+--- @return boolean     True if the table is not empty
+---
 function Tables.notEmpty(tbl)
     return not Tables.isEmpty(tbl)
 end
 
+--- Count elements in a table
+---
+--- @param tbl table    The table to count elements from
+--- @return boolean     True if the table is empty
+--- Works when #tbl would not but fairly slower
+---
 function Tables.count(tbl)
     return Tables.reduce(tbl, function(value, result)
         return result + 1
     end, 0)
 end
 
+--- Test all elements of a table return true to the test function
+---
+--- @param tbl table        The table to test elements of
+--- @param testFn function  The function to test each table element with
+--- @return boolean         True if the test function return true for all
+---                         elements in the given table
+---
 function Tables.all(tbl, testFn)
     for _, value in pairs(tbl) do
         if not testFn(value) then
@@ -51,10 +79,18 @@ function Tables.all(tbl, testFn)
     return true
 end
 
+--- Alias for the Tables.all function
 function Tables.every(...)
     return Tables.all(...)
 end
 
+--- Test at least one element of a table return true to the test function
+---
+--- @param tbl table        The table to test elements of
+--- @param testFn function  The function to test each table element with
+--- @return boolean         True if the test function return true for all
+---                         elements in the given table
+---
 function Tables.any(tbl, testFn)
     for _, value in pairs(tbl) do
         if testFn(value) then
@@ -64,6 +100,8 @@ function Tables.any(tbl, testFn)
     return false
 end
 
+--- Alias for the Tables.any function
+---
 function Tables.some(...)
     return Tables.any(...)
 end
@@ -101,6 +139,14 @@ function Tables.filterNot(tbl, filterFn)
     return Tables.filterIf(tbl, filterFn, false)
 end
 
+--- Merge tables without modifying them
+---
+--- Values of the last tables will override those of the first tables in case of
+--- key collision.
+---
+--- @param args table   The tables to merge (variable arg number)
+--- @return table       A new table containing the keys of all given tables
+---
 function Tables.naiveMergeAssocTables(tbl1, ...)
     -- return a new table instead of mutating tbl1
     result = Tables.Copy(tbl1)
@@ -112,14 +158,22 @@ function Tables.naiveMergeAssocTables(tbl1, ...)
     return result
 end
 
+--- Make a table return a specific value instead of nil for unset keys
+---
+--- @param tbl table        The table to change the default value of
+--- @param defaultValue     The value to return for unset keys
+--- @return table           The table passed in as the first argument
+---
 function Tables.setDefault(tbl, defaultValue)
     setmetatable(tbl, { __index = function () return defaultValue end })
     return tbl
 end
 
----Returns a copy of the provided table with shuffled entries.
----@param orderedTable table an ordered table that we want to shuffle.
----@return table shuffledTable a copy of the provdide table with shuffled entries.
+--- Returns a copy of the provided table with shuffled entries.
+---
+--- @param orderedTable table       The ordered table that we want to shuffle.
+--- @return table shuffledTable     Copy of the provide table with shuffled entries.
+---
 function Tables.ShuffleTable(orderedTable)
     local tempTable = {table.unpack(orderedTable)}
     local shuffledTable = {}
@@ -131,10 +185,12 @@ function Tables.ShuffleTable(orderedTable)
     return shuffledTable
 end
 
----Takes an ordered table containing ordered tables and returns an ordered table
----of shuffled tables.
----@param tableWithOrderedTables table ordered table with ordered tables.
----@return table tableWithShuffledTables ordered table with shuffled tables.
+--- Takes an ordered table containing ordered tables and returns an ordered table
+--- of shuffled tables.
+---
+--- @param tableWithOrderedTables table     An ordered table with ordered tables.
+--- @return table tableWithShuffledTables   An Ordered table with shuffled tables.
+---
 function Tables.ShuffleTables(tableWithOrderedTables)
     local tempTable = {table.unpack(tableWithOrderedTables)}
     local tableWithShuffledTables = {}
@@ -146,10 +202,12 @@ function Tables.ShuffleTables(tableWithOrderedTables)
     return tableWithShuffledTables
 end
 
----Returns a single level indexed table containing all entries from 2nd level
----tables of the provided twoLevelTable.
----@param twoLevelTable table a table of tables.
----@return table singleLevelTable a single level table with all 2nd level table entries.
+--- Returns a single level indexed table containing all entries from 2nd level
+--- tables of the provided twoLevelTable.
+---
+--- @param twoLevelTable table  Table of tables.
+--- @return table               A single level table with all 2nd level table entries.
+---
 function Tables.GetTableFromTables(twoLevelTable)
     local tempTable = {table.unpack(twoLevelTable)}
     local singleLevelTable = {}
@@ -161,13 +219,16 @@ function Tables.GetTableFromTables(twoLevelTable)
     return singleLevelTable
 end
 
----Concatenates two indexed tables. It keeps the order provided in argument,
----i.e. elements of table1 will start at first index, and elements of table2
----will start at #table1+1.
----Only supports concatenation of two indexed tables, not key-value tables.
----@param table1 table first of the two tables to join.
----@param table2 table second of the two tables to join.
----@return table concatenatedTable concatenated table.
+--- Concatenates two indexed tables. It keeps the order provided in argument,
+--- i.e. elements of table1 will start at first index, and elements of table2
+---
+--- will start at #table1+1.
+--- Only supports concatenation of two indexed tables, not key-value tables.
+---
+--- @param table1 table     First of the two tables to join.
+--- @param table2 table     Second of the two tables to join.
+--- @return table           Concatenated table.
+---
 function Tables.ConcatenateTables(table1, table2)
     local concatenatedTable = {table.unpack(table1)}
     for _, value in ipairs(table2) do
@@ -251,8 +312,10 @@ local function assert_arg_iterable (idx,val)
 end
 
 --- make a shallow copy of a table
---- @param tab table an iterable source
---- @return table new table
+---
+--- @param t table  An iterable source
+--- @return table   New table
+---
 function Tables.Copy (t)
     assert_arg_iterable(1,t)
     local res = {}
@@ -279,10 +342,13 @@ local function cycle_aware_copy(t, cache)
 end
 
 --- make a deep copy of a table, recursively copying all the keys and fields.
+---
 --- This supports cycles in tables; cycles will be reproduced in the copy.
 --- This will also set the copied table's metatable to that of the original.
---- @param tab table A table
---- @return table new table
+---
+--- @param tab table    A table
+--- @return table       New table
+---
 function Tables.DeepCopy(t)
     return cycle_aware_copy(t,{})
 end
