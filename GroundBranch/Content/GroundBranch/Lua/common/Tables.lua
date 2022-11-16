@@ -28,12 +28,18 @@ function Tables.debug(tbl, level)
     return output
 end
 
-function Tables.notEmpty(tbl)
-    return not not next(tbl)
+function Tables.isEmpty(tbl)
+    return not next(tbl)
 end
 
-function Tables.isEmpty(tbl)
-    return not Tables.notEmpty(tbl)
+function Tables.notEmpty(tbl)
+    return not Tables.isEmpty(tbl)
+end
+
+function Tables.count(tbl)
+    return Tables.reduce(tbl, function(value, result)
+        return result + 1
+    end, 0)
 end
 
 function Tables.all(tbl, testFn)
@@ -93,12 +99,6 @@ end
 
 function Tables.filterNot(tbl, filterFn)
     return Tables.filterIf(tbl, filterFn, false)
-end
-
-function Tables.count(tbl)
-    return Tables.reduce(tbl, function(value, result)
-        return result + 1
-    end, 0)
 end
 
 function Tables.naiveMergeAssocTables(tbl1, ...)
