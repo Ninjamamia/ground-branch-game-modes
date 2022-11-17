@@ -16,6 +16,7 @@ local laptop = {
 }
 
 function laptop:ServerUseTimer(User, DeltaTime)
+	local DefusingAgent = gamemode.script.AgentsManager:GetAgent(User)
 	self.CurrentTime = self.CurrentTime + DeltaTime
 	self.CurrentTime = math.max(self.CurrentTime, 0)
 	self.CurrentTime = math.min(self.CurrentTime, self.tiDefuse)
@@ -27,7 +28,7 @@ function laptop:ServerUseTimer(User, DeltaTime)
 	if Result.Percentage == 1.0 then
 		timer.Clear(self.Timers.Timeout.Name, self)
 		if gamemode.script.AmbushManager ~= nil then
-			gamemode.script.AmbushManager:OnDefuse(self.Object, gamemode.script.AgentsManager:GetAgent(User))
+			gamemode.script.AmbushManager:OnDefuse(self.Object, DefusingAgent)
 		else
 			AdminTools:ShowDebug("Defuser: gamemode doesn't define AmbushManager")
 		end

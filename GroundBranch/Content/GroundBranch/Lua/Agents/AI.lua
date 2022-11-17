@@ -8,11 +8,11 @@ AI.__index = AI
 
 ---Creates a new AI object.
 ---@return table AI Newly created AI object.
-function AI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+function AI:Create(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     if spawnPoint:HasTag('SuicideBomber') then
-        return SuicideAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+        return SuicideAI:Create(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     end
-    return BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+    return BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
 end
 
 return AI

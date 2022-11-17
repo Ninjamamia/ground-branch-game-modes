@@ -12,15 +12,15 @@ SuicideAI.Type = "Suicide AI"
 
 ---Creates a new SuicideAI object.
 ---@return table SuicideAI Newly created AI object.
-function SuicideAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+function SuicideAI:Create(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     local self = setmetatable({}, SuicideAI)
-    self:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+    self:Init(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     self:PostInit()
     return self
 end
 
-function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
-    super.Init(self, AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+function SuicideAI:Init(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
+    super.Init(self, AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     self.State = 'Idle'
     self.TriggerTeams = {}
     self.TriggerRadius = 1000

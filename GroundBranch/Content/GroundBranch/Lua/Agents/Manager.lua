@@ -99,13 +99,12 @@ end
 ---@param freezeTime number the time for which the ai should be frozen.
 ---@param count integer The amount of the AI to spawn.
 ---@param spawnPoints table The list of spawn points to use.
----@param spawnTag string The tag that will be assigned to spawned AI.
 ---@param eliminationCallback table A callback object to call after the AI has been killed (optional).
 ---@param preSpawnCallback table A callback object to call immediately before the first AI is spawned (optional).
 ---@param postSpawnCallback table A callback object to call after spawning is complete (optional).
 ---@param isBlocking boolean If set to true, the next queue item will only be processed after all AI have been spawned (optional, default = false).
 ---@param prio number Higher prios will spawn before (optional, default = 255).
-function Manager:SpawnAI(delay, freezeTime, count, spawnPoints, spawnTag, eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
+function Manager:SpawnAI(delay, freezeTime, count, spawnPoints, eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
 	count = math.min(#spawnPoints, count)
 	local NewItem = {
 		tiSpawn = self.tiSpawnQueue + delay,
@@ -113,7 +112,6 @@ function Manager:SpawnAI(delay, freezeTime, count, spawnPoints, spawnTag, elimin
 		count = count,
 		spawnedCount = 0,
 		spawnPoints = spawnPoints,
-		spawnTag = spawnTag,
 		eliminationCallback = eliminationCallback or nil,
 		preSpawnCallback = preSpawnCallback or nil,
 		postSpawnCallback = postSpawnCallback or nil,
@@ -153,7 +151,7 @@ function Manager:OnSpawnQueueTick()
 				if self.AliveAICount >= maxAICount then
 					if CurrSpawnItem.isBlocking then
 						if count > 0 or failCount > 0 then
-							local message = 'AgentsManager: Spawned (P) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's'
+							local message = 'AgentsManager: Spawned (P) ' .. count .. ' AI frozen for ' .. CurrSpawnItem.freezeTime .. 's'
 							if failCount > 0 then
 								message = message .. ', failed to spawn ' .. failCount
 							end
@@ -167,7 +165,7 @@ function Manager:OnSpawnQueueTick()
 					end
 				end
 				if CurrSpawnItem.spawnedCount == 0 and CurrSpawnItem.preSpawnCallback ~= nil then
-					CurrSpawnItem.preSpawnCallback:Call(CurrSpawnItem.spawnTag)
+					CurrSpawnItem.preSpawnCallback:Call()
 				end
 				local uuid = "AI_" .. self.SpawnedAICount
 				spawnPoint:SpawnAI(uuid, CurrSpawnItem.freezeTime)
@@ -175,7 +173,7 @@ function Manager:OnSpawnQueueTick()
 				if characterController ~= nil then
 					print('AgentsManager: Spawned ' .. uuid)
 					characterController = characterController[1]
-					local NewAI = AI:Create(self, uuid, characterController, spawnPoint, CurrSpawnItem.spawnTag, CurrSpawnItem.eliminationCallback)
+					local NewAI = AI:Create(self, uuid, characterController, spawnPoint, CurrSpawnItem.eliminationCallback)
 					table.insert(self.Agents, NewAI)
 					self.SpawnedAIByUUID[uuid] = NewAI
 					self.SpawnedAIByControllerName[actor.GetName(NewAI.CharacterController)] = NewAI
@@ -204,7 +202,7 @@ function Manager:OnSpawnQueueTick()
 			CurrSpawnItem.postSpawnCallback:Call(CurrSpawnItem.spawnedAI)
 		end
 		if count > 0 then
-			local message = 'AgentsManager: Spawned (F) ' .. count .. ' ' .. CurrSpawnItem.spawnTag .. ' frozen for ' .. CurrSpawnItem.freezeTime .. 's'
+			local message = 'AgentsManager: Spawned (F) ' .. count .. ' AI frozen for ' .. CurrSpawnItem.freezeTime .. 's'
 			if failCount > 0 then
 				message = message .. ', failed to spawn ' .. failCount
 			end
