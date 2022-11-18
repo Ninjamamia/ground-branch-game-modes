@@ -177,10 +177,10 @@ function Base:OnHealingCheckTick()
     return false
 end
 
-function Base:DisplayMessage(message, position, duration)
+function Base:DisplayMessage(message, position, duration, messageType)
 end
 
-function Base:DisplayPrompt(location, label, duration)
+function Base:DisplayPrompt(location, label, duration, messageType)
 end
 
 function Base:AwardPlayerScore(action)

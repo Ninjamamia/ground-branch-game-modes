@@ -349,57 +349,40 @@ end
 
 --#region Messages
 
-function Team:DisplayMessageToPlayer(agent, message, position, duration, messageType)
-    if not self.Display[messageType] then
-        return
-    end
-    agent:DisplayMessage(
-        message,
-        position,
-        duration
-    )
-end
-
 function Team:DisplayMessageToAlivePlayers(message, position, duration, messageType)
-    if not self.Display[messageType] then
-        return
-    end
     if #self.Agents.Alive > 0 then
         for _, agent in ipairs(self.Agents.Alive) do
             agent:DisplayMessage(
                 message,
                 position,
-                duration
+                duration,
+                messageType
             )
         end
     end
 end
 
 function Team:DisplayMessageToAllPlayers(message, position, duration, messageType)
-    if not self.Display[messageType] then
-        return
-    end
     if #self.Agents.All > 0 then
         for _, agent in ipairs(self.Agents.All) do
             agent:DisplayMessage(
                 message,
                 position,
-                duration
+                duration,
+                messageType
             )
         end
     end
 end
 
 function Team:DisplayPromptToAlivePlayers(location, label, duration, messageType)
-    if not self.Display[messageType] then
-        return
-    end
     if #self.Agents.Alive > 0 then
         for _, agent in ipairs(self.Agents.Alive) do
             agent:ShowWorldPrompt(
                 location,
                 label,
-                duration
+                duration,
+                messageType
             )
         end
     end
