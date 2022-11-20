@@ -156,7 +156,7 @@ end
 
 function Mode:SpawnCIVs()
 	self.AISpawns.CIV:AddRandomSpawns()
-	self.AISpawns.CIV:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value, self.AISpawnDefs.CIV.Tag)
+	self.AISpawns.CIV:Spawn(0.0, 0.5, self.Settings.CIVPopulation.Value)
 end
 
 function Mode:PreRoundCleanUp()
@@ -174,7 +174,7 @@ function Mode:Uprise()
 		local sizeUprise = self.Settings.GlobalCIVUpriseSize.Value
 		if sizeUprise > 0 then
 			self.AISpawns.Uprise:AddRandomSpawns()
-			self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, self.AISpawnDefs.Uprise.Tag, Callback:Create(self, self.OnUpriseSpawned), nil, true)
+			self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, Callback:Create(self, self.OnUpriseSpawned), nil, true)
 		end
 	end
 end
@@ -189,7 +189,7 @@ function Mode:LocalUprise(killedAgentLocation)
 	AdminTools:ShowDebug("Local uprise triggered, spawning " .. sizeUprise .. " armed CIVs close in " .. tiUprise .. "s")
 	if sizeUprise > 0 then
 		self.AISpawns.Uprise:AddSpawnsFromClosestGroup(sizeUprise, killedAgentLocation)
-		self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, self.AISpawnDefs.Uprise.Tag, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
+		self.AISpawns.Uprise:Spawn(tiUprise, 0.4, sizeUprise, Callback:Create(self, self.OnLocalUpriseSpawned), nil, true)
 	end
 	local tiUpset = math.random(30, 90)
 	AdminTools:ShowDebug(tostring(self.Teams.CIVArmed) .. ' will uprise for ' .. tiUpset .. 's now...')

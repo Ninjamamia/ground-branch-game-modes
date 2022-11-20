@@ -121,7 +121,7 @@ end
 ---@param freezeTime number time for which the ai should be frozen.
 function ConfirmKill:Spawn(freezeTime)
     print('Schedule spawning ' .. self.HVT.Tag)
-	gamemode.script.AgentsManager:SpawnAI(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), self.HVT.Tag, Callback:Create(self, self.Neutralized), nil, Callback:Create(self, self.checkSpawnsTimer))
+	gamemode.script.AgentsManager:SpawnAI(0.0, freezeTime, self.HVT.Count, self:PopShuffledSpawnPoints(), Callback:Create(self, self.Neutralized), nil, Callback:Create(self, self.checkSpawnsTimer))
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.

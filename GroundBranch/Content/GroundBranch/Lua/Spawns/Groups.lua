@@ -266,20 +266,18 @@ function Groups:ResetSpawnTables()
 end
 
 ---Schedules AI spawning in the selected spawn points.
----@param agentsManager table The queue object to use.
 ---@param delay number The time after which spawning shall start.
 ---@param freezeTime number the time for which the ai should be frozen.
 ---@param count integer The amount of the AI to spawn.
----@param spawnTag string The tag that will be assigned to spawned AI.
 ---@param preSpawnCallback table A callback object to call immediately before the first AI is spawned (optional).
 ---@param postSpawnCallback table A callback object to call after spawning is complete (optional).
 ---@param isBlocking boolean If set to true, the next queue item will only be processed after all AI have been spawned (optional, default = false).
 ---@param prio number Higher prios will spawn before (optional, default = 255).
-function Groups:Spawn(delay, freezeTime, count, spawnTag, preSpawnCallback, postSpawnCallback, isBlocking, prio)
+function Groups:Spawn(delay, freezeTime, count, preSpawnCallback, postSpawnCallback, isBlocking, prio)
     if count > #self.SelectedSpawnPoints then
         count = #self.SelectedSpawnPoints
     end
-	gamemode.script.AgentsManager:SpawnAI(delay, freezeTime, count, self:PopSelectedSpawnPoints(), spawnTag, self.eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
+	gamemode.script.AgentsManager:SpawnAI(delay, freezeTime, count, self:PopSelectedSpawnPoints(), self.eliminationCallback, preSpawnCallback, postSpawnCallback, isBlocking, prio)
 end
 
 --#endregion

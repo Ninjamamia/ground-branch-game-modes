@@ -45,7 +45,7 @@ function Mode:OnOpForDied(killData)
 			local WaveSize = math.floor((self.Settings.OpForCount.Value * self.Settings.WaveSizePercent.Value) / 100)
 			AdminTools:ShowDebug("Spawning reinforcement wave " .. self.WaveNumber .. " (" .. WaveSize .. " OpFor)")
 			self.AISpawns.OpFor:SelectSpawnPoints()
-			self.AISpawns.OpFor:Spawn(0.0, 0.4, WaveSize, self.AiTeams.OpFor.Tag)
+			self.AISpawns.OpFor:Spawn(0.0, 0.4, WaveSize)
 		end
 	end
 end

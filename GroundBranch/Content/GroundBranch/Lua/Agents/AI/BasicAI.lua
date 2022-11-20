@@ -12,20 +12,18 @@ BasicAI.Type = "Basic AI"
 
 ---Creates a new BasicAI object.
 ---@return table BasicAI Newly created AI object.
-function BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+function BasicAI:Create(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     local self = setmetatable({}, BasicAI)
-    self:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+    self:Init(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
     self:PostInit()
     return self
 end
 
-function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, BaseTag, eliminationCallback)
+function BasicAI:Init(AgentsManager, uuid, characterController, spawnPoint, eliminationCallback)
 	self.Name = uuid .. ' @ ' .. spawnPoint:GetName()
     super.Init(self, AgentsManager, characterController, eliminationCallback)
 	self.UUID = uuid
 	self.SpawnPoint = spawnPoint
-	self.BaseTag = BaseTag
-    self:AddTag(BaseTag)
     self.OriginalTeamId = self.TeamId
     self.RespawnCount = 0
 end

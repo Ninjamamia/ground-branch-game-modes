@@ -370,7 +370,7 @@ end
 
 function Mode:SpawnOpFor()
 	self.AISpawns.OpFor:SelectSpawnPoints()
-	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value, self.AISpawnDefs.OpFor.Tag)
+	self.AISpawns.OpFor:Spawn(0.0, 0.4, self.Settings.OpForCount.Value)
 end
 
 function Mode:OnOpForDied(killData)
