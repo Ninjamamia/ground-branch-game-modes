@@ -1,29 +1,36 @@
--- package path is used to look for required files, prepend the parent directory
-package.path = "../../?.lua;../?.lua;" .. package.path
+-- add path to the  GB 'Lua' directory to package.path (used for requires)
+if not _G['gbLuaDirInPath'] then
+    local DIR_SEP = package.config:sub(1,1)
+    local currentScriptPath = arg[0]
+    local workingDir = os.getenv('CWD') or
+                       os.getenv('PWD') or
+                       os.getenv('WD') or
+                       os.getenv('CD')
+    if currentScriptPath ~= nil and workingDir ~= nil then
+        local fullPath = workingDir..DIR_SEP..currentScriptPath
+        local substrIndex = fullPath:find('[\\/]GroundBranch[\\/]Lua[\\/]')
+        if substrIndex ~= nil then
+            local gbLuaDir = fullPath:sub(1, substrIndex+17)
+            package.path = gbLuaDir .. "?.lua;" .. package.path
+            _G['gbLuaDirInPath'] = true
+        end
+    end
+end
 
--- -- this is supposed to be global and before other require calls
--- actor = require('test.mocks').Actor
--- gameplaystatics = require('test.mocks').Gameplaystatics
-
--- local log               = require('actor_state.actor_state_logger')
--- local all               = require('common.Tables').all
--- local count             = require('common.Tables').count
--- local copyTable         = require('common.Tables').Copy
--- local filter            = require('common.Tables').filter
--- local isEmpty           = require('common.Tables').isEmpty
-
-local test      = require('common.UnitTest')
 local Functions = require('common.Functions')
 local Tables    = require('common.Tables')
+local Values 	= require('common.Values')
 
-local PATH_SEPARATOR = package.config:sub(1,1)
+local test      = require('common.UnitTest')
+
 
 function main()
-	print('Test Lua/common"')
-	print('----------------')
+	print('Test Lua/common')
+	print('---------------')
 	
 	test_Functions()
 	test_Tables()
+	test_Values()
 	
 	print(' ')
 	test.PrintSummary()
@@ -250,6 +257,32 @@ function test_Tables()
 	--- @todo add test for Tables.filter
 	--- @todo add test for Tables.filterNot
 	--- @todo add test to make sure no functions mutates the tables
+end
+
+function test_Values()
+	print()
+	print('Testing common.Values...')
+	print()
+
+	test('Values.toboolean', function()
+		-- test "falsy" values
+		assert(false == Values.toboolean(false))
+		assert(false == Values.toboolean(nil))
+		-- test "truthy" values
+		assert(true == Values.toboolean(true))
+		assert(true == Values.toboolean({}))
+		assert(true == Values.toboolean(0))
+		assert(true == Values.toboolean(1))
+		assert(true == Values.toboolean(''))
+		assert(true == Values.toboolean('sometext'))
+	end)
+
+	test('Values.default', function()
+		local defaultValue = {}
+		local value = {}
+		assert(value == Values.default(value, defaultValue))
+		assert(defaultValue == Values.default(nil, defaultValue))
+	end)
 end
 
 main()

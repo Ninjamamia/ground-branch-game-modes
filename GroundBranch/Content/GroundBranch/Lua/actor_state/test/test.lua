@@ -17,12 +17,6 @@ if not _G['gbLuaDirInPath'] then
     end
 end
 
--- print(package.path)
-
-
--- -- package path is used to look for required files, prepend the parent directory
--- package.path = "../../?.lua;../?.lua;" .. package.path
-
 -- this is supposed to be global and before other require calls
 actor           = require('actor_state.test.mocks').Actor
 gameplaystatics = require('actor_state.test.mocks').Gameplaystatics
@@ -34,6 +28,7 @@ local count             = require('common.Tables').count
 local copyTable         = require('common.Tables').Copy
 local filter            = require('common.Tables').filter
 local isEmpty           = require('common.Tables').isEmpty
+
 local test              = require('common.UnitTest')
 
 -- logger debug level to for the package to test
@@ -90,8 +85,8 @@ end
 function main()
     math.randomseed(os.time())
 
-    print('Test Lua/actor_state"')
-    print('---------------------')
+    print('Test Lua/actor_state')
+    print('--------------------')
     
     print(' ')
     print('Testing actor_state.ActorStateManager...');
