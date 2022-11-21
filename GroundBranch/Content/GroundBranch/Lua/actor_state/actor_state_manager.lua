@@ -349,8 +349,6 @@ function ActorStateManager:setState(targets, params)
         if reachedNum       then shouldEnable = not shouldEnable end
         if reverse          then shouldEnable = not shouldEnable end
 
-
-
         self:enableActor(target, shouldEnable)
         result[actor.GetName(target)] = shouldEnable
     end
