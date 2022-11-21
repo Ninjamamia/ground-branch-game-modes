@@ -252,8 +252,8 @@ function test_parseActors()
 
             local asm = ActorStateManager:create()
             local actionList1 = asm:parseActors('FlagTag1')
-            local actionList2 = asm:create():parseActors('FlagTag2')
-            local actionList3 = asm:create():parseActors('FlagTag3')
+            local actionList2 = asm:parseActors('FlagTag2')
+            local actionList3 = asm:parseActors('FlagTag3')
 
             assert(#actionList1 == 1, 'Did not create the correct number of actions')
             assert(#actionList2 == 2, 'Did not create the correct number of actions')
