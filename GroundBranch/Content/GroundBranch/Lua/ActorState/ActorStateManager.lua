@@ -31,7 +31,7 @@
  --     selected targets is chosen randomly, then targets are chosen
  --     randomly. Disregarded when <num> is provided. 
 ---
-local log              = require('actor_state.actor_state_logger')
+local log              = require('ActorState.ActorStateLogger')
 local default          = require('common.Values').default
 local sprintf          = require("common.Strings").sprintf
 local concatTables     = require('common.Tables').ConcatenateTables

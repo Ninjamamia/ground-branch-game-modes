@@ -17,7 +17,7 @@ if not _G['gbLuaDirInPath'] then
     end
 end
 
-require('actor_state.test.test')
+require('ActorState.test.test')
 print(' ')
 require('common.test.test')
 print(' ')

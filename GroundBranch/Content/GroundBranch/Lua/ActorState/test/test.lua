@@ -18,11 +18,11 @@ if not _G['gbLuaDirInPath'] then
 end
 
 -- this is supposed to be global and before other require calls
-actor           = require('actor_state.test.mocks').Actor
-gameplaystatics = require('actor_state.test.mocks').Gameplaystatics
+actor           = require('ActorState.test.mocks').Actor
+gameplaystatics = require('ActorState.test.mocks').Gameplaystatics
 
-local ActorStateManager = require('actor_state.actor_state_manager')
-local log               = require('actor_state.actor_state_logger')
+local ActorStateManager = require('ActorState.ActorStateManager')
+local log               = require('ActorState.ActorStateLogger')
 local all               = require('common.Tables').all
 local count             = require('common.Tables').count
 local copyTable         = require('common.Tables').Copy
@@ -85,11 +85,11 @@ end
 function main()
     math.randomseed(os.time())
 
-    print('Test Lua/actor_state')
+    print('Test Lua/ActorState')
     print('--------------------')
     
     print(' ')
-    print('Testing actor_state.ActorStateManager...');
+    print('Testing ActorState.ActorStateManager...');
     print(' ')
     -- dunno why but UnitTest.lua changes print behaviour, have to print a space
     test_enableActor()
