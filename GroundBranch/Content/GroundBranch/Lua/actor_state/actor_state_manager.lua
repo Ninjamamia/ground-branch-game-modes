@@ -401,14 +401,12 @@ function ActorStateManager:parseActors(flagTag)
     local groupedActionArgs = reduce(actionArgsToGroup, groupActionArgs, {})
     local groupActionArgsList = map(groupedActionArgs, mergeGroupedActionArgsList)
 
-    -- concatenate both ActionArgsList
-    local actorStateActionArgList = concatTables(
+    -- concatenate both ActionArgsList to create list of actions to process with
+    -- ActorStateManager:setStateFromList()
+    local actions = concatTables(
         loneActionArgsList,
         groupActionArgsList
     )
-
-    -- create list of actions to process with ActorStateManager:setStateFromList()
-    local actions = actorStateActionArgList
     
     log:Info(sprintf("  Created %s action(s)",  #actions))
 
