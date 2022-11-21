@@ -48,6 +48,8 @@ local shuffleTable     = require('common.Tables').ShuffleTable
 
 local ActorStateManager = {}
 
+ActorStateManager.__index = ActorStateManager
+
 local function validateInt(value, min, max)
     intValue = tonumber(value)
 
@@ -232,7 +234,6 @@ end
 
 -- Instantiate the ActorStateManager
 function ActorStateManager:create()
-    self.__index = self
     local self = setmetatable({}, self)
     self.flagTag = default('ActorState')
     self.stateByActorName = defaultTable({}, true)
