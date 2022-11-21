@@ -216,7 +216,7 @@ local function groupActionArgs(action, result)
 end
 
 -- function to use with Tables.map
-local function mergeGroupedActionArgsList(actionArgsList)
+local function mergeGroupedActionArgs(actionArgsList)
     -- make a list of targets
     local targets = map(actionArgsList, function(actionArgs)
         return actionArgs.targets[1]
@@ -377,6 +377,7 @@ end
 function ActorStateManager:parseActors(flagTag)
     flagTag = default(flagTag, self.flagTag)
     log:Info(sprintf("Gathering actors with tag '%s'...", flagTag))
+    
     local targets = gameplaystatics.GetAllActorsWithTag(flagTag)
     log:Info(sprintf("  Found %s actor(s)", #targets))
 
@@ -392,19 +393,15 @@ function ActorStateManager:parseActors(flagTag)
     log:Info("Creating action list...")
     
     -- extract actions on single actor (no group)
-    local loneActionArgsList = filterNot(actionArgsList, hasGroupParam)
+    local loneActions = filterNot(actionArgsList, hasGroupParam)
 
     -- extract actions with a group parameter, group and merge them
-    local actionArgsToGroup = filter(actionArgsList, hasGroupParam)
-    local groupedActionArgs = reduce(actionArgsToGroup, groupActionArgs, {})
-    local groupActionArgsList = map(groupedActionArgs, mergeGroupedActionArgsList)
+    local groupActions = filter(actionArgsList, hasGroupParam)
+    local grouped = reduce(groupActions, groupActionArgs, {})
+    local mergedActions = map(grouped, mergeGroupedActionArgs)
 
-    -- concatenate both ActionArgsList to create list of actions to process with
-    -- ActorStateManager:setStateFromList()
-    local actions = concatTables(
-        loneActionArgsList,
-        groupActionArgsList
-    )
+    -- concatenate list of actions
+    local actions = concatTables(loneActions, mergedActions)
     
     log:Info(sprintf("  Created %s action(s)",  #actions))
 
