@@ -202,26 +202,25 @@ local function setGBActorState(target, state)
     log:Debug(sprintf("  Actor '%s' new state: %s", actor.GetName(target), actorStateStr))
 end
 
--- function to use with Tables.filter
-local function hasGroupParam(tbl)
-    return tbl.params ~= nil and tbl.params.group ~= nil
-end
-
 -- function to use with Tables.reduce
 local function groupActionArgs(action, result)
-    local groupName = action.params.group
-    if result[groupName] == nil then
-        result[groupName] = {}
+    if not action.params.group then
+        table.insert(result, { action })
+    else
+        local groupName = action.params.group
+        if result[groupName] == nil then
+            result[groupName] = {}
+        end
+        table.insert(result[groupName], action)
     end
-    table.insert(result[groupName], action)
     return result
 end
 
 -- function to use with Tables.map
-local function mergeGroupedActionArgs(actionArgsList)
+local function mergeActionArgs(actionArgsList)
     -- make a list of targets
     local targets = map(actionArgsList, function(actionArgs)
-        return actionArgs.targets[1]
+        return actionArgs.target
     end)
     -- make a list of params and merge them all
     local params = map(actionArgsList, function(actionArgs)
@@ -329,26 +328,26 @@ function ActorStateManager:setState(targets, params)
     log:Debug(sprintf('  Effective params: probRealised=%s, num=%s, with=%s, reverse=%s', probRealised, num, linkedActorName, reverse))
     
     -- process the targets
-    local countTargets = 0
     for index, target in ipairs(shuffleTable(targets)) do
         local reachedNum = index > num
 
         local shouldEnable = true
+        local linkedActorDisabled = false
+        
         if linkedActorName then
             if shouldCompleteLinkedActorName then
                 local actorName = actor.GetName(target)
                 local suffix = actorName:sub(actorName:find("_[^_]*$") + 1)
                 linkedActorName = linkedActorName .. suffix
             end
-            local isLinkedActorEnabled = self.stateByActorName[linkedActorName]
-            log:Debug(sprintf("  Actor '%s' is enabled: %s", linkedActorName, isLinkedActorEnabled))
-            if not self.stateByActorName[linkedActorName] then
-                shouldEnable = not shouldEnable
-            end
+            linkedActorDisabled = not self.stateByActorName[linkedActorName]
+            log:Debug(sprintf("  Actor '%s' is enabled: %s", linkedActorName, not linkedActorDisabled))
         end
-        if not probRealised then shouldEnable = not shouldEnable end
-        if reachedNum       then shouldEnable = not shouldEnable end
-        if reverse          then shouldEnable = not shouldEnable end
+        
+        if linkedActorDisabled then shouldEnable = not shouldEnable end
+        if not probRealised    then shouldEnable = not shouldEnable end
+        if reachedNum          then shouldEnable = not shouldEnable end
+        if reverse             then shouldEnable = not shouldEnable end
 
         self:enableActor(target, shouldEnable)
         result[actor.GetName(target)] = shouldEnable
@@ -377,32 +376,25 @@ end
 -- Parse actors tags to create a list of actions
 function ActorStateManager:parseActors(flagTag)
     flagTag = default(flagTag, self.flagTag)
+    
     log:Info(sprintf("Gathering actors with tag '%s'...", flagTag))
     
     local targets = gameplaystatics.GetAllActorsWithTag(flagTag)
+
     log:Info(sprintf("  Found %s actor(s)", #targets))
 
-    -- extract params and store them along their corresponding actor
-    -- to create a table accepted by the exec method
-    local actionArgsList = map(targets, function(target)
+    -- extract params and store them along their corresponding actor (target)
+    local actionArgs = map(targets, function(target)
         return {
-            targets = { target },
+            target = target,
             params = extractParams(target)
         }
     end)
 
     log:Info("Creating action list...")
     
-    -- extract actions on single actor (no group)
-    local loneActions = filterNot(actionArgsList, hasGroupParam)
-
-    -- extract actions with a group parameter, group and merge them
-    local groupActions = filter(actionArgsList, hasGroupParam)
-    local grouped = reduce(groupActions, groupActionArgs, {})
-    local mergedActions = map(grouped, mergeGroupedActionArgs)
-
-    -- concatenate list of actions
-    local actions = concatTables(loneActions, mergedActions)
+    local grouped = reduce(actionArgs, groupActionArgs, {})
+    local actions = map(grouped, mergeActionArgs)
     
     log:Info(sprintf("  Created %s action(s)",  #actions))
 
