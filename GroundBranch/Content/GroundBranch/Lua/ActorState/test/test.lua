@@ -18,8 +18,8 @@ if not _G['gbLuaDirInPath'] then
 end
 
 -- this is supposed to be global and before other require calls
-actor           = require('ActorState.test.mocks').Actor
-gameplaystatics = require('ActorState.test.mocks').Gameplaystatics
+actor           = require('test.mocks').Actor
+gameplaystatics = require('test.mocks').Gameplaystatics
 
 local ActorStateManager = require('ActorState.ActorStateManager')
 local log               = require('ActorState.ActorStateLogger')
