@@ -1,6 +1,7 @@
-local sprintf = require('common.Strings').sprintf
-local trim    = require('common.Strings').trim
-local count   = require('common.Tables').count
+local sprintf       = require('common.Strings').sprintf
+local trim          = require('common.Strings').trim
+local count         = require('common.Tables').count
+local tableContains = require('common.Tables').Index
 
 local log = require('common.Logger').new('ParamParser')
 -- log:SetLogLevel('DEBUG')
@@ -134,18 +135,20 @@ function ParamParser.validateParams(params, validators)
     for _, validator in ipairs(validators) do
         if validator.paramName then
             local initialParamValue = params[validator.paramName]
-            local finalParamValue = validator.validates(initialParamValue)
+            if initialParamValue ~= nil then
+                local finalParamValue = validator.validates(initialParamValue)
 
-            if finalParamValue == nil then
-                local errorMsgTpl = 'Invalid parameter value for <%s>: %s'
-                if not validator.error then
-                    error(sprintf(errorMsgTpl, validator.paramName, initialParamValue))
-                else
-                    errorMsg = sprintf(validator.error, initialParamValue)
-                    error(sprintf(errorMsgTpl, validator.paramName, errorMsg))
-                end
-            end 
-            params[validator.paramName] = finalParamValue
+                if finalParamValue == nil then
+                    local errorMsgTpl = 'Invalid parameter value for <%s>: %s'
+                    if not validator.error then
+                        error(sprintf(errorMsgTpl, validator.paramName, initialParamValue))
+                    else
+                        errorMsg = sprintf(validator.error, initialParamValue)
+                        error(sprintf(errorMsgTpl, validator.paramName, errorMsg))
+                    end
+                end 
+                params[validator.paramName] = finalParamValue
+            end
         else
             params = validator.validates(params)
         end
@@ -167,6 +170,12 @@ function ParamParser.validators.integer(min, max)
         if value ~= math.floor(value) then return nil end
         if min and value < min then return nil end
         if max and value > max then return nil end
+        return value
+    end
+end
+function ParamParser.validators.inList(list)
+    return function(value)
+        if not tableContains(list, value) then return nil end
         return value
     end
 end

@@ -32,109 +32,22 @@
  --     randomly. Disregarded when <num> is provided. 
 ---
 local log              = require('ActorState.ActorStateLogger')
-local default          = require('common.Values').default
+local ParamParser      = require('common.ParamParser')
 local sprintf          = require("common.Strings").sprintf
-local concatTables     = require('common.Tables').ConcatenateTables
 local count            = require('common.Tables').count
-local filter           = require('common.Tables').filter
-local filterNot        = require('common.Tables').filterNot
 local tableIsEmpty     = require('common.Tables').isEmpty
+local tableContains    = require('common.Tables').Index
 local map              = require('common.Tables').map
 local tableNotEmpty    = require('common.Tables').notEmpty
 local mergeAssoc       = require('common.Tables').naiveMergeAssocTables
 local reduce           = require('common.Tables').reduce
 local defaultTable     = require('common.Tables').setDefault
 local shuffleTable     = require('common.Tables').ShuffleTable
+local default          = require('common.Values').default
 
 local ActorStateManager = {}
 
 ActorStateManager.__index = ActorStateManager
-
-local function validateInt(value, min, max)
-    intValue = tonumber(value)
-
-    if intValue == nil then return nil end
-    if min ~= nil and intValue < min then return nil end
-    if max ~= nil and intValue > max then return nil end
-    
-    return intValue
-end
-
-local function validateParam(paramName, paramValue)
-    paramName = paramName:lower(paramName)
-    if paramName == 'act' then
-        if paramValue ~= 'enable' and paramValue ~= 'disable' then
-            error(string.format(
-                "Invalid parameter value for <%s>: 'enable' or 'disable' expected, got '%s'",
-                paramName, paramValue
-            ))
-        end
-        finalParamValue = paramValue
-    elseif paramName == 'group' then
-        finalParamValue = paramValue
-    elseif paramName == 'with' then
-        finalParamValue = paramValue
-    elseif paramName == 'prob' then
-        finalParamValue = validateInt(paramValue, 0, 100)
-        if finalParamValue == nil then
-            error(string.format(
-                "Invalid parameter value for <%s>: number between 0 to 100 expected, got '%s'",
-                paramName, paramValue
-            ))
-        end
-    elseif paramName == 'num' then
-        finalParamValue = validateInt(paramValue, 0)
-        if finalParamValue == nil then
-            error(string.format(
-                "Invalid parameter value for <%s>: number greater than or equal to 0 expected, got '%s'",
-                paramName, paramValue
-            ))
-        end
-    elseif paramName == 'min' then
-        finalParamValue = validateInt(paramValue, 0)
-        if finalParamValue == nil then
-            error(string.format(
-                "Invalid parameter value for <%s>: number greater than or equal to 0 expected, got '%s'",
-                paramName, paramValue
-            ))
-        end
-    elseif paramName == 'max' then
-        finalParamValue = validateInt(paramValue, 0)
-        if finalParamValue == nil then
-            error(string.format(
-                "Invalid parameter value for <%s>: number greater than or equal 0 expected, got '%s'",
-                paramName, paramValue
-            ))
-        end 
-    else
-        error(string.format("Unknown parameter name <%s>", paramName, paramValue))
-    end
-
-    return { name=paramName, value=finalParamValue }
-end
-
-local function parseTag(tag)
-    local finalParamValue
-    local _, _, paramName, paramValue = string.find(tag, "(%a+)%s*=%s*(.+)")
-    
-    -- soft fail on empty name or value
-    if paramName == nil or paramName == '' then return nil end
-    if paramValue == nil or paramValue == '' then return nil end
-    
-    -- check value is valid for known parameters
-    return validateParam(paramName, paramValue)
-end
-
-local function parseTags(tags)
-    local params = {}
-    for _, tag in ipairs(tags) do
-        local param = parseTag(tag)
-        if param ~= nil then            
-            params[param.name] = param.value
-        end
-    end
-    return params
-end
 
 local function debugParams(params)
     if params == nil then return '(nil)' end
@@ -150,37 +63,6 @@ local function debugParams(params)
         end
     end
     return table.concat(out, ', ')
-end
-
-local function genericDebugParams(params)
-    out = {}
-    for paramName, paramValue in pairs(params) do
-        table.insert(out, string.format('%s=%s', paramName, paramValue))
-    end
-    return table.concat(out, ', ')
-end
-
-local function extractParams(anActor)
-    log:Debug(sprintf("Parsing parameters for actor '%s'...",
-        actor.GetName(anActor)))
-
-    local success, result = pcall(function()
-        -- returns for the inline function, not extractParams
-        return parseTags(actor.GetTags(anActor))
-    end)
-    
-    if not success then
-        local error = result
-        log:Error(sprintf("Parameter parsing failed for actor '%s': %s",
-            actor.GetName(anActor), error))
-        return {}
-    end
-    
-    local params = result
-    
-    log:Debug(sprintf("  Found %s parameter(s): %s",
-        count(params), genericDebugParams(params)))
-    return params
 end
 
 -- Set visibility and or collision of an actor according to the given state
@@ -230,6 +112,44 @@ local function mergeActionArgs(actionArgsList)
 
     return { targets = targets, params = params }
 end
+
+local paramValidators = {
+    {
+        validates = function(params)
+            local Tables = require('common.Tables')
+            local knownParams = {
+                'act', 'prob', 'num', 'min', 'max', 'group', 'with'
+            }
+            for paramName, _ in pairs(params) do
+                if not tableContains(knownParams, paramName) then
+                    log:Error(sprintf("Unknown parameter name <%s>",
+                        paramName))
+                end
+            end
+            return params
+        end,
+    }, {
+        paramName = 'act',
+        validates = ParamParser.validators.inList{'enable', 'disable'},
+        error = "'enable' or 'disable' expected, got '%s'",
+    }, {
+        paramName = 'prob',
+        validates = ParamParser.validators.integer(0, 100),
+        error = "number between 0 to 100 expected, got '%s'",
+    }, {
+        paramName = 'num',
+        validates = ParamParser.validators.integer(0, 100),
+        error = "number greater than or equal to 0 expected, got '%s'",
+    }, {
+        paramName = 'min',
+        validates = ParamParser.validators.integer(0, 100),
+        error = "number greater than or equal to 0 expected, got '%s'",
+    }, {
+        paramName = 'max',
+        validates = ParamParser.validators.integer(0, 100),
+        error = "number greater than or equal 0 expected, got '%s'",
+    }
+}
 
 -- Instantiate the ActorStateManager
 function ActorStateManager:create()
@@ -384,10 +304,11 @@ function ActorStateManager:parseActors(flagTag)
     log:Info(sprintf("  Found %s actor(s)", #targets))
 
     -- extract params and store them along their corresponding actor (target)
+    local paramParser = ParamParser:new(paramValidators)
     local actionArgs = map(targets, function(target)
         return {
             target = target,
-            params = extractParams(target)
+            params = paramParser:parse(actor.GetTags(target))
         }
     end)
 

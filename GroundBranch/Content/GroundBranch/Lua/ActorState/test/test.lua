@@ -32,8 +32,8 @@ local isEmpty           = require('common.Tables').isEmpty
 local test              = require('common.UnitTest')
 
 -- logger debug level to for the package to test
-log:SetLogLevel('OFF')
--- log:SetLogLevel('ERROR')
+-- log:SetLogLevel('OFF')
+log:SetLogLevel('ERROR')
 -- log:SetLogLevel('INFO')
 -- log:SetLogLevel('DEBUG')
 
