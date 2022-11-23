@@ -17,12 +17,12 @@ if not _G['gbLuaDirInPath'] then
     end
 end
 
-local Functions = require('common.Functions')
-local Tables    = require('common.Tables')
-local Values    = require('common.Values')
+local Functions   = require('common.Functions')
+local Tables      = require('common.Tables')
+local Values      = require('common.Values')
+local ParamParser = require('common.ParamParser')
 
-local test      = require('common.UnitTest')
-
+local test = require('common.UnitTest')
 
 function main()
     print('Test Lua/common')
@@ -31,6 +31,7 @@ function main()
     test_Functions()
     test_Tables()
     test_Values()
+    test_ParamParser()
     
     print(' ')
     test.PrintSummary()
@@ -282,6 +283,159 @@ function test_Values()
         local value = {}
         assert(value == Values.default(value, defaultValue))
         assert(defaultValue == Values.default(nil, defaultValue))
+    end)
+end
+
+function test_ParamParser()
+    print()
+    print('Testing common.ParamParser...')
+    print()
+    test('ParamParser.parseParam', function()
+        assert(nil == ParamParser.parseParam(''))
+        assert(nil == ParamParser.parseParam('   '))
+        assert(nil == ParamParser.parseParam('This should not parse'))
+        do
+            local param = ParamParser.parseParam('Param Name=Param Value')
+            assert(param['name'] == 'Param Name')
+            assert(param.value == 'Param Value')
+        end
+        do
+            local param = ParamParser.parseParam('  Param Name  =  Param Value  ')
+            assert(param.name == 'Param Name')
+            assert(param.value == 'Param Value')
+        end
+    end)
+
+    test('ParamParser.validateParams', function()
+        --- @todo update UnitTest.lua to provide a way to expect errors
+        ---       then use it to test validation failure
+        do
+            local calledOnParam1 = false
+            local calledOnParam2 = false
+            local calledOnParams = false
+            local param1 = {}
+            local param2 = {}
+            local finalParams = ParamParser.validateParams({
+                param1=param1,
+                param2=param2,
+            }, {{
+                paramName = 'param1',
+                validates = function(value)
+                    calledOnParam1 = true
+                    assert(value == param1)
+                    return value
+                end,
+            }, {
+                paramName = 'param2',
+                validates = function(value)
+                    calledOnParam2 = true
+                    assert(value == param2)
+                    return value
+                end,
+            }, {
+                validates = function(localParams)
+                    calledOnParams = true
+                    assert(localParams.param1 == param1)
+                    assert(localParams.param2 == param2)
+                    localParams.addedParam = 'addedValue'
+                    return localParams
+                end,
+            }})
+            assert(calledOnParam1)
+            assert(calledOnParam2)
+            assert(calledOnParams)
+            assert(finalParams.param1 == param1)
+            assert(finalParams.param2 == param2)
+            assert(finalParams.addedParam == 'addedValue')
+        end
+        do
+            local params = ParamParser.validateParams({ param1=0 }, {{
+                paramName = 'param1',
+                validates = function(value) return value + 1 end,
+            }, {
+                paramName = 'param1',
+                validates = function(value) return value + 1 end,
+            }, {
+                validates = function(localParams)
+                    localParams.param1 = localParams.param1 + 1
+                    return localParams
+                end,
+            }})
+            assert(3 == params.param1)
+        end 
+    end)
+    test('ParamParser.extractParams', function()
+
+        local params = ParamParser.extractParams({
+            'param1=value1',
+            'param2=VALUE2',
+        },{{
+            paramName = 'param1',
+            validates = string.upper
+        }, {
+            paramName = 'param2',
+            validates = string.lower
+        },{
+            validates = function(localParams)
+                localParams.param1 = localParams.param1..'Suffix'
+                localParams.param2 = localParams.param2..'Suffix'
+                return localParams
+            end
+        }})
+        assert('VALUE1Suffix' == params.param1)
+        assert('value2Suffix' == params.param2)
+    end)
+    test('ParamParser.validators.integer', function()
+        do
+            local validator = ParamParser.validators.integer(nil, nil)
+            assert(nil == validator())
+            assert(nil == validator(''))
+            assert(nil == validator('0.1'))
+            assert(nil == validator('text'))
+            assert(268435456 == validator(268435456))
+            assert(268435456 == validator('268435456'))
+        end
+        do
+            local validator = ParamParser.validators.integer(-1, nil)
+            assert(nil == validator('-2'))
+            assert(-1 == validator('-1'))
+            assert(268435456 == validator('268435456'))
+        end
+        do
+            local validator = ParamParser.validators.integer(nil, 1)
+            assert(-268435456 == validator('-268435456'))
+            assert(1 == validator('1'))
+            assert(nil == validator('2'))
+        end
+        do
+            local validator = ParamParser.validators.integer(-1, 1)
+            assert(-1 == validator('-1'))
+            assert(0 == validator('0'))
+            assert(1 == validator('1'))
+            assert(nil == validator('-2'))
+            assert(nil == validator('2'))
+        end
+    end)
+    test('ParamParser:new:parse', function()
+
+        local params = ParamParser:new({{
+            paramName = 'param1',
+            validates = string.upper
+        }, {
+            paramName = 'param2',
+            validates = string.lower
+        },{
+            validates = function(localParams)
+                localParams.param1 = localParams.param1..'Suffix'
+                localParams.param2 = localParams.param2..'Suffix'
+                return localParams
+            end
+        }}):parse({
+            'param1=value1',
+            'param2=VALUE2',
+        })
+        assert('VALUE1Suffix' == params.param1)
+        assert('value2Suffix' == params.param2)
     end)
 end
 
