@@ -34,4 +34,8 @@ function Strings.printf(...)
     print(string.format(...))
 end
 
+function Strings.trim(str)
+    return (str:gsub("^%s*(.-)%s*$", "%1"))
+end
+
 return Strings
