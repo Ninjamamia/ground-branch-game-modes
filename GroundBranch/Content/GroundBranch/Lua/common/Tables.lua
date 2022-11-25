@@ -19,11 +19,19 @@ function Tables.debug(tbl, level)
     output = output.."{"..NEWLINE
 
     level = level + 1
-    for k, v in pairs(tbl) do
-        if type(v) == "table" then
-            output = output..Prefix(level)..k..": "..Tables.debug(v, level)
+    local keys = Tables.getKeys(tbl)
+    table.sort(keys)
+    for _, key in ipairs(keys) do
+        local value = tbl[key]
+
+        if type(value) == "table" then
+            if value.__tostring then
+                output = output..Prefix(level)..key..": "..tostring(value)..NEWLINE
+            else
+                output = output..Prefix(level)..key..": "..Tables.debug(value, level)
+            end
         else
-            output = output..Prefix(level)..k..": "..tostring(v)..NEWLINE
+            output = output..Prefix(level)..key..": "..tostring(value)..NEWLINE
         end
     end
     level = level - 1
@@ -63,6 +71,17 @@ function Tables.count(tbl)
     end, 0)
 end
 
+--- Sum elements in a table
+---
+--- @param tbl table    The table to sum elements from
+--- @return integer     The sum result
+---
+function Tables.sum(tbl)
+    return Tables.reduce(tbl, function(value, result)
+        return result + value
+    end, 0)
+end
+
 --- Test all elements of a table return true to the test function
 ---
 --- @param tbl table        The table to test elements of
@@ -82,6 +101,15 @@ end
 --- Alias for the Tables.all function
 function Tables.every(...)
     return Tables.all(...)
+end
+
+function Tables.each(tbl, testFn)
+    for _, value in pairs(tbl) do
+        if false == testFn(value) then
+            return false
+        end
+    end
+    return true
 end
 
 --- Test at least one element of a table return true to the test function
@@ -139,6 +167,14 @@ function Tables.filterNot(tbl, filterFn)
     return Tables.filterIf(tbl, filterFn, false)
 end
 
+function Tables.getKeys(tbl)
+    local keys = {}
+    for key, _ in pairs(tbl) do
+        table.insert(keys, key)
+    end
+    return keys
+end
+
 --- Merge tables without modifying them
 ---
 --- Values of the last tables will override those of the first tables in case of
@@ -158,15 +194,30 @@ function Tables.naiveMergeAssocTables(tbl1, ...)
     return result
 end
 
---- Make a table return a specific value instead of nil for unset keys
+--- Make a table return an arbitrary value instead of nil for unset keys
 ---
---- @param tbl table        The table to change the default value of
---- @param defaultValue     The value to return for unset keys
---- @return table           The table passed in as the first argument
+--- @param tbl table              The table to change the default value of
+--- @param defaultValue mixed     The value to return for unset keys, or a
+---                               function that would return the value
+--- @return table                 The table passed in as the first argument
 ---
 function Tables.setDefault(tbl, defaultValue)
-    setmetatable(tbl, { __index = function () return defaultValue end })
+    if 'function' == type(defaultValue) then
+        setmetatable(tbl, { __index = function(self, key) return defaultValue(tbl, key) end })
+    else
+        setmetatable(tbl, { __index = function() return defaultValue end })
+    end
     return tbl
+end
+--- Get a new table returningn arbitrary value instead of nil for unset keys
+---
+--- @param tbl table              The table to change the default value of
+--- @param defaultValue mixed     The value to return for unset keys, or a
+---                               function that would return the value
+--- @return table                 The table passed in as the first argument
+---
+function Tables.getDefault(defaultValue)
+    return Tables.setDefault({}, defaultValue)
 end
 
 --- Returns a copy of the provided table with shuffled entries.

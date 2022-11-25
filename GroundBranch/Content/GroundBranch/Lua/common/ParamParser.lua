@@ -141,16 +141,24 @@ function ParamParser.validateParams(params, validators)
                 if finalParamValue == nil then
                     local errorMsgTpl = 'Invalid parameter value for <%s>: %s'
                     if not validator.error then
-                        error(sprintf(errorMsgTpl, validator.paramName, initialParamValue))
+                        error(sprintf(errorMsgTpl, validator.paramName, initialParamValue), 0)
                     else
                         errorMsg = sprintf(validator.error, initialParamValue)
-                        error(sprintf(errorMsgTpl, validator.paramName, errorMsg))
+                        error(sprintf(errorMsgTpl, validator.paramName, errorMsg), 0)
                     end
                 end 
                 params[validator.paramName] = finalParamValue
             end
         else
-            params = validator.validates(params)
+            local result = validator.validates(params)
+            if result == nil then
+                if not validator.error then
+                    error('Invalid parameter values, no error set for the validates function', 0)
+                else
+                    error(validator.error, 0)
+                end
+            end
+            params = result
         end
     end
     return params
@@ -158,11 +166,6 @@ end
 
 ParamParser.validators = {}
 
--- function ParamParser.validators.integer(value)
---     value = tonumber(value)
---     if value ~= math.floor(value) then return nil end
---     return value
--- end
 function ParamParser.validators.integer(min, max)
     return function(value)
         value = tonumber(value)
@@ -179,45 +182,5 @@ function ParamParser.validators.inList(list)
         return value
     end
 end
-
---[[ LEGACY CODE
-    -- extract params and store them along their corresponding actor (target)
-    function ParamParser.parseActors(actors, validators)
-        return map(actors, function(anActor)
-            log:Debug(sprintf("Parsing parameters for actor '%s'...",
-            actor.GetName(anActor)))
-
-            local success, result = pcall(function()
-                return ParamParser.extractParams(actor.GetTags(anActor), validators)
-            end)
-
-
-            -- return nil on errors
-            if not success then
-                local error = result
-                log:Error(sprintf("Parameter parsing failed for actor '%s': %s",
-                    actor.GetName(anActor), error))
-                return nil
-            end
-
-            -- return nil when no parameters are found
-            local params = result
-            local paramsCount = count(params)
-            if paramsCount <= 0 then
-                log:Debug(sprintf("  No parameter found", paramsCount))
-                return nil
-            end
-
-            -- return the found parameters along their corresponding actor
-            log:Debug(sprintf("  Found %s parameter(s): %s",
-                    paramsCount, debugParams(params)))
-
-            return {
-                actor = anActor,
-                params = params,
-            }
-        end)
-    end
---]]
 
 return ParamParser

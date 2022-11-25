@@ -33,17 +33,26 @@
 ---
 local log              = require('ActorState.ActorStateLogger')
 local ParamParser      = require('common.ParamParser')
-local sprintf          = require("common.Strings").sprintf
+local sprintf          = require('common.Strings').sprintf
 local count            = require('common.Tables').count
 local tableIsEmpty     = require('common.Tables').isEmpty
 local tableContains    = require('common.Tables').Index
 local map              = require('common.Tables').map
+local debugTable       = require('common.Tables').debug
 local tableNotEmpty    = require('common.Tables').notEmpty
 local mergeAssoc       = require('common.Tables').naiveMergeAssocTables
 local reduce           = require('common.Tables').reduce
 local defaultTable     = require('common.Tables').setDefault
 local shuffleTable     = require('common.Tables').ShuffleTable
 local default          = require('common.Values').default
+
+local sum = require('common.Tables').sum
+local empty = require('common.Tables').isEmpty
+local getKeys = require('common.Tables').getKeys
+local edgeListToAdjacencyMap = require('common.Graphs').edgeListToAdjacencyMap
+local dissolveGraphEdges = require('common.Graphs').dissolveEdges
+local isConnectedGraph = require('common.Graphs').isConnected
+local connectWithRandomEdges = require('common.Graphs').connectWithRandomEdges
 
 local ActorStateManager = {}
 
@@ -116,7 +125,6 @@ end
 local paramValidators = {
     {
         validates = function(params)
-            local Tables = require('common.Tables')
             local knownParams = {
                 'act', 'prob', 'num', 'min', 'max', 'group', 'with'
             }
@@ -154,7 +162,6 @@ local paramValidators = {
 -- Instantiate the ActorStateManager
 function ActorStateManager:create()
     local self = setmetatable({}, self)
-    self.flagTag = default('ActorState')
     self.stateByActorName = defaultTable({}, true)
     -- ^ this is a map of actor states by actor name. Used when we need to
     -- decide the state of an actor based on the state of other actors. Enmpty
@@ -234,7 +241,6 @@ function ActorStateManager:setState(targets, params)
         max = math.max(min, math.min(max, targetCount))
         -- pick a random number of targets to enable
         num = math.random(min, max)
-        -- print(string.format('min: %s, max: %s, computed num: %s', min, max, num))
     end
     local linkedActorName = params.with
     local shouldCompleteLinkedActorName
@@ -273,6 +279,13 @@ function ActorStateManager:setState(targets, params)
         result[actor.GetName(target)] = shouldEnable
     end
 
+    local actStr = reverse and 'enabled' or 'disabled'
+    local actCount = sum(map(result, function(shouldEnable)
+        if reverse ~= shouldEnable then return 1 else return 0 end
+    end))
+
+    log:Info(sprintf('%s %s actors', actStr, actCount))
+
     return result
 end
 
@@ -293,9 +306,9 @@ function ActorStateManager:setStateFromList(actions)
     end
 end
 
--- Parse actors tags to create a list of actions
-function ActorStateManager:parseActors(flagTag)
-    flagTag = default(flagTag, self.flagTag)
+-- Parse actors tags for simple state - return list of actions
+function ActorStateManager:parseActors()
+    local flagTag = 'ActorState'
     
     log:Info(sprintf("Gathering actors with tag '%s'...", flagTag))
     
@@ -320,6 +333,190 @@ function ActorStateManager:parseActors(flagTag)
     log:Info(sprintf("  Created %s action(s)",  #actions))
 
     return actions
+end
+
+-- Parse actors tags for graph - return list of actions
+function ActorStateManager:parseActorsGraphConnector()
+    local flagTag = 'GraphConnector'
+    -- the actors have tags allowing to build an edge list, a common
+    -- representation for a graph, each edge is connecting exactly two nodes    
+
+    -- get actors wearing the flag tag
+    log:Info(sprintf("Gathering actors with tag '%s'...", flagTag))
+    local actorList = gameplaystatics.GetAllActorsWithTag(flagTag)
+    for _, act in pairs(actorList) do
+        log:Debug(sprintf('  Found actor: %s', actor.GetName(act)))
+    end
+    log:Debug(sprintf('  Found %s actors', #actorList))
+    
+    -- stop here if no actors were found
+    if empty(actorList) then
+        log:Info('No actors found, nothing to do')
+        return {}
+    end
+    
+    -- parsing actors params from their tags
+    log:Info('Parsing actors parameters...')
+    local paramParser = ParamParser:new({
+        {
+            error = "Parameters 'room1' and 'room2' are required",
+            validates = function(params)
+                if not params.room1 then return nil end
+                if not params.room2 then return nil end
+                return params
+            end
+        }, {
+            error = "Parameters 'room1' and 'room2' cannot be equal",
+            validates = function(params)
+                if params.room1 == params.room2 then return nil end
+                return params
+            end
+        }})
+    local actorsAndParams = map(actorList, function(actorItem) return {
+        actor = actorItem,
+        params = paramParser:parse(actor.GetTags(actorItem))
+    } end)
+
+    -- build a map of actors per edges
+    local actorsPerEdges = {}
+    for _, data in ipairs(actorsAndParams) do
+        -- Create a 2 dimensional array containing lists of actors. Allows to
+        -- retrieve a list of actors for a given couple of nodes, ie. an edge.
+        -- Unfortunately the order of the nodes in the couple cannot be
+        -- predicted, so we have to test both [node1][node2] and [node2][node1].
+        
+        --- @todo might be a nice to implement a set and use it here
+
+        if not data.params.room1 or not data.params.room2 then break end
+
+        local node1 = data.params.room1
+        local node2 = data.params.room2
+
+        -- we have to try both ways [node1][node2] and [node2][node1]
+        if actorsPerEdges[node1] and actorsPerEdges[node1][node2] then
+            -- if edge is already in the map, append actor
+            table.insert(actorsPerEdges[node1][node2], data.actor)
+
+        elseif actorsPerEdges[node2] and actorsPerEdges[node2][node1] then
+            -- if edge is already in the map, append actor
+            table.insert(actorsPerEdges[node2][node1], data.actor)
+
+        else
+            -- if not, create a new list with the actor
+            if not actorsPerEdges[node1] then actorsPerEdges[node1] = {} end
+            actorsPerEdges[node1][node2] = { data.actor }
+        end
+    end
+
+    -- build a proper edge list
+    log:Info('Building edge list...')
+    -- create a proper edge list from the 3D array
+    local edgeList = {}
+    for node1, subActorsPerEdges in pairs(actorsPerEdges) do
+        for node2, actors in pairs(subActorsPerEdges) do
+            local edge = { node1, node2 }
+            table.sort(edge)
+            table.insert(edgeList, edge)
+            log:Debug(sprintf('  Found edge: %s / %s (%s actors)', node1, node2, #actors))
+        end
+    end
+    log:Debug(sprintf('  Found %s edges', #edgeList))
+    -- stop here if no edges were found
+    if empty(edgeList) then
+        log:Warn('No edges found, aborting process')
+        return {}
+    end
+
+
+
+
+    -- turn edge list to adjacency map
+    log:Info('Building adjacency map...')
+    local adjacencyMap = edgeListToAdjacencyMap(edgeList)
+    for node,_ in pairs(adjacencyMap) do
+        log:Debug(sprintf('  Found node: %s', node))
+    end
+    log:Debug(sprintf('  Found %s nodes', count(adjacencyMap)))
+
+    -- extract a proper node list (sorted)
+    local nodeList = getKeys(adjacencyMap)
+    table.sort(nodeList)
+
+
+    print()
+
+
+    -- pick random number of edges to dissolve
+    local numberOfEdgesToDissolve = math.random(0, #edgeList)
+    dissolveGraphEdges(edgeList, 3)
+    -- dissolve a number of edges from the top of the list
+
+    print()
+
+
+
+
+
+
+    -- check if graph is connected
+    local isGraphConnected = isConnectedGraph(adjacencyMap)
+
+    -- log basic graph data
+    log:Info(sprintf(
+        'Found graph: %s nodes, %s potential edges, %s (%s actors)',
+        #edgeList,
+        count(adjacencyMap),
+        isGraphConnected and 'connectable' or 'non-connectable',
+        #actorList
+    ))
+    
+    -- only process connected graph
+    if not isGraphConnected then
+        log:Error('Graph is NOT connectable, abort processing')
+        return nil
+    end
+
+    -- select random edges to create a connected graph
+    log:Debug('Connecting graph with random edges...')
+    local selectedEdgeList = connectWithRandomEdges(nodeList, edgeList)
+    for _, edge in pairs(selectedEdgeList) do
+        local node1, node2 = edge[1], edge[2]
+        log:Debug(sprintf('  Selected edge: %s / %s', node1, node2))
+    end
+    log:Info(sprintf('Selected %s of the potential edges for the final graph', #selectedEdgeList))
+    
+    -- arrange the actors of the selected edges in a list actor state groups
+    log:Debug('Creating actor state groups...')
+    local actorStateGroups = map(selectedEdgeList, function(nodes)
+        
+        local groupName = sprintf('graph_edge_%s/%s', nodes[1], nodes[2])
+        local targets = actorsPerEdges[nodes[1]][nodes[2]]
+        
+        local prob = math.random(1,100)
+        local params = { group=groupName, act='disable' }
+        
+        if 60 >= prob then
+            -- 60% probability to have one opening only
+            params.num = 1
+            log:Debug(sprintf('  Created group: %s with 1 actor disabled', groupName))
+        elseif 65 >= prob then
+            -- 5% probability to have two openings
+            params.num = 2
+            log:Debug(sprintf('  Created group: %s with 2 actors disabled', groupName))
+        else
+            -- 35% probability to have wall completely open
+            log:Debug(sprintf('  Created group: %s with all actors disabled', groupName))
+        end
+
+        return {
+            targets = targets,
+            params = params,
+        }
+    end)
+    log:Info(sprintf('Created %s actor state groups', #actorStateGroups))
+
+    -- return a list of actor state groups
+    return actorStateGroups
 end
 
 return ActorStateManager

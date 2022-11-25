@@ -21,6 +21,7 @@ local Functions   = require('common.Functions')
 local Tables      = require('common.Tables')
 local Values      = require('common.Values')
 local ParamParser = require('common.ParamParser')
+local Graphs = require('common.Graphs')
 
 local test = require('common.UnitTest')
 
@@ -28,10 +29,11 @@ function main()
     print('Test Lua/common')
     print('---------------')
     
-    test_Functions()
-    test_Tables()
-    test_Values()
-    test_ParamParser()
+    -- test_Functions()
+    -- test_Tables()
+    -- test_Values()
+    -- test_ParamParser()
+    test_Graphs()
     
     print(' ')
     test.PrintSummary()
@@ -244,12 +246,33 @@ function test_Tables()
     end)
 
     test('Tables.setDefault', function()
-        local tbl = {'value1', key2='value2'}
-        local defaultValue = {}
-        Tables.setDefault(tbl, defaultValue)
-        assert(tbl[1] == 'value1')
-        assert(tbl.key2 == 'value2')
-        assert(tbl.unsetKey == defaultValue)
+        do
+            local tbl = { 'value1', key2='value2' }
+            local defaultValue = {}
+            
+            Tables.setDefault(tbl, defaultValue)
+            
+            assert(tbl[1] == 'value1')
+            assert(tbl.key2 == 'value2')
+            assert(tbl.unsetKey == defaultValue)
+        end
+        do
+            local tbl = {'value1', key2='value2'}
+            local defaultValue = 0
+            local defaultValueFn = function(tbl2, key)
+                assert(tbl2 == tbl)
+                assert(key == 'unsetKey')
+                defaultValue = defaultValue + 1
+                return defaultValue
+            end
+
+            Tables.setDefault(tbl, defaultValueFn)
+
+            assert(tbl[1] == 'value1')
+            assert(tbl.key2 == 'value2')
+            assert(tbl.unsetKey == 1)
+            assert(tbl.unsetKey == 2)
+        end
     end)
 
     --- @todo add test for Tables.reduce
@@ -436,6 +459,28 @@ function test_ParamParser()
         })
         assert('VALUE1Suffix' == params.param1)
         assert('value2Suffix' == params.param2)
+    end)
+end
+function test_Graphs()
+    print()
+    print('Testing common.Graphs...')
+    print()
+    test('Graphs.dissolveEdges', function()
+
+        -- local edgeList = {
+        --     { 'A', 'B' }, { 'B', 'C' },
+        --     { 'D', 'E' }, { 'E', 'F' },
+        --     { 'G', 'H' }, { 'H', 'I' },
+        --     { 'A', 'D' }, { 'B', 'E' }, { 'C', 'F' },
+        --     { 'D', 'G' }, { 'E', 'H' }, { 'F', 'I' },
+        -- }
+        local edgeList = {
+            { 'A', 'B' }, { 'B', 'C' },
+            { 'C', 'D' }, { 'D', 'A' },
+        }
+
+        Graphs.dissolveEdges(edgeList, 2)
+        
     end)
 end
 

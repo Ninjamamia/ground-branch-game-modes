@@ -1,5 +1,5 @@
 local AdminTools = {
-	Admins = { "Bus", "NotSoLoneWolf" },
+	Admins = { "Bus", "NotSoLoneWolf", "Ninjamamia" },
 	DebugMessageLevel = 1
 }
 

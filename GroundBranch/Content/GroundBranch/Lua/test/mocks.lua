@@ -1,15 +1,17 @@
 local Mocks = {}
 
+local each = require('common.Tables').each
+
 --
 -- Mocking actor UserData
 --
 Mocks.Actor = { count = 0 }
 Mocks.Actor.__index = Mocks.Actor;
 
-function Mocks.Actor.create()
+function Mocks.Actor.create(name)
     Mocks.Actor.count = Mocks.Actor.count + 1
     local self = setmetatable({
-        name = "test_actor_"..Mocks.Actor.count,
+        name = name or "test_actor_"..Mocks.Actor.count,
         tags = {},
         active = nil,
         visible = nil,
@@ -18,15 +20,14 @@ function Mocks.Actor.create()
     return self
 end
 function Mocks.Actor.GetName(self) return self.name end
-function Mocks.Actor.SetTag(self, tag) table.insert(self.tags, tag) end
 function Mocks.Actor.GetTags(self) return self.tags end
-function Mocks.Actor.SetActive(self, value) self.active = value end
-function Mocks.Actor.SetHidden(self, value) self.visible = not value end
-function Mocks.Actor.SetEnableCollision(self, value) self.collide = value end
+function Mocks.Actor.SetTag(self, tag) table.insert(self.tags, tag); return self end
+function Mocks.Actor.SetTags(self, tags)  each(tags, function(tag) self:SetTag(tag) end); return self end
+function Mocks.Actor.SetActive(self, value) self.active = value; return self end
+function Mocks.Actor.SetHidden(self, value) self.visible = not value; return self end
+function Mocks.Actor.SetEnableCollision(self, value) self.collide = value; return self end
 function Mocks.Actor.__tostring(self)
-    return string.format(
-        '<Mocks.Actor> name=%s visible=%s collide=%s active=%s tags={ %s }',
-        self.name, self.visible, self.collide, self.active, table.concat(self.tags, ', '))
+    return string.format('<Mocks.Actor> name=%s', self.name)
 end
 function Mocks.Actor.__concat(self, other)
     return tostring(self)..tostring(other)

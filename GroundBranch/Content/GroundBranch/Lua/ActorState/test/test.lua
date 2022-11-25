@@ -30,12 +30,14 @@ local filter            = require('common.Tables').filter
 local isEmpty           = require('common.Tables').isEmpty
 
 local test              = require('common.UnitTest')
+local tprint = function(tbl) return print(require('common.Tables').debug(tbl)) end
 
 -- logger debug level to for the package to test
 -- log:SetLogLevel('OFF')
-log:SetLogLevel('ERROR')
+-- log:SetLogLevel('ERROR')
 -- log:SetLogLevel('INFO')
 -- log:SetLogLevel('DEBUG')
+
 
 -- function returning a list of 10 mocked actor instances
 local function getTargets()
@@ -88,15 +90,16 @@ function main()
     print('Test Lua/ActorState')
     print('--------------------')
     
+    -- dunno why but common.UnitTest changes print behaviour, have to print a
+    -- space to have an empty line
     print(' ')
     print('Testing ActorState.ActorStateManager...');
     print(' ')
-    -- dunno why but UnitTest.lua changes print behaviour, have to print a space
-    test_enableActor()
-    test_parseActors()
-    test_setStateFromList() 
-
-    test_setState()
+    -- test_enableActor()
+    -- test_parseActors()
+    -- test_setStateFromList() 
+    -- test_setState()
+    test_parseActorsGraphConnector()
 
     print(' ')
     test.PrintSummary()
@@ -265,6 +268,58 @@ function test_parseActors()
     end)
 end
 
+function test_parseActorsGraphConnector()
+    
+    test('ActorStateManager:parseActorsGraphConnector', function()
+        
+        do -- should do nothing
+            gameplaystatics.reset()
+
+            local actorStateManager = ActorStateManager:create()
+            local actionList = actorStateManager:parseActorsGraphConnector()
+            local result = actorStateManager:setStateFromList(actionList)
+            
+            assert(isEmpty(actionList))
+        end
+        do -- should do nothing
+            gameplaystatics.reset()
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector' }))
+
+            local actorStateManager = ActorStateManager:create()
+            local actionList = actorStateManager:parseActorsGraphConnector()
+            local result = actorStateManager:setStateFromList(actionList)
+            
+            assert(isEmpty(actionList))
+        end
+        do -- parameters validation error since room 1 and 2 cannot be equal
+            gameplaystatics.reset()        
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=A', 'room2=A' }))
+
+            local actorStateManager = ActorStateManager:create()
+            local actionList = actorStateManager:parseActorsGraphConnector()
+            local result = actorStateManager:setStateFromList(actionList)
+            
+            assert(isEmpty(actionList))
+        end
+        do -- should work fine
+            gameplaystatics.reset()
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=A', 'room2=B' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=A', 'room2=B' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=B', 'room2=C' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=B', 'room2=C' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=C', 'room2=D' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=C', 'room2=D' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=D', 'room2=A' }))
+            gameplaystatics.addActor(actor.create():SetTags({ 'GraphConnector', 'room1=D', 'room2=A' }))
+
+            local actorStateManager = ActorStateManager:create()
+            local actionList = actorStateManager:parseActorsGraphConnector()
+            actorStateManager:setStateFromList(actionList)
+        end
+    end)
+
+end
+
 function test_setStateFromList()
     test('ActorStateManager.setStateFromList', function()
         do
@@ -319,9 +374,6 @@ function test_setState()
         do -- Enable all targets'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
@@ -350,9 +402,6 @@ function test_setState()
         do -- Disable all targets'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
@@ -374,9 +423,6 @@ function test_setState()
         do -- Enable specific number of targets'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))            
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
@@ -399,9 +445,6 @@ function test_setState()
         do -- Disable specific number of targets'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
@@ -424,9 +467,6 @@ function test_setState()
         do -- Enable a random number of targets with a max'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
@@ -445,9 +485,6 @@ function test_setState()
         do -- Disable a random number of targets with a minimum'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
@@ -466,9 +503,6 @@ function test_setState()
         do -- Enable a random number of targets with a maximum'
             local function runTest(params)
                 local targets = getTargets()
-                -- print(debugTargets(targets))
-                -- print(debugParams(params))
-                -- log:SetLogLevel('DEBUG')
                 
                 ActorStateManager:create():setState(targets, params)
 
