@@ -171,7 +171,8 @@ function Manager:OnSpawnQueueTick()
 				spawnPoint:SpawnAI(uuid, CurrSpawnItem.freezeTime)
 				local characterController = gameplaystatics.GetAllActorsWithTag(uuid)
 				if characterController ~= nil then
-					print('AgentsManager: Spawned ' .. uuid)
+					print('AgentsManager: Spawned ' .. uuid .. ' @ ' .. actor.GetName(spawnPoint.Actor))
+
 					characterController = characterController[1]
 					local NewAI = AI:Create(self, uuid, characterController, spawnPoint, CurrSpawnItem.eliminationCallback)
 					table.insert(self.Agents, NewAI)
