@@ -223,6 +223,16 @@ function Manager:Start()
 	)
 end
 
+function Manager:OnPlayerCanEnterPlayArea(PlayerState)
+	if
+		gamemode.GetRoundStage() == 'InProgress' or
+		player.GetInsertionPoint(PlayerState) ~= nil
+	then
+		return true
+	end
+	return false
+end
+
 function Manager:OnGetSpawnInfo(PlayerState)
 	local Agent = self.PlayersByName[player.GetName(PlayerState)]
 	if Agent == nil then

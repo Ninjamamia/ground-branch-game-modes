@@ -262,13 +262,7 @@ end
 
 function Mode:PlayerCanEnterPlayArea(PlayerState)
 	print('PlayerCanEnterPlayArea')
-	if
-		gamemode.GetRoundStage() == 'InProgress' or
-		player.GetInsertionPoint(PlayerState) ~= nil
-	then
-		return true
-	end
-	return false
+	return self.AgentsManager:OnPlayerCanEnterPlayArea(PlayerState)
 end
 
 function Mode:GetSpawnInfo(PlayerState)
