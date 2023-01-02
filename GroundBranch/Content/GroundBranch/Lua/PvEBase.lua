@@ -33,7 +33,7 @@ local Mode = {
 		},
 		RoundTime = {
 			Min = 3,
-			Max = 60,
+			Max = 120,
 			Value = 60,
 			AdvancedSetting = false,
 		},
