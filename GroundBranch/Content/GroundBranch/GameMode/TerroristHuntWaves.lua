@@ -2,7 +2,7 @@ local AdminTools = require('AdminTools')
 local Tables = require("Common.Tables")
 
 -- Create a deep copy of the singleton
-local super = Tables.DeepCopy(require("TerroristHunt"))
+local super = Tables.DeepCopy(require("GroundBranch.GameMode.TerroristHunt"))
 
 -- Our sub-class of the singleton
 local Mode = setmetatable({}, { __index = super })

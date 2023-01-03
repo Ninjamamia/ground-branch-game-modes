@@ -27,7 +27,7 @@ local MSpawnsGroups         = require('Spawns.Groups')
 local Callback 				= require('common.Callback')
 
 -- Create a deep copy of the singleton
-local super = Tables.DeepCopy(require("KillConfirmed"))
+local super = Tables.DeepCopy(require("GroundBranch.GameMode.KillConfirmed"))
 
 -- Our sub-class of the singleton
 local Mode = setmetatable({}, { __index = super })
