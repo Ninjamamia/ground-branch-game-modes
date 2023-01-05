@@ -129,6 +129,7 @@ end
 function Mode:PreInit()
 	print('Pre initialization')
 	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
+	self.AllNavBlocks = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_MissionNavBlock.BP_MissionNavBlock_C')
 	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
 	self.OnCharacterDiedCallback = CallbackList:Create()
@@ -249,6 +250,10 @@ function Mode:PreRoundCleanUp()
 	for name, objective in pairs(self.Objectives) do
 		print("Resetting " .. name)
 		objective:Reset()
+	end
+	print("Resetting all NavBlocks...")
+	for _, NavBlock in ipairs(self.AllNavBlocks) do
+		actor.SetActive(NavBlock, true)
 	end
 end
 
