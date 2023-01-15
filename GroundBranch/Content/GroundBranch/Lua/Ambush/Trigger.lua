@@ -28,6 +28,9 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     self.Activates = {}
     self.Mines = {}
     self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
+    self.TriggerOnRelease = actor.HasTag(Actor, 'TriggerOnRelease')
+    self.FirstAgent = nil
+    self.Message = nil
     print(tostring(self) .. ' found.')
     print('  Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -46,6 +49,8 @@ function Trigger:Create(Parent, Actor, IsLaptop)
                 table.insert(self.Activates, value)
             elseif key == "Mine" then
                 table.insert(self.Mines, value)
+            elseif key == "Message" then
+                self.Message = value
             else
                 self[key] = tonumber(value)
             end
@@ -151,6 +156,12 @@ function Trigger:Trigger()
         if ActivateTrigger ~= nil then
             ActivateTrigger:Activate(true)
             ActivateTrigger:SyncState()
+        else
+            local ActivateMine = self.Parent.MinesByName[Activate]
+            if ActivateMine ~= nil then
+                ActivateMine:Activate(true)
+                ActivateMine:SyncState()
+            end
         end
     end
     for _, MineName in pairs(self.Mines) do
@@ -169,19 +180,25 @@ function Trigger:OnBeginOverlap(Agent)
             self.AgentsCount = self.AgentsCount + 1
             local Message = tostring(Agent) .. ' entered ' .. tostring(self) .. ', ' .. self.AgentsCount .. ' agents present'
             if self.AgentsCount == 1 then
-                if self.tiPresence < 0.2 then
-                    AdminTools:ShowDebug(Message)
-                    self:Trigger()
-                else
-                    Message = Message .. ', will trigger in ' .. self.tiPresence .. 's'
-                    AdminTools:ShowDebug(Message)
-                    timer.Set(
-                        "Trigger_" .. self.Name,
-                        self,
-                        self.Trigger,
-                        self.tiPresence,
-                        false
-                    )
+                self.FirstAgent = Agent
+                if self.Message ~= nil then
+                    Agent:DisplayMessage(self.Message, 'Upper', 3.0)
+                end
+                if self.TriggerOnRelease == false then
+                    if self.tiPresence < 0.2 then
+                        AdminTools:ShowDebug(Message)
+                        self:Trigger()
+                    else
+                        Message = Message .. ', will trigger in ' .. self.tiPresence .. 's'
+                        AdminTools:ShowDebug(Message)
+                        timer.Set(
+                            "Trigger_" .. self.Name,
+                            self,
+                            self.Trigger,
+                            self.tiPresence,
+                            false
+                        )
+                    end
                 end
             end
         end
@@ -194,6 +211,12 @@ function Trigger:OnEndOverlap(Agent)
             self.Agents[Agent.Name] = nil
             self.AgentsCount = self.AgentsCount - 1
             local Message = tostring(Agent) .. ' left ' .. tostring(self) .. ', ' .. self.AgentsCount .. ' agents present'
+            if self.TriggerOnRelease == true then
+                if Agent == self.FirstAgent then
+                    AdminTools:ShowDebug('This was the first agent (TriggerOnRelease set), tiggering...')
+                    self:Trigger()
+                end
+            end
             if self.AgentsCount == 0 then
                 timer.Clear("Trigger_" .. self.Name, self)
                 Message = Message .. ', timer aborted'
