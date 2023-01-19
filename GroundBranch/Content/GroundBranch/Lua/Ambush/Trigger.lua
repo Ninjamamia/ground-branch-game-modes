@@ -32,7 +32,8 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
     self.TriggerOnRelease = actor.HasTag(Actor, 'TriggerOnRelease')
     self.FirstAgent = nil
-    self.Message = nil
+    self.MessageToFirst = nil
+    self.MessageToAll = nil
     print('  ' .. tostring(self) .. ' found.')
     print('    Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -51,8 +52,10 @@ function Trigger:Create(Parent, Actor, IsLaptop)
                 table.insert(self.ActivatePatterns, value)
             elseif key == "Mine" then
                 table.insert(self.MinePatterns, value)
-            elseif key == "Message" then
-                self.Message = value
+            elseif key == "MessageToFirst" then
+                self.MessageToFirst = value
+            elseif key == "MessageToAll" then
+                self.MessageToAll = value
             else
                 self[key] = tonumber(value)
             end
@@ -201,8 +204,11 @@ function Trigger:OnBeginOverlap(Agent)
             local Message = tostring(Agent) .. ' entered ' .. tostring(self) .. ', ' .. self.AgentsCount .. ' agents present'
             if self.AgentsCount == 1 then
                 self.FirstAgent = Agent
-                if self.Message ~= nil then
-                    Agent:DisplayMessage(self.Message, 'Upper', 3.0)
+                if self.MessageToFirst ~= nil then
+                    Agent:DisplayMessage(self.MessageToFirst, 'Upper', 3.0)
+                end
+                if self.MessageToAll ~= nil then
+                    Agent.Team:DisplayMessageToAlivePlayers(self.MessageToAll, 'Upper', 3.0)
                 end
                 if self.TriggerOnRelease == false then
                     if self.tiPresence < 0.2 then
