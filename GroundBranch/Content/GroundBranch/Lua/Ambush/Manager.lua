@@ -30,6 +30,22 @@ function AmbushManager:Create(teamTag)
         count = count + 1
     end
     print('Found a total of ' .. count .. ' blasts.')
+    print('Gathering mines...')
+    local Mines = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/GameMode/BP_BigBomb.BP_BigBomb_C', 'Mine')
+    count = 0
+    for _, Actor in ipairs(Mines) do
+        local NewMine = Mine:Create(self, Actor)
+        self.MinesByName[NewMine.Name] = NewMine
+        for _, Defuser in ipairs(NewMine.Defusers) do
+            local defuserName = Defuser:GetName()
+            if self.MinesByDefuserName[defuserName] == nil then
+                self.MinesByDefuserName[defuserName] = {}
+            end
+            table.insert(self.MinesByDefuserName[defuserName], NewMine)
+        end
+        count = count + 1
+    end
+    print('Found a total of ' .. count .. ' mines.')
     print('Gathering ambush triggers...')
     count = 0
     -- search for laptops first explicitly because they have a different debug visiblily behaviour
@@ -48,22 +64,10 @@ function AmbushManager:Create(teamTag)
         end
     end
     print('Found a total of ' .. count .. ' ambush triggers.')
-    print('Gathering mines...')
-    local Mines = gameplaystatics.GetAllActorsOfClassWithTag('/Game/GroundBranch/Props/GameMode/BP_BigBomb.BP_BigBomb_C', 'Mine')
-    count = 0
-    for _, Actor in ipairs(Mines) do
-        local NewMine = Mine:Create(self, Actor)
-        self.MinesByName[NewMine.Name] = NewMine
-        for _, Defuser in ipairs(NewMine.Defusers) do
-            local defuserName = Defuser:GetName()
-            if self.MinesByDefuserName[defuserName] == nil then
-                self.MinesByDefuserName[defuserName] = {}
-            end
-            table.insert(self.MinesByDefuserName[defuserName], NewMine)
-        end
-        count = count + 1
+    print('Performing trigger post init tasks...')
+    for _, CurrTrigger in pairs(self.TriggersByName) do
+        CurrTrigger:PostInit()
     end
-    print('Found a total of ' .. count .. ' mines.')
 	print('Hooking to callbacks')
 	if gamemode.script.OnCharacterDiedCallback ~= nil then
 		gamemode.script.OnCharacterDiedCallback:Add(Callback:Create(self, self.OnCharacterDied))

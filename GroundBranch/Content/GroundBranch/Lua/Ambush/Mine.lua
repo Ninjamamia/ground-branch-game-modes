@@ -24,27 +24,27 @@ function Mine:Create(Parent, Actor)
     self.Defusers = {}
     self.BlastZones = {}
     self.Hidden = actor.HasTag(Actor, 'Hidden')
-    print(tostring(self) .. ' found.')
-    print('  Parameters:')
+    print('  ' .. tostring(self) .. ' found.')
+    print('    Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
         local key
         local value
         _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
-            print("    " .. Tag)
+            print('      ' .. Tag)
             if key == 'BlastZone' then
                 local BlastZone = self.Parent.BlastZonesByName[value]
                 if BlastZone ~= nil then
                     table.insert(self.BlastZones, BlastZone)
                 else
-                    print('    BlastZone ' .. value .. ' is unknown!')
+                    print('      BlastZone ' .. value .. ' is unknown!')
                 end
             else
                 self[key] = tonumber(value)
             end
         end
     end
-    print('  Gathering props...')
+    print('    Gathering props...')
     for _, Actor in ipairs(gameplaystatics.GetAllActorsWithTag(self.Name)) do
         local NewProp = Prop:Create(Parent, Actor)
         self.Props[NewProp.Name] = NewProp
@@ -56,7 +56,7 @@ function Mine:Create(Parent, Actor)
         table.insert(self.Defusers, NewDefuser)
     end
     self.PropsCount = self.PropsCount - #self.Defusers
-    print('  Found a total of ' .. self.PropsCount .. ' props and ' .. #self.Defusers .. ' defusers.')
+    print('    Found a total of ' .. self.PropsCount .. ' props and ' .. #self.Defusers .. ' defusers.')
     return self
 end
 

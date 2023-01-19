@@ -25,20 +25,22 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     self.Tag = nil
     self.State = 'Inactive'
     self.Spawns = {}
+    self.ActivatePatterns = {}
     self.Activates = {}
+    self.MinePatterns = {}
     self.Mines = {}
     self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
     self.TriggerOnRelease = actor.HasTag(Actor, 'TriggerOnRelease')
     self.FirstAgent = nil
     self.Message = nil
-    print(tostring(self) .. ' found.')
-    print('  Parameters:')
+    print('  ' .. tostring(self) .. ' found.')
+    print('    Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
         local key
         local value
         _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
-            print("    " .. Tag)
+            print("      " .. Tag)
             if key == "Group" then
                 self.Tag = value
                 self.Spawns = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClassWithTag(
@@ -46,9 +48,9 @@ function Trigger:Create(Parent, Actor, IsLaptop)
                     value
                 ))
             elseif key == "Activate" then
-                table.insert(self.Activates, value)
+                table.insert(self.ActivatePatterns, value)
             elseif key == "Mine" then
-                table.insert(self.Mines, value)
+                table.insert(self.MinePatterns, value)
             elseif key == "Message" then
                 self.Message = value
             else
@@ -56,11 +58,41 @@ function Trigger:Create(Parent, Actor, IsLaptop)
             end
         end
     end
-    print('  Summary:')
-    print("    Spawns: " .. #self.Spawns)
-    print("    Activation links: " .. #self.Activates)
-    print("    Mines: " .. #self.Mines)
     return self
+end
+
+function Trigger:PostInit()
+    print('  ' .. tostring(self) .. ' post init...')
+    print('    Processing mine links...')
+    for _, value in ipairs(self.MinePatterns) do
+        local pattern = string.gsub(value, '%*', '.*') .. '$'
+        for name, mine in pairs(self.Parent.MinesByName) do
+            if string.find(name, pattern) ~= nil then
+                print('      ' .. tostring(mine) .. ' added')
+                table.insert(self.Mines, mine)
+            end
+        end
+    end
+    print('    Processing activation links...')
+    for _, value in ipairs(self.ActivatePatterns) do
+        local pattern = string.gsub(value, '%*', '.*') .. '$'
+        for name, item in pairs(self.Parent.TriggersByName) do
+            if string.find(name, pattern) ~= nil then
+                print('      ' .. tostring(item) .. ' added')
+                table.insert(self.Activates, item)
+            end
+        end
+        for name, item in pairs(self.Parent.MinesByName) do
+            if string.find(name, pattern) ~= nil then
+                print('      ' .. tostring(item) .. ' added')
+                table.insert(self.Activates, item)
+            end
+        end
+    end
+    print('    Summary:')
+    print("      Spawns: " .. #self.Spawns)
+    print("      Activation links: " .. #self.Activates)
+    print("      Mines: " .. #self.Mines)
 end
 
 function Trigger:__tostring()
@@ -151,24 +183,12 @@ function Trigger:Trigger()
     end
     self.ActorState:SetActive(false)
     self.ActorState:SetVisible(false)
-    for _, Activate in pairs(self.Activates) do
-        local ActivateTrigger = self.Parent.TriggersByName[Activate]
-        if ActivateTrigger ~= nil then
-            ActivateTrigger:Activate(true)
-            ActivateTrigger:SyncState()
-        else
-            local ActivateMine = self.Parent.MinesByName[Activate]
-            if ActivateMine ~= nil then
-                ActivateMine:Activate(true)
-                ActivateMine:SyncState()
-            end
-        end
+    for _, CurrActivate in pairs(self.Activates) do
+        CurrActivate:Activate(true)
+        CurrActivate:SyncState()
     end
-    for _, MineName in pairs(self.Mines) do
-        local CurrMine = self.Parent.MinesByName[MineName]
-        if CurrMine ~= nil then
-            CurrMine:Trigger()
-        end
+    for _, CurrMine in pairs(self.Mines) do
+        CurrMine:Trigger()
     end
     self:SyncState()
 end
