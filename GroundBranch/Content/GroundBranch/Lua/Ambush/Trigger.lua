@@ -205,10 +205,10 @@ function Trigger:OnBeginOverlap(Agent)
             if self.AgentsCount == 1 then
                 self.FirstAgent = Agent
                 if self.MessageToFirst ~= nil then
-                    Agent:DisplayMessage(self.MessageToFirst, 'Upper', 3.0)
+                    Agent:DisplayMessage(self.MessageToFirst, 'Upper', 10.0)
                 end
                 if self.MessageToAll ~= nil then
-                    Agent.Team:DisplayMessageToAlivePlayers(self.MessageToAll, 'Upper', 3.0)
+                    Agent.Team:DisplayMessageToAlivePlayers(self.MessageToAll, 'Upper', 10.0)
                 end
                 if self.TriggerOnRelease == false then
                     if self.tiPresence < 0.2 then
