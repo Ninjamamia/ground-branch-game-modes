@@ -32,8 +32,8 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
     self.TriggerOnRelease = actor.HasTag(Actor, 'TriggerOnRelease')
     self.FirstAgent = nil
-    self.MessageToFirst = nil
-    self.MessageToAll = nil
+    self.EntryMessageToFirst = nil
+    self.DelayedMessageToBluFor = nil
     print('  ' .. tostring(self) .. ' found.')
     print('    Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
@@ -52,10 +52,10 @@ function Trigger:Create(Parent, Actor, IsLaptop)
                 table.insert(self.ActivatePatterns, value)
             elseif key == "Mine" then
                 table.insert(self.MinePatterns, value)
-            elseif key == "MessageToFirst" then
-                self.MessageToFirst = value
-            elseif key == "MessageToAll" then
-                self.MessageToAll = value
+            elseif key == "EntryMessageToFirst" then
+                self.EntryMessageToFirst = value
+            elseif key == "DelayedMessageToBluFor" then
+                self.DelayedMessageToBluFor = value
             else
                 self[key] = tonumber(value)
             end
@@ -181,6 +181,13 @@ function Trigger:Trigger()
     if self.sizeAmbush > 0 then
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, spawning " .. self.sizeAmbush .. " AI of group " .. self.Tag .. " in " .. self.tiAmbush .. "s")
         gamemode.script.AgentsManager:SpawnAI(self.tiAmbush, 0.1, self.sizeAmbush, self.Spawns, nil, nil, self.postSpawnCallback, true)
+        timer.Set(
+            "Trigger_Message_" .. self.Name,
+            self,
+            self.SendMessage,
+            self.tiAmbush,
+            false
+        )
     else
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, nothing to spawn.")
     end
@@ -196,6 +203,12 @@ function Trigger:Trigger()
     self:SyncState()
 end
 
+function Trigger:SendMessage()
+    if self.DelayedMessageToBluFor ~= nil then
+        gamemode.script.Teams['BluFor']:DisplayMessageToAlivePlayers(self.DelayedMessageToBluFor, 'Upper', 10.0)
+    end
+end
+
 function Trigger:OnBeginOverlap(Agent)
     if self.State == 'Active' then
         if self.Agents[Agent.Name] == nil then
@@ -204,11 +217,8 @@ function Trigger:OnBeginOverlap(Agent)
             local Message = tostring(Agent) .. ' entered ' .. tostring(self) .. ', ' .. self.AgentsCount .. ' agents present'
             if self.AgentsCount == 1 then
                 self.FirstAgent = Agent
-                if self.MessageToFirst ~= nil then
-                    Agent:DisplayMessage(self.MessageToFirst, 'Upper', 10.0)
-                end
-                if self.MessageToAll ~= nil then
-                    Agent.Team:DisplayMessageToAlivePlayers(self.MessageToAll, 'Upper', 10.0)
+                if self.EntryMessageToFirst ~= nil then
+                    Agent:DisplayMessage(self.EntryMessageToFirst, 'Upper', 10.0)
                 end
                 if self.TriggerOnRelease == false then
                     if self.tiPresence < 0.2 then
