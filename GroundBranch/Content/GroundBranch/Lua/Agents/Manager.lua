@@ -22,7 +22,7 @@ Manager.__index = Manager
 
 ---Creates a new spawn queue object.
 ---@return table Manager Newly create Manager object.
-function Manager:Create(maxConcurrentAI, fallbackEliminationCallback)
+function Manager:Create(maxConcurrentAI, bleedoutTime, fallbackEliminationCallback)
     local self = setmetatable({}, Manager)
     self.SpawnQueue = {}
 	self.tiSpawnQueue = 0
@@ -33,6 +33,7 @@ function Manager:Create(maxConcurrentAI, fallbackEliminationCallback)
 	self.SpawnedAIByControllerName = {}
 	self.PlayersByName = {}
 	self.TeamsById = {}
+	self.tiIdle = bleedoutTime
     return self
 end
 
@@ -75,6 +76,10 @@ end
 
 function Manager:SetMaxConcurrentAICount(value)
 	self.MaxConcurrentAICount = value
+end
+
+function Manager:SetBleedoutTime(value)
+	self.tiIdle = value
 end
 
 function Manager:OnAIBleedout(KilledAgent)

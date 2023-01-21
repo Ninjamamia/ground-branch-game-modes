@@ -5,7 +5,6 @@ local Base = {
     IsAgent = true
 }
 
-Base.tiIdle = 30
 Base.tiHeal = 10
 Base.tiWait = 10
 
@@ -116,8 +115,8 @@ end
 
 function Base:PrepareHealing()
     self.State = 'Idle'
-    self.tiState = self.tiIdle
-    self.tiTimeout = self.tiIdle
+    self.tiState = self.AgentsManager.tiIdle
+    self.tiTimeout = self.AgentsManager.tiIdle
     self.AgentsManager:EnqueueHealingChance(self)
 end
 
