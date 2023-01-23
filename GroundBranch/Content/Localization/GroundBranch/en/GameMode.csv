@@ -1,4 +1,19 @@
 Key,SourceString,Comment
+"gamemode_any","All",""
+"gamemode_deathmatch","Deathmatch",""
+"gamemode_description_deathmatch","[PvP] Fight for the most kills in a free-for-all battle with unlimited respawns.",""
+"gamemode_dtas","Dynamic Take and Secure",""
+"gamemode_description_dtas","[PvP] Two teams spawn in completely random spots on the map. Once Defenders have placed the flag, Attackers must locate and capture the flag area.",""
+"gamemode_intelretrieval","Intel Retrieval",""
+"gamemode_description_intelretrieval","[Solo/Co-Op] Search for the intel device in one of several suspected locations, then safely retrieve it to the marked extraction point.",""
+"gamemode_teamelimination","Team Elimination",""
+"gamemode_description_teamelimination","[PvP] Eliminate the opposing team. Individual and collective respawns can be enabled.",""
+"gamemode_terroristhunt","Terrorist Hunt",""
+"gamemode_description_terroristhunt","[Solo/Co-Op] Locate and eliminate a predetermined number of enemies in the area of operations.",""
+"gamemode_training","Training",""
+"gamemode_description_training","[Solo/Co-Op] Practice your shooting and CQB skills individually or collectively in The Farm's multiple ranges and shoothouses.",""
+"gamemode_uplink","Uplink",""
+"gamemode_description_uplink","[PvP] Defenders guard an intel device in one of several possible locations, as Attackers must locate and hack it to win.",""
 "missionsetting_timeofday","Insertion time","Opsboard"
 "missionsetting_trainingtimeofday","Set local time","Opsboard"
 "missionsetting_roundtime","Time limit","Opsboard"
@@ -26,10 +41,7 @@ Key,SourceString,Comment
 "missionsetting_quickteamkits_1","Tan v Black","Opsboard"
 "missionsetting_quickteamkits_2","Plain v Camo","Opsboard"
 "missionsetting_quickteamkits_3","Blue v Red","Opsboard"
-"missionsetting_maxhealings","Maximum healings per player","Opsboard"
-"missionsetting_healingmode","Healing Mode","Opsboard"
-"missionsetting_healingmode_0","In Place","Opsboard"
-"missionsetting_healingmode_1","MedEvac","Opsboard"
+"missionsetting_minplayers","Minimum player count",
 "aisetting_maxturnrate","How quickly the AI can turn (degrees per second)",
 "aisetting_maxsprintturnrate","How quickly the AI can turn while sprinting (degrees per second)",
 "aisetting_maxheadlookrate","How quickly the AI can look around separately to aiming (degrees per second)",
@@ -65,16 +77,6 @@ Key,SourceString,Comment
 "tag_pvp","PvP",""
 "tag_team","Team",""
 "tag_train","Training",""
-"gamemode_any","All",""
-"gamemode_assassination","Assassination",""
-"gamemode_deathmatch","Deathmatch",""
-"gamemode_defuse","Defuse",""
-"gamemode_intelretrieval","Intel Retrieval",""
-"gamemode_uplink","Uplink",""
-"gamemode_teamelimination","Team Elimination",""
-"gamemode_terroristhunt","Terrorist Hunt",""
-"gamemode_training","Training",""
-"gamemode_dtas","Dynamic Take and Secure",""
 "ingamemap_timeofday","Local time",
 "ingamemap_timeremaining","Time remaining",
 "element_alpha","Alpha",

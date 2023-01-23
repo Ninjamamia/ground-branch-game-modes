@@ -1,0 +1,9 @@
+Key,SourceString,Comment
+"weathercategory_unknown","Seasonal",""
+"weathercategory_clear","Clear",""
+"weathercategory_cloudy","Cloudy",""
+"weathercategory_overcast","Overcast",""
+"weathercategory_rain","Rain",""
+"weathercategory_fog","Fog",""
+"weathercategory_snow","Snow",""
+

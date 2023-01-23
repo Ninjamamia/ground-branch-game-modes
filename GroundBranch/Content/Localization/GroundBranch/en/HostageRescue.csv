@@ -1,0 +1,22 @@
+Key,SourceString,Comment
+HostageRescue,Hostage Rescue,
+objective_DefendObjective,Defend the laptop.,Opsboard
+objective_EliminateAttackers,Eliminate the attacking team.,Opsboard
+objective_CaptureObjective,Locate and hack the laptop.,Opsboard
+objective_EliminateDefenders,Eliminate the defending team.,Opsboard
+summary_DefendObjective,Information was kept safe.,AAR
+summary_CaptureObjective,Information was extracted from laptop.,AAR
+summary_DefendersEliminated,Defending team was eliminated.,AAR
+summary_AttackersEliminated,Attacking team was eliminated.,AAR
+summary_BothEliminated,Both teams were wiped out.,AAR
+roundstage_BlueDefenderSetup_1,Prepare to defend the laptop.,Opsboard
+roundstage_BlueDefenderSetup_2,Defenders are setting up.\r\nPrepare to locate and hack the laptop.,Opsboard
+roundstage_RedDefenderSetup_1,Defenders are setting up.\r\nPrepare to locate and hack the laptop.,Opsboard
+roundstage_RedDefenderSetup_2,Prepare to defend the laptop.,Opsboard
+gamemessage_SwapAttacking,Teams have been swapped.\r\nYou are now attacking.,
+gamemessage_SwapDefending,Teams have been swapped.\r\nYou are now defending.,
+missionsetting_autoswap_0,No,
+missionsetting_autoswap_1,Yes,
+missionsetting_autoswap,Auto-swap teams,
+missionsetting_defendersetuptime,Defender setup time (seconds),Opsboard
+missionsetting_capturetime,Capture time (seconds),Opsboard
