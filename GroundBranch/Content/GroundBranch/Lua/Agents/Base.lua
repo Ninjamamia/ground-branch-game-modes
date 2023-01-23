@@ -5,7 +5,6 @@ local Base = {
     IsAgent = true
 }
 
-Base.tiIdle = 30
 Base.tiHeal = 10
 Base.tiWait = 10
 
@@ -116,8 +115,8 @@ end
 
 function Base:PrepareHealing()
     self.State = 'Idle'
-    self.tiState = self.tiIdle
-    self.tiTimeout = self.tiIdle
+    self.tiState = self.AgentsManager.tiIdle
+    self.tiTimeout = self.AgentsManager.tiIdle
     self.AgentsManager:EnqueueHealingChance(self)
 end
 
@@ -177,10 +176,10 @@ function Base:OnHealingCheckTick()
     return false
 end
 
-function Base:DisplayMessage(message, position, duration)
+function Base:DisplayMessage(message, position, duration, messageType)
 end
 
-function Base:DisplayPrompt(location, label, duration)
+function Base:DisplayPrompt(location, label, duration, messageType)
 end
 
 function Base:AwardPlayerScore(action)

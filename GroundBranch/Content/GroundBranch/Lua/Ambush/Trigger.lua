@@ -25,17 +25,23 @@ function Trigger:Create(Parent, Actor, IsLaptop)
     self.Tag = nil
     self.State = 'Inactive'
     self.Spawns = {}
+    self.ActivatePatterns = {}
     self.Activates = {}
+    self.MinePatterns = {}
     self.Mines = {}
     self.VisibleWhenActive = actor.HasTag(Actor, 'Visible')
-    print(tostring(self) .. ' found.')
-    print('  Parameters:')
+    self.TriggerOnRelease = actor.HasTag(Actor, 'TriggerOnRelease')
+    self.FirstAgent = nil
+    self.EntryMessageToFirst = nil
+    self.DelayedMessageToBluFor = nil
+    print('  ' .. tostring(self) .. ' found.')
+    print('    Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
         local key
         local value
         _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
-            print("    " .. Tag)
+            print("      " .. Tag)
             if key == "Group" then
                 self.Tag = value
                 self.Spawns = SpawnPoint.CreateMultiple(gameplaystatics.GetAllActorsOfClassWithTag(
@@ -43,19 +49,53 @@ function Trigger:Create(Parent, Actor, IsLaptop)
                     value
                 ))
             elseif key == "Activate" then
-                table.insert(self.Activates, value)
+                table.insert(self.ActivatePatterns, value)
             elseif key == "Mine" then
-                table.insert(self.Mines, value)
+                table.insert(self.MinePatterns, value)
+            elseif key == "EntryMessageToFirst" then
+                self.EntryMessageToFirst = value
+            elseif key == "DelayedMessageToBluFor" then
+                self.DelayedMessageToBluFor = value
             else
                 self[key] = tonumber(value)
             end
         end
     end
-    print('  Summary:')
-    print("    Spawns: " .. #self.Spawns)
-    print("    Activation links: " .. #self.Activates)
-    print("    Mines: " .. #self.Mines)
     return self
+end
+
+function Trigger:PostInit()
+    print('  ' .. tostring(self) .. ' post init...')
+    print('    Processing mine links...')
+    for _, value in ipairs(self.MinePatterns) do
+        local pattern = string.gsub(value, '%*', '.*') .. '$'
+        for name, mine in pairs(self.Parent.MinesByName) do
+            if string.find(name, pattern) ~= nil then
+                print('      ' .. tostring(mine) .. ' added')
+                table.insert(self.Mines, mine)
+            end
+        end
+    end
+    print('    Processing activation links...')
+    for _, value in ipairs(self.ActivatePatterns) do
+        local pattern = string.gsub(value, '%*', '.*') .. '$'
+        for name, item in pairs(self.Parent.TriggersByName) do
+            if string.find(name, pattern) ~= nil then
+                print('      ' .. tostring(item) .. ' added')
+                table.insert(self.Activates, item)
+            end
+        end
+        for name, item in pairs(self.Parent.MinesByName) do
+            if string.find(name, pattern) ~= nil then
+                print('      ' .. tostring(item) .. ' added')
+                table.insert(self.Activates, item)
+            end
+        end
+    end
+    print('    Summary:')
+    print("      Spawns: " .. #self.Spawns)
+    print("      Activation links: " .. #self.Activates)
+    print("      Mines: " .. #self.Mines)
 end
 
 function Trigger:__tostring()
@@ -141,25 +181,32 @@ function Trigger:Trigger()
     if self.sizeAmbush > 0 then
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, spawning " .. self.sizeAmbush .. " AI of group " .. self.Tag .. " in " .. self.tiAmbush .. "s")
         gamemode.script.AgentsManager:SpawnAI(self.tiAmbush, 0.1, self.sizeAmbush, self.Spawns, nil, nil, self.postSpawnCallback, true)
+        timer.Set(
+            "Trigger_Message_" .. self.Name,
+            self,
+            self.SendMessage,
+            self.tiAmbush,
+            false
+        )
     else
         AdminTools:ShowDebug(tostring(self) .. " triggered, activating " .. #self.Activates .. " other triggers, triggering " .. #self.Mines .. " mines, nothing to spawn.")
     end
     self.ActorState:SetActive(false)
     self.ActorState:SetVisible(false)
-    for _, Activate in pairs(self.Activates) do
-        local ActivateTrigger = self.Parent.TriggersByName[Activate]
-        if ActivateTrigger ~= nil then
-            ActivateTrigger:Activate(true)
-            ActivateTrigger:SyncState()
-        end
+    for _, CurrActivate in pairs(self.Activates) do
+        CurrActivate:Activate(true)
+        CurrActivate:SyncState()
     end
-    for _, MineName in pairs(self.Mines) do
-        local CurrMine = self.Parent.MinesByName[MineName]
-        if CurrMine ~= nil then
-            CurrMine:Trigger()
-        end
+    for _, CurrMine in pairs(self.Mines) do
+        CurrMine:Trigger()
     end
     self:SyncState()
+end
+
+function Trigger:SendMessage()
+    if self.DelayedMessageToBluFor ~= nil then
+        gamemode.script.Teams['BluFor']:DisplayMessageToAlivePlayers(self.DelayedMessageToBluFor, 'Upper', 10.0)
+    end
 end
 
 function Trigger:OnBeginOverlap(Agent)
@@ -169,19 +216,25 @@ function Trigger:OnBeginOverlap(Agent)
             self.AgentsCount = self.AgentsCount + 1
             local Message = tostring(Agent) .. ' entered ' .. tostring(self) .. ', ' .. self.AgentsCount .. ' agents present'
             if self.AgentsCount == 1 then
-                if self.tiPresence < 0.2 then
-                    AdminTools:ShowDebug(Message)
-                    self:Trigger()
-                else
-                    Message = Message .. ', will trigger in ' .. self.tiPresence .. 's'
-                    AdminTools:ShowDebug(Message)
-                    timer.Set(
-                        "Trigger_" .. self.Name,
-                        self,
-                        self.Trigger,
-                        self.tiPresence,
-                        false
-                    )
+                self.FirstAgent = Agent
+                if self.EntryMessageToFirst ~= nil then
+                    Agent:DisplayMessage(self.EntryMessageToFirst, 'Upper', 10.0)
+                end
+                if self.TriggerOnRelease == false then
+                    if self.tiPresence < 0.2 then
+                        AdminTools:ShowDebug(Message)
+                        self:Trigger()
+                    else
+                        Message = Message .. ', will trigger in ' .. self.tiPresence .. 's'
+                        AdminTools:ShowDebug(Message)
+                        timer.Set(
+                            "Trigger_" .. self.Name,
+                            self,
+                            self.Trigger,
+                            self.tiPresence,
+                            false
+                        )
+                    end
                 end
             end
         end
@@ -194,6 +247,12 @@ function Trigger:OnEndOverlap(Agent)
             self.Agents[Agent.Name] = nil
             self.AgentsCount = self.AgentsCount - 1
             local Message = tostring(Agent) .. ' left ' .. tostring(self) .. ', ' .. self.AgentsCount .. ' agents present'
+            if self.TriggerOnRelease == true then
+                if Agent == self.FirstAgent then
+                    AdminTools:ShowDebug('This was the first agent (TriggerOnRelease set), tiggering...')
+                    self:Trigger()
+                end
+            end
             if self.AgentsCount == 0 then
                 timer.Clear("Trigger_" .. self.Name, self)
                 Message = Message .. ', timer aborted'

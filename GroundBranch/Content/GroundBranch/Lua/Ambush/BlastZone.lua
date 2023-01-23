@@ -12,7 +12,7 @@ function BlastZone:Create(Parent, Actor)
     self.Name = actor.GetName(Actor)
     self.Actor = Actor
     self.ActorState = ActorState:Create(self.Actor)
-    print(tostring(self) .. ' found.')
+    print('  ' .. tostring(self) .. ' found.')
     return self
 end
 

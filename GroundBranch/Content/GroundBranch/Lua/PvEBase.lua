@@ -34,7 +34,7 @@ local Mode = {
 		},
 		RoundTime = {
 			Min = 3,
-			Max = 60,
+			Max = 120,
 			Value = 60,
 			AdvancedSetting = false,
 		},
@@ -62,6 +62,12 @@ local Mode = {
 			Value = 0,
 			AdvancedSetting = false,
 		},
+		BleedoutTime = {
+			Min = 10,
+			Max = 120,
+			Value = 30,
+			AdvancedSetting = false,
+		}
 	},
 	PlayerScoreTypes = {
 	},
@@ -130,13 +136,8 @@ end
 
 function Mode:PreInit()
 	print('Pre initialization')
-
-	-- testing the ActorStateManager
-	self.ActorStateManager = ActorStateManager:create()
-	self.ActorStateManager:setStateFromList(self.ActorStateManager:parseActors())
-
-	-- usual code
-	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, Callback:Create(self, self.OnOpForDied))
+	self.AgentsManager = AgentsManager:Create(self.Settings.AIMaxConcurrentCount.Value, self.Settings.BleedoutTime.Value, Callback:Create(self, self.OnOpForDied))
+	self.AllNavBlocks = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_MissionNavBlock.BP_MissionNavBlock_C')
 	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
 	self.OnCharacterDiedCallback = CallbackList:Create()
@@ -170,6 +171,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		AdminTools:SetDebugMessageLevel(self.Settings.DebugMessageLevel.Value)
 		self.Teams.BluFor:SetMaxHealings(self.Settings.MaxHealings.Value)
 		self.Teams.BluFor:SetHealingMode(self.Settings.HealingMode.Value)
+		self.AgentsManager:SetBleedoutTime(self.Settings.BleedoutTime.Value)
 		if self.Settings.TriggersEnabled.Value == 1 then
 			self.AmbushManager:Activate()
 		else
@@ -258,6 +260,10 @@ function Mode:PreRoundCleanUp()
 		print("Resetting " .. name)
 		objective:Reset()
 	end
+	print("Resetting all NavBlocks...")
+	for _, NavBlock in ipairs(self.AllNavBlocks) do
+		actor.SetActive(NavBlock, true)
+	end
 end
 
 function Mode:ShouldCheckForTeamKills()
@@ -270,13 +276,7 @@ end
 
 function Mode:PlayerCanEnterPlayArea(PlayerState)
 	print('PlayerCanEnterPlayArea')
-	if
-		gamemode.GetRoundStage() == 'InProgress' or
-		player.GetInsertionPoint(PlayerState) ~= nil
-	then
-		return true
-	end
-	return false
+	return self.AgentsManager:OnPlayerCanEnterPlayArea(PlayerState)
 end
 
 function Mode:GetSpawnInfo(PlayerState)

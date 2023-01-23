@@ -24,27 +24,27 @@ function Mine:Create(Parent, Actor)
     self.Defusers = {}
     self.BlastZones = {}
     self.Hidden = actor.HasTag(Actor, 'Hidden')
-    print(tostring(self) .. ' found.')
-    print('  Parameters:')
+    print('  ' .. tostring(self) .. ' found.')
+    print('    Parameters:')
     for _, Tag in ipairs(actor.GetTags(Actor)) do
         local key
         local value
         _, _, key, value = string.find(Tag, "(%a+)%s*=%s*(.+)")
         if key ~= nil then
-            print("    " .. Tag)
+            print('      ' .. Tag)
             if key == 'BlastZone' then
                 local BlastZone = self.Parent.BlastZonesByName[value]
                 if BlastZone ~= nil then
                     table.insert(self.BlastZones, BlastZone)
                 else
-                    print('    BlastZone ' .. value .. ' is unknown!')
+                    print('      BlastZone ' .. value .. ' is unknown!')
                 end
             else
                 self[key] = tonumber(value)
             end
         end
     end
-    print('  Gathering props...')
+    print('    Gathering props...')
     for _, Actor in ipairs(gameplaystatics.GetAllActorsWithTag(self.Name)) do
         local NewProp = Prop:Create(Parent, Actor)
         self.Props[NewProp.Name] = NewProp
@@ -56,7 +56,7 @@ function Mine:Create(Parent, Actor)
         table.insert(self.Defusers, NewDefuser)
     end
     self.PropsCount = self.PropsCount - #self.Defusers
-    print('  Found a total of ' .. self.PropsCount .. ' props and ' .. #self.Defusers .. ' defusers.')
+    print('    Found a total of ' .. self.PropsCount .. ' props and ' .. #self.Defusers .. ' defusers.')
     return self
 end
 
@@ -95,6 +95,13 @@ function Mine:Activate()
     for _, CurrBlast in ipairs(self.BlastZones) do
         CurrBlast:SetDebugVisibility(AdminTools.DebugMessageLevel > 2)
         CurrBlast:Activate()
+    end
+    local tiDelayMin = self.tiDelayMin or 0
+    local tiDelayMax = self.tiDelayMax or 0
+    if tiDelayMin >= tiDelayMax then
+        self.tiDelay = math.min(tiDelayMin, tiDelayMax)
+    else
+        self.tiDelay = math.random(tiDelayMin * 10, tiDelayMax * 10) * 0.1
     end
 end
 
@@ -143,27 +150,43 @@ function Mine:Trigger(force)
         self:SyncState()
     end
     if self.State == 'Active' then
-        self.State = 'Triggered'
-        AdminTools:ShowDebug(tostring(self) .. " triggered.")
-        actor.SetActive(self.Actor, true)
-        GetLuaComp(self.Actor).Explode()
-        self.ActorState:SetActive(false)
-        self.ActorState:SetVisible(false)
-        for _, CurrBlast in ipairs(self.BlastZones) do
-            CurrBlast:Trigger()
+        AdminTools:ShowDebug(tostring(self) .. " triggered, igniting after " .. self.tiDelay .. "s.")
+        if self.tiDelay < 0.2 then
+            self:Ignite()
+        else
+            timer.Set(
+                "Trigger_" .. self.Name,
+                self,
+                self.Ignite,
+                self.tiDelay,
+                false
+            )
         end
-        for _, Prop in pairs(self.Props) do
-            Prop:SetActive(false)
-            Prop:SetVisible(false)
-            Prop:SetCollidable(false)
-        end
-        for _, Prop in ipairs(self.Defusers) do
-            Prop:SetActive(false)
-            Prop:SetVisible(false)
-            Prop:SetCollidable(false)
-        end
-        self:SyncState()
     end
+end
+
+
+function Mine:Ignite()
+    self.State = 'Triggered'
+    AdminTools:ShowDebug(tostring(self) .. ": Ignition!")
+    actor.SetActive(self.Actor, true)
+    GetLuaComp(self.Actor).Explode()
+    self.ActorState:SetActive(false)
+    self.ActorState:SetVisible(false)
+    for _, CurrBlast in ipairs(self.BlastZones) do
+        CurrBlast:Trigger()
+    end
+    for _, Prop in pairs(self.Props) do
+        Prop:SetActive(false)
+        Prop:SetVisible(false)
+        Prop:SetCollidable(false)
+    end
+    for _, Prop in ipairs(self.Defusers) do
+        Prop:SetActive(false)
+        Prop:SetVisible(false)
+        Prop:SetCollidable(false)
+    end
+    self:SyncState()
 end
 
 return Mine

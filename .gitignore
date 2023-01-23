@@ -10,6 +10,7 @@
 ## Lua scritps
 !GroundBranch/Content/GroundBranch/Lua/*.lua
 !GroundBranch/Content/GroundBranch/Lua/**/*.lua
+!GroundBranch/Content/GroundBranch/GameMode/*.lua
 ## Mission files
 !GroundBranch/Content/GroundBranch/Mission/**/*.mis
 ## Localization files

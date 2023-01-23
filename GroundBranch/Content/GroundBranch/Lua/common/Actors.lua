@@ -103,16 +103,6 @@ function Actors.GetPosition(Actor)
     end
     local location = actor.GetLocation(Actor)
     local rotation = actor.GetRotation(Actor)
-    -- fix first letter case of rotation indices, no way around since
-    -- actor.GetLocation uses lowercase but we are supposed to return
-    -- PascalCase in the GetSpawnInfo() function
-	if rotation ~= nil then
-		rotation = {
-			Pitch = rotation.pitch,
-			Yaw = rotation.yaw,
-			Roll = rotation.roll,
-		}
-	end
     -- add the dead player's postion to the deadPlayerPositions the
     -- PlayerState is used as an id to select the correct position in
     -- the list later in the GetSpawnInfo() function

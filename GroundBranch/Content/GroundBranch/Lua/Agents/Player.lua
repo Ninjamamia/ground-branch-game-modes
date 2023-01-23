@@ -98,7 +98,11 @@ function Player:OnLogOut()
     self.Team:UpdateAgentsLists()
 end
 
-function Player:DisplayMessage(message, position, duration)
+function Player:DisplayMessage(message, position, duration, messageType)
+    messageType = messageType or "Always"
+    if not self.Team.Display[messageType] then
+        return
+    end
     player.ShowGameMessage(
         self.CharacterController,
         message,
@@ -107,7 +111,11 @@ function Player:DisplayMessage(message, position, duration)
     )
 end
 
-function Player:ShowWorldPrompt(location, label, duration)
+function Player:ShowWorldPrompt(location, label, duration, messageType)
+    messageType = messageType or "Always"
+    if not self.Team.Display[messageType] then
+        return
+    end
     player.ShowWorldPrompt(
         self.CharacterController,
         location,
